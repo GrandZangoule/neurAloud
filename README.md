@@ -1,2 +1,2 @@
-# neurAloud
-💪📚🎧 = Empowering minds through books and sound.
+# NeurAloud
+Official website and documentation for NeurAloud, the AI-powered reading assistant.
