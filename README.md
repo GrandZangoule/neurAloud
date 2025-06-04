@@ -1,2 +1,2 @@
 # NeurAloud
-Official website and documentation for NeurAloud, the AI-powered reading assistant.
+Empowering minds through books and sound. 💪📚🎧
