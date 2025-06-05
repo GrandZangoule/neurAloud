@@ -1,9 +1,3 @@
-# NeurAloud Web App
+# NeurAloud
 
-This repository hosts the live version of the NeurAloud app.
-
-## Features
-- Sidebar navigation
-- TTS engine selector
-- Read queue
-- Web deployment ready
+This package includes the complete front-end for the NeurAloud web app.
