@@ -4,66 +4,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NeurAloud</title>
-
-  <!-- Google AdSense -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8803301976531972" crossorigin="anonymous"></script>
-
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="sidebar">
-    <button class="nav-button" onclick="navigate('home')">🏠 Home</button>
-    <button class="nav-button" onclick="navigate('library')">📚 Library</button>
-    <button class="nav-button" onclick="navigate('upload')">➕ Upload</button>
-    <button class="nav-button" onclick="navigate('store')">🛍️ Store</button>
-    <button class="nav-button" onclick="navigate('profile')">👤 Profile</button>
-  </div>
+  <div id="app">
+    <aside class="sidebar">
+      <button class="nav-button">🏠 Home</button>
+      <button class="nav-button">📚 Library</button>
+      <button class="nav-button">➕ Upload</button>
+      <button class="nav-button">🛍️ Store</button>
+      <button class="nav-button">👤 Profile</button>
+    </aside>
 
-  <div id="main">
-    <header>
-      <h1>Welcome to NeurAloud</h1>
-      <p>The AI-powered reading assistant that helps you read, listen, and learn better.</p>
-    </header>
+    <main class="main">
+      <header>
+        <h1>Welcome to NeurAloud</h1>
+        <p>The AI-powered reading assistant that helps you read, listen, and learn better.</p>
+      </header>
 
-    <section id="file-upload">
-      <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx,.md" />
-      <button onclick="handleFile()">📂 Load File</button>
-    </section>
+      <section class="upload-controls">
+        <input type="file" id="fileInput" accept=".txt,.pdf,.docx" />
+        <button onclick="loadFile()">📁 Load File</button>
+      </section>
 
-    <section id="read-queue">
-      <h2>📖 Read Queue</h2>
-      <ul id="queue-list"></ul>
-    </section>
+      <section class="read-queue">
+        <h2>📖 Read Queue</h2>
+        <div class="tts-controls">
+          <label for="ttsEngine">TTS Engine:</label>
+          <select id="ttsEngine">
+            <option>Google TTS</option>
+            <option>Speechify</option>
+            <option>Amazon Polly</option>
+            <option>Azure</option>
+            <option>OpenTTS</option>
+          </select>
+        </div>
 
-    <section id="tts-panel">
-      <label for="tts-engine">TTS Engine:</label>
-      <select id="tts-engine">
-        <option value="google">Google TTS</option>
-        <option value="azure">Azure</option>
-        <option value="amazon">Amazon Polly</option>
-        <option value="speechify">Speechify</option>
-        <option value="opentts">OpenTTS</option>
-      </select>
-    </section>
+        <div id="textDisplay" contenteditable="false"></div>
+      </section>
 
-    <!-- Google AdSense Banner -->
-    <section class="ad-section">
-      <ins class="adsbygoogle"
-        style="display:block"
-        data-ad-client="ca-pub-8803301976531972"
-        data-ad-slot="5315996119"
-        data-ad-format="auto"
-        data-full-width-responsive="true"></ins>
-      <script>
-        (adsbygoogle = window.adsbygoogle || []).push({});
-      </script>
-    </section>
-
-    <footer>
-      <button onclick="play()">▶️ Play</button>
-      <button onclick="pause()">⏸️ Pause</button>
-      <button onclick="stop()">⏹️ Stop</button>
-    </footer>
+      <footer class="playback-buttons">
+        <button onclick="play()">▶️ Play</button>
+        <button onclick="pause()">⏸️ Pause</button>
+        <button onclick="stop()">⏹️ Stop</button>
+      </footer>
+    </main>
   </div>
 
   <script src="script.js"></script>
