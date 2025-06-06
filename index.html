@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NeurAloud</title>
   <link rel="stylesheet" href="style.css" />
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8803301976531972" crossorigin="anonymous"></script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8803301976531972"
+     crossorigin="anonymous"></script>
 </head>
 <body>
   <div id="sidebar">
@@ -22,46 +23,44 @@
       <p>The AI-powered reading assistant that helps you read, listen, and learn better.</p>
     </header>
 
-    <section id="upload-section" style="display:none;">
-      <h2>Upload Document</h2>
-      <input type="file" id="fileInput" accept=".txt,.pdf" />
+    <!-- Upload Section -->
+    <section id="upload-section">
+      <input type="file" id="file-input" accept=".txt" />
     </section>
 
-    <section id="library-section" style="display:none;">
-      <h2>Your Library</h2>
-      <ul id="library-list"></ul>
-    </section>
-
+    <!-- Read Queue -->
     <section id="read-queue">
       <h2>Read Queue</h2>
       <ul id="queue-list"></ul>
     </section>
 
+    <!-- TTS Panel -->
     <section id="tts-panel">
       <label for="tts-engine">TTS Engine:</label>
       <select id="tts-engine">
-        <option>Google TTS</option>
-        <option>Azure</option>
-        <option>Amazon Polly</option>
-        <option>Speechify</option>
-        <option>OpenTTS</option>
+        <option value="google">Google TTS</option>
+        <option value="azure">Azure</option>
+        <option value="polly">Amazon Polly</option>
+        <option value="speechify">Speechify</option>
+        <option value="opentts">OpenTTS</option>
       </select>
-      <button onclick="toggleAutoResume()" id="auto-resume-toggle">Auto-Resume: Off</button>
     </section>
 
+    <!-- Playback Controls -->
     <footer>
       <button onclick="play()">▶️ Play</button>
       <button onclick="pause()">⏸️ Pause</button>
       <button onclick="stop()">⏹️ Stop</button>
     </footer>
 
-    <section id="ad-container">
+    <!-- Ad Banner -->
+    <section style="margin-top: 20px;">
       <ins class="adsbygoogle"
-        style="display:block"
-        data-ad-client="ca-pub-8803301976531972"
-        data-ad-slot="5315996119"
-        data-ad-format="auto"
-        data-full-width-responsive="true"></ins>
+           style="display:block"
+           data-ad-client="ca-pub-8803301976531972"
+           data-ad-slot="5315996119"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
       <script>
         (adsbygoogle = window.adsbygoogle || []).push({});
       </script>
