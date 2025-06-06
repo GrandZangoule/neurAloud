@@ -7,47 +7,48 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="app">
+  <div class="container">
     <aside class="sidebar">
-      <button class="nav-button">🏠 Home</button>
-      <button class="nav-button">📚 Library</button>
-      <button class="nav-button">➕ Upload</button>
-      <button class="nav-button">🛍️ Store</button>
-      <button class="nav-button">👤 Profile</button>
+      <button onclick="navigate('home')">🏠 Home</button>
+      <button onclick="navigate('library')">📚 Library</button>
+      <button onclick="navigate('upload')">➕ Upload</button>
+      <button onclick="navigate('store')">🛍️ Store</button>
+      <button onclick="navigate('profile')">👤 Profile</button>
     </aside>
 
-    <main class="main">
-      <header>
-        <h1>Welcome to NeurAloud</h1>
-        <p>The AI-powered reading assistant that helps you read, listen, and learn better.</p>
-      </header>
+    <main class="content">
+      <h1>Welcome to NeurAloud</h1>
+      <p class="intro">The AI-powered reading assistant that helps you read, listen, and learn better.</p>
 
-      <section class="upload-controls">
-        <input type="file" id="fileInput" accept=".txt,.pdf,.docx" />
+      <div class="upload-controls">
+        <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.epub" />
         <button onclick="loadFile()">📁 Load File</button>
-      </section>
+      </div>
 
-      <section class="read-queue">
+      <div class="read-queue-header">
         <h2>📖 Read Queue</h2>
-        <div class="tts-controls">
-          <label for="ttsEngine">TTS Engine:</label>
-          <select id="ttsEngine">
-            <option>Google TTS</option>
-            <option>Speechify</option>
-            <option>Amazon Polly</option>
-            <option>Azure</option>
-            <option>OpenTTS</option>
-          </select>
-        </div>
+      </div>
 
-        <div id="textDisplay" contenteditable="false"></div>
-      </section>
+      <div class="tts-settings">
+        <label for="tts-engine">TTS Engine:</label>
+        <select id="tts-engine">
+          <option value="google">Google TTS</option>
+          <option value="azure">Azure</option>
+          <option value="polly">Amazon Polly</option>
+          <option value="speechify">Speechify</option>
+          <option value="opentts">OpenTTS</option>
+        </select>
+      </div>
 
-      <footer class="playback-buttons">
-        <button onclick="play()">▶️ Play</button>
-        <button onclick="pause()">⏸️ Pause</button>
-        <button onclick="stop()">⏹️ Stop</button>
-      </footer>
+      <div class="display-box">
+        <div id="textDisplay" class="text-box" contenteditable="false"></div>
+      </div>
+
+      <div class="playback-controls">
+        <button onclick="play()" class="play-btn">▶️ Play</button>
+        <button onclick="pause()" class="pause-btn">⏸️ Pause</button>
+        <button onclick="stop()" class="stop-btn">⏹️ Stop</button>
+      </div>
     </main>
   </div>
 
