@@ -1,33 +1,56 @@
-const fileInput = document.getElementById("file-input");
-const textDisplay = document.getElementById("text-display");
+let text = '';
+let utterance = null;
 
-fileInput.addEventListener("change", async () => {
-  const file = fileInput.files[0];
+document.getElementById("file-input").addEventListener("change", handleFile);
+
+function handleFile(event) {
+  const file = event.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
 
   if (file.type === "application/pdf") {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = "";
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      fullText += content.items.map(item => item.str).join(" ") + "\n\n";
-    }
-    textDisplay.textContent = fullText;
-  } else {
-    reader.onload = () => {
-      textDisplay.textContent = reader.result;
+    const fileReader = new FileReader();
+    fileReader.onload = function () {
+      const typedarray = new Uint8Array(this.result);
+      pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+        let allText = '';
+        const readPage = (pageNum) => {
+          if (pageNum > pdf.numPages) {
+            document.getElementById("text-display").textContent = allText;
+            localStorage.setItem('neurAloud_text', allText);
+            return;
+          }
+          pdf.getPage(pageNum).then(page => {
+            page.getTextContent().then(content => {
+              const strings = content.items.map(item => item.str).join(' ');
+              allText += strings + '\n';
+              readPage(pageNum + 1);
+            });
+          });
+        };
+        readPage(1);
+      });
+    };
+    fileReader.readAsArrayBuffer(file);
+  } else if (file.type === "text/plain") {
+    reader.onload = function () {
+      text = reader.result;
+      document.getElementById("text-display").textContent = text;
+      localStorage.setItem('neurAloud_text', text);
     };
     reader.readAsText(file);
+  } else {
+    alert("Unsupported file type. Please upload a .txt or .pdf file.");
   }
-});
+}
 
 function play() {
-  const text = textDisplay.textContent;
-  const utterance = new SpeechSynthesisUtterance(text);
+  stop(); // stop previous utterance
+  text = document.getElementById("text-display").textContent;
+  if (!text) return;
+  utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1.0;
   speechSynthesis.speak(utterance);
 }
 
@@ -40,5 +63,13 @@ function stop() {
 }
 
 function navigate(section) {
-  alert(`Navigation to: ${section} — coming soon.`);
+  alert(`Navigating to ${section}... (Not yet implemented)`);
 }
+
+// Auto-load persisted file
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem('neurAloud_text');
+  if (saved) {
+    document.getElementById("text-display").textContent = saved;
+  }
+});
