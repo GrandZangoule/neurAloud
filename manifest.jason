@@ -1,21 +1,21 @@
 {
   "name": "NeurAloud",
   "short_name": "NeurAloud",
-  "description": "Text and PDF Reader with TTS",
+  "description": "Empowering minds through books and sound",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#6C63FF",
+  "theme_color": "#6b21a8",
   "icons": [
     {
-      "src": "icon-192.png",
-      "type": "image/png",
-      "sizes": "192x192"
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
     },
     {
-      "src": "icon-512.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }
