@@ -1,76 +1,44 @@
-let currentText = '';
-let utterance;
-let synth = window.speechSynthesis;
-let isPaused = false;
+const fileInput = document.getElementById("file-input");
+const textDisplay = document.getElementById("text-display");
 
-document.getElementById('file-input').addEventListener('change', handleFileUpload);
-
-function handleFileUpload(event) {
-  const file = event.target.files[0];
+fileInput.addEventListener("change", async () => {
+  const file = fileInput.files[0];
   if (!file) return;
 
-  const display = document.getElementById('text-display');
+  const reader = new FileReader();
 
-  if (file.type === 'application/pdf') {
-    const reader = new FileReader();
-    reader.onload = function () {
-      const typedarray = new Uint8Array(reader.result);
-      pdfjsLib.getDocument(typedarray).promise.then(pdf => {
-        let text = '';
-        let pages = [];
-        for (let i = 1; i <= pdf.numPages; i++) {
-          pages.push(pdf.getPage(i).then(page =>
-            page.getTextContent().then(content => {
-              return content.items.map(item => item.str).join(' ');
-            })
-          ));
-        }
-
-        Promise.all(pages).then(results => {
-          text = results.join('\n\n');
-          currentText = text;
-          display.textContent = text;
-        });
-      });
-    };
-    reader.readAsArrayBuffer(file);
+  if (file.type === "application/pdf") {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      fullText += content.items.map(item => item.str).join(" ") + "\n\n";
+    }
+    textDisplay.textContent = fullText;
   } else {
-    const reader = new FileReader();
-    reader.onload = function () {
-      currentText = reader.result;
-      display.textContent = currentText;
+    reader.onload = () => {
+      textDisplay.textContent = reader.result;
     };
     reader.readAsText(file);
   }
-}
+});
 
 function play() {
-  if (isPaused) {
-    synth.resume();
-    isPaused = false;
-    return;
-  }
-
-  if (synth.speaking) {
-    stop();
-  }
-
-  utterance = new SpeechSynthesisUtterance(currentText);
-  utterance.rate = 1.0;
-  utterance.pitch = 1.0;
-  utterance.lang = 'en-US';
-
-  synth.speak(utterance);
+  const text = textDisplay.textContent;
+  const utterance = new SpeechSynthesisUtterance(text);
+  speechSynthesis.speak(utterance);
 }
 
 function pause() {
-  if (synth.speaking && !synth.paused) {
-    synth.pause();
-    isPaused = true;
-  }
+  speechSynthesis.pause();
 }
 
 function stop() {
-  synth.cancel();
-  isPaused = false;
+  speechSynthesis.cancel();
+}
+
+function navigate(section) {
+  alert(`Navigation to: ${section} — coming soon.`);
 }
