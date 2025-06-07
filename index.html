@@ -25,9 +25,10 @@
         <p>Empowering minds through books and sound.</p>
       </header>
 
-      <section id="upload-section">
+      <section id="upload-section" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
         <label for="file-input" class="file-label">📂 Choose File</label>
         <input type="file" id="file-input" accept=".txt,.pdf" />
+        <span id="file-name" style="font-size: 0.9em; color: #555;"></span>
         <select id="tts-engine">
           <option>Default TTS Engine</option>
           <option>Google TTS</option>
@@ -37,7 +38,7 @@
         </select>
       </section>
 
-      <section id="controls">
+      <section id="controls" style="margin-top: 20px;">
         <button onclick="play()">▶️ Play</button>
         <button onclick="pause()">⏸️ Pause</button>
         <button onclick="stop()">⏹️ Stop</button>
@@ -54,6 +55,11 @@
       navigator.serviceWorker.register('./service-worker.js')
         .then(() => console.log("Service Worker registered"));
     }
+
+    document.getElementById("file-input").addEventListener("change", (e) => {
+      const fileName = e.target.files[0]?.name || "";
+      document.getElementById("file-name").textContent = fileName;
+    });
   </script>
   <script src="script.js"></script>
 </body>
