@@ -7,48 +7,51 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <aside class="sidebar">
-      <button onclick="navigate('home')">🏠 Home</button>
-      <button onclick="navigate('library')">📚 Library</button>
-      <button onclick="navigate('upload')">➕ Upload</button>
-      <button onclick="navigate('store')">🛍️ Store</button>
-      <button onclick="navigate('profile')">👤 Profile</button>
+  <div id="app">
+    <aside id="sidebar">
+      <button class="nav-button">🏠 Home</button>
+      <button class="nav-button" onclick="showLibrary()">📚 Library</button>
+      <button class="nav-button" onclick="document.getElementById('file-input').click()">➕ Upload</button>
+      <button class="nav-button">🛍️ Store</button>
+      <button class="nav-button">👤 Profile</button>
     </aside>
 
-    <main class="content">
-      <h1>Welcome to NeurAloud</h1>
-      <p class="intro">The AI-powered reading assistant that helps you read, listen, and learn better.</p>
+    <main id="main-content">
+      <header>
+        <h1>📘 NeurAloud</h1>
+        <p>Your AI-powered reading companion</p>
+      </header>
 
-      <div class="upload-controls">
-        <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.epub" />
-        <button onclick="loadFile()">📁 Load File</button>
-      </div>
+      <section id="upload-section">
+        <input type="file" id="file-input" accept=".pdf,.txt" hidden onchange="handleFileUpload(event)" />
+        <button onclick="loadFile()">📂 Load File</button>
+      </section>
 
-      <div class="read-queue-header">
-        <h2>📖 Read Queue</h2>
-      </div>
+      <section id="read-queue">
+        <h2>📑 Read Queue</h2>
+        <ul id="queue-list"></ul>
+      </section>
 
-      <div class="tts-settings">
+      <section id="tts-panel">
         <label for="tts-engine">TTS Engine:</label>
         <select id="tts-engine">
+          <option value="default">Default</option>
           <option value="google">Google TTS</option>
           <option value="azure">Azure</option>
-          <option value="polly">Amazon Polly</option>
-          <option value="speechify">Speechify</option>
-          <option value="opentts">OpenTTS</option>
+          <option value="amazon">Amazon Polly</option>
         </select>
-      </div>
+      </section>
 
-      <div class="display-box">
-        <div id="textDisplay" class="text-box" contenteditable="false"></div>
-      </div>
+      <section id="file-display">
+        <h3>📄 Loaded File</h3>
+        <div id="text-container"></div>
+      </section>
 
-      <div class="playback-controls">
-        <button onclick="play()" class="play-btn">▶️ Play</button>
-        <button onclick="pause()" class="pause-btn">⏸️ Pause</button>
-        <button onclick="stop()" class="stop-btn">⏹️ Stop</button>
-      </div>
+      <footer>
+        <button onclick="play()">▶️ Play</button>
+        <button onclick="pause()">⏸️ Pause</button>
+        <button onclick="stop()">⏹️ Stop</button>
+      </footer>
     </main>
   </div>
 
