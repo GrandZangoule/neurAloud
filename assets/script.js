@@ -3,12 +3,9 @@ let currentSentenceIndex = 0;
 let sentences = [];
 let isLooping = false;
 
-// Restore last loaded text
 window.addEventListener("DOMContentLoaded", () => {
   const lastText = localStorage.getItem("lastText");
-  if (lastText) {
-    displayText(lastText);
-  }
+  if (lastText) displayText(lastText);
 });
 
 function loadFile(event) {
@@ -24,8 +21,8 @@ function loadFile(event) {
   };
 
   if (file.type === "application/pdf") {
-    reader.readAsArrayBuffer(file); // We'll extend PDF support later with PDF.js
-    alert("PDF support will be added soon. Please upload a .txt file for now.");
+    alert("📄 PDF support coming soon. Use .txt files for now.");
+    return;
   } else {
     reader.readAsText(file);
   }
@@ -34,8 +31,7 @@ function loadFile(event) {
 function displayText(text) {
   sentences = text.split(/(?<=\.|\!|\?)\s/);
   const html = sentences.map(s => `<span class="sentence">${s}</span>`).join(" ");
-  const box = document.getElementById("text-display");
-  box.innerHTML = html;
+  document.getElementById("text-display").innerHTML = html;
 }
 
 function highlightSentence(index) {
@@ -85,9 +81,7 @@ function speakSentence(index) {
 }
 
 function pause() {
-  if (speechSynthesis.speaking) {
-    speechSynthesis.pause();
-  }
+  if (speechSynthesis.speaking) speechSynthesis.pause();
 }
 
 function stop() {
@@ -101,10 +95,10 @@ function toggleLoop() {
   alert("🔁 Looping is now " + (isLooping ? "enabled" : "disabled"));
 }
 
-function navigate(tab) {
-  alert(`🔧 Navigation to "${tab}" is not yet wired. Coming soon.`);
+function translateText() {
+  alert("🌐 Translation coming soon.");
 }
 
-function translateText() {
-  alert("🌍 Translation will be added soon.");
+function navigate(tab) {
+  alert(`🔧 Navigation to "${tab}" not yet wired.`);
 }
