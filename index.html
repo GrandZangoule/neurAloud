@@ -3,40 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
   <title>NeurAloud</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="manifest.json" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 </head>
 <body>
-  <div class="header">
-    <h1>📚 NeurAloud</h1>
-    <div class="engine-row">
-      <label for="tts-engine">TTS Engine:</label>
-      <select id="tts-engine">
-        <option value="default">Default</option>
-        <!-- Add others later -->
-      </select>
-      <span id="read-queue-label">Read Queue</span>
+  <div id="app">
+    <div id="sidebar">
+      <button class="nav-button">🏠 Home</button>
+      <button class="nav-button">📚 Library</button>
+      <button class="nav-button">📤 Upload</button>
+      <button class="nav-button">🛍️ Store</button>
+      <button class="nav-button">👤 Profile</button>
+    </div>
+
+    <div id="main">
+      <header>
+        <h1><img src="icon.png" alt="NeurAloud Logo" class="logo"> NeurAloud</h1>
+        <p>Empowering minds through books and sound.</p>
+      </header>
+
+      <section id="upload-controls">
+        <label class="upload-btn">
+          📂 Choose File
+          <input type="file" id="file-input" accept=".txt,.pdf">
+        </label>
+        <select id="tts-engine">
+          <option value="default">Default TTS Engine</option>
+          <option value="google">Google TTS</option>
+          <option value="azure">Azure</option>
+          <option value="speechify">Speechify</option>
+        </select>
+      </section>
+
+      <div id="controls">
+        <button onclick="play()">🔊 Play</button>
+        <button onclick="pause()">⏸️ Pause</button>
+        <button onclick="stop()">⏹️ Stop</button>
+      </div>
+
+      <div id="text-display">Upload a document to begin reading.</div>
     </div>
   </div>
 
-  <div class="main">
-    <div class="upload-section">
-      <input type="file" id="file-input" />
-    </div>
-
-    <div class="controls">
-      <button onclick="play()">▶️ Play</button>
-      <button onclick="pause()">⏸️ Pause</button>
-      <button onclick="stop()">⏹️ Stop</button>
-    </div>
-
-    <div id="text-display" class="text-display">
-      <p>No document loaded yet.</p>
-    </div>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="script.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
