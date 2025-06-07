@@ -1,164 +1,147 @@
-body {
+/* Reset */
+* {
   margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: #f8f9fc;
-  color: #333;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-#app {
-  display: flex;
-  height: 100vh;
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f0f4ff;
+  color: #222;
+  padding: 0;
+  margin: 0;
 }
 
-#sidebar {
-  background: #6b21a8;
+header {
+  background: linear-gradient(to right, #6a11cb, #2575fc);
   color: white;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  min-width: 180px;
+  padding: 1rem;
+  text-align: center;
 }
 
-.nav-button {
-  background: transparent;
+nav {
+  margin-top: 1rem;
+}
+
+nav button {
+  margin: 0 0.4rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  color: #2575fc;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+nav button:hover {
+  background: #e0eaff;
+}
+
+main {
+  padding: 1.5rem;
+  max-width: 1000px;
+  margin: auto;
+}
+
+.file-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.file-controls input[type="file"] {
+  flex: 1;
+}
+
+.file-controls input[type="number"] {
+  width: 60px;
+  padding: 0.3rem;
+}
+
+.file-controls button {
+  background: #2575fc;
   color: white;
   border: none;
-  text-align: left;
-  padding: 10px;
-  margin-bottom: 10px;
-  font-size: 16px;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.file-controls button:hover {
+  background: #1a5ed9;
+}
+
+.text-display {
+  background: white;
+  border: 2px solid #cddaff;
+  border-radius: 10px;
+  padding: 1rem;
+  min-height: 300px;
+  max-height: 80vh;
+  overflow-y: auto;
+  line-height: 1.6;
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sentence {
+  padding: 0.1rem 0.25rem;
+  transition: background 0.3s ease;
+}
+
+.sentence.highlight {
+  background-color: yellow;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.controls button {
+  background: #6a11cb;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  font-size: 1rem;
   cursor: pointer;
   transition: background 0.3s;
 }
 
-.nav-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+.controls button:hover {
+  background: #4b0fab;
 }
 
-#main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  overflow: hidden;
-}
-
-header {
-  margin-bottom: 10px;
-}
-
-header h1 {
-  margin: 0;
-  color: #4b0082;
-  font-size: 24px;
-  display: flex;
-  align-items: center;
-}
-
-header p {
-  margin: 0;
-  font-size: 14px;
-  color: #666;
-}
-
-#upload-section {
-  background: #f0f0f0;
-  padding: 10px;
-  border-radius: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-.file-label {
-  background-color: #6b21a8;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-#file-input {
-  display: none;
-}
-
-#tts-engine {
-  padding: 6px;
-  font-size: 14px;
-}
-
-#controls {
-  margin-top: 15px;
-  display: flex;
-  gap: 15px;
-}
-
-#controls button {
-  font-size: 18px;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 6px;
-  background: #6b21a8;
-  color: white;
-  cursor: pointer;
-  transition: transform 0.1s;
-}
-
-#controls button:hover {
-  background: #4b0082;
-  transform: scale(1.03);
-}
-
-#display-area {
-  margin-top: 20px;
-  flex-grow: 1;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  padding: 15px;
-  overflow-y: auto;
-  height: 100%;
-}
-
-#text-display {
-  line-height: 1.6;
-  font-size: 16px;
-  white-space: pre-wrap;
-}
-
-.sentence {
-  display: inline;
-  transition: background-color 0.3s;
-}
-
-.sentence.highlight {
-  background-color: #ffff99;
-}
-
-@media (max-width: 768px) {
-  #app {
+/* Mobile Responsive */
+@media (max-width: 600px) {
+  .file-controls {
     flex-direction: column;
+    align-items: stretch;
   }
 
-  #sidebar {
-    flex-direction: row;
-    overflow-x: auto;
-    white-space: nowrap;
-    min-width: 100%;
-    padding: 10px;
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
   }
 
-  .nav-button {
-    font-size: 14px;
-    padding: 6px 10px;
+  nav button {
+    flex: 1 0 40%;
+    margin-bottom: 0.5rem;
   }
 
-  #main {
-    padding: 10px;
+  .controls button {
+    flex: 1 0 40%;
   }
 }
