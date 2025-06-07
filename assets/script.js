@@ -1,6 +1,7 @@
 let utterance;
 let currentSentenceIndex = 0;
 let sentences = [];
+let isLooping = false;
 
 window.addEventListener("DOMContentLoaded", () => {
   const lastText = localStorage.getItem("lastText");
@@ -8,6 +9,25 @@ window.addEventListener("DOMContentLoaded", () => {
     displayText(lastText);
   }
 });
+
+function loadFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function (e) {
+    const content = e.target.result;
+    localStorage.setItem("lastText", content);
+    displayText(content);
+  };
+
+  if (file.type === "application/pdf") {
+    alert("PDF support will be integrated soon. For now, use .txt files.");
+  } else {
+    reader.readAsText(file);
+  }
+}
 
 function displayText(text) {
   sentences = text.split(/(?<=\.|\!|\?)\s/);
@@ -37,7 +57,12 @@ function play() {
 
 function speakSentence(index) {
   if (index >= sentences.length) {
-    stop();
+    if (isLooping) {
+      currentSentenceIndex = 0;
+      speakSentence(currentSentenceIndex);
+    } else {
+      stop();
+    }
     return;
   }
 
@@ -45,8 +70,8 @@ function speakSentence(index) {
   highlightSentence(index);
 
   utterance = new SpeechSynthesisUtterance(sentence);
-  utterance.rate = 1.0;
-  utterance.pitch = 1.0;
+  utterance.rate = parseFloat(document.getElementById("rate").value);
+  utterance.pitch = parseFloat(document.getElementById("pitch").value);
 
   utterance.onend = () => {
     currentSentenceIndex++;
@@ -68,10 +93,15 @@ function stop() {
   highlightSentence(-1);
 }
 
+function toggleLoop() {
+  isLooping = !isLooping;
+  alert("🔁 Looping " + (isLooping ? "enabled" : "disabled"));
+}
+
 function navigate(tab) {
-  alert(`🔧 Navigation to "${tab}" is not yet wired. Coming soon.`);
+  alert(`🔧 Navigation to "${tab}" coming soon.`);
 }
 
 function translateText() {
-  alert("🌍 Translation feature is coming soon!");
+  alert("🌐 Translation support coming soon!");
 }
