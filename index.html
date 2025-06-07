@@ -5,43 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NeurAloud</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.min.js"></script>
 </head>
 <body>
-  <div id="app">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <h1>📚 NeurAloud</h1>
+  <header>
+    <h1>📚 NeurAloud</h1>
+  </header>
 
-      <div class="upload-section">
-        <label for="fileInput" class="upload-btn">📂 Upload File</label>
-        <input type="file" id="fileInput" accept=".txt,.pdf" hidden />
-      </div>
+  <main>
+    <section class="controls">
+      <label for="file-input" class="file-label">📁 Choose File</label>
+      <input type="file" id="file-input" accept=".txt,.pdf"/>
+      <select id="tts-engine">
+        <option value="default">Default TTS Engine</option>
+        <!-- Additional TTS engines can be added -->
+      </select>
+    </section>
 
-      <div class="engine-row">
-        <label for="ttsEngine">🧠 TTS Engine:</label>
-        <select id="ttsEngine">
-          <option>Google TTS</option>
-          <option>SpeechSynthesis (Default)</option>
-        </select>
-      </div>
+    <section class="playback-buttons">
+      <button onclick="play()">▶️ Play</button>
+      <button onclick="pause()">⏸️ Pause</button>
+      <button onclick="stop()">⏹️ Stop</button>
+    </section>
 
-      <h3>📋 Read Queue</h3>
-      <ul id="queue-list" class="queue"></ul>
+    <section id="text-display" class="text-box"></section>
+  </main>
 
-      <div class="controls">
-        <button onclick="play()">▶️ Play</button>
-        <button onclick="pause()">⏸️ Pause</button>
-        <button onclick="stop()">⏹️ Stop</button>
-      </div>
-    </div>
-
-    <!-- Main Viewer -->
-    <div class="viewer">
-      <h2>📝 Text Display</h2>
-      <div id="textBox" class="text-box"></div>
-    </div>
-  </div>
+  <footer>
+    <p>© 2025 NeurAloud</p>
+  </footer>
 
   <script src="script.js"></script>
 </body>
