@@ -1,141 +1,99 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(to bottom right, #7e22ce, #e879f9);
-  color: #111827;
-  height: 100vh;
+  background: linear-gradient(to bottom right, #a855f7, #fcd34d);
+  color: #1e1b4b;
   display: flex;
+  height: 100vh;
 }
 
 #app {
   display: flex;
   width: 100%;
-  height: 100vh;
 }
 
 #sidebar {
-  width: 200px;
+  width: 180px;
   background-color: #1e1b4b;
-  padding: 20px;
   color: white;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .nav-button {
-  background: none;
-  color: white;
+  background-color: transparent;
   border: none;
+  color: white;
   font-size: 16px;
-  padding: 10px;
   text-align: left;
   cursor: pointer;
 }
 
 .nav-button:hover {
-  background-color: #4338ca;
+  background-color: #4c1d95;
 }
 
 #main {
   flex: 1;
-  padding: 20px;
+  padding: 24px;
+  background-color: #f1f5f9;
   display: flex;
   flex-direction: column;
+  gap: 20px;
 }
 
 header h1 {
-  font-size: 2rem;
-  color: #ffffff;
-  margin-bottom: 0;
+  margin: 0;
+  color: #6b21a8;
 }
 
 header p {
-  color: #f3e8ff;
-  font-size: 1rem;
-  margin-top: 4px;
+  font-size: 16px;
+  color: #334155;
 }
 
 #upload-section {
-  margin: 20px 0;
   display: flex;
-  gap: 20px;
   align-items: center;
+  gap: 12px;
 }
 
-#file-input {
-  background: #fff;
-  padding: 6px;
-  border-radius: 4px;
-}
-
-#tts-engine {
-  padding: 6px;
-  border-radius: 4px;
-}
-
-#read-queue h2 {
-  font-size: 1.25rem;
-  margin-top: 20px;
-  margin-bottom: 10px;
-}
-
-#queue-list {
-  list-style-type: none;
-  padding-left: 0;
+.file-label {
+  background-color: #6b21a8;
   color: white;
-}
-
-#text-display {
-  margin-top: 20px;
-  padding: 20px;
-  background: white;
-  color: #111827;
-  border-radius: 8px;
-  height: 100%;
-  min-height: 400px;
-  max-height: 600px;
-  overflow-y: auto;
-  flex-grow: 1;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-
-footer {
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
-}
-
-footer button {
-  padding: 10px 20px;
-  font-size: 16px;
-  border: none;
+  padding: 8px 12px;
   border-radius: 6px;
-  background-color: #2563eb;
-  color: white;
   cursor: pointer;
 }
 
-footer button:hover {
-  background-color: #1e40af;
+#file-input {
+  display: none;
 }
 
-@media (max-width: 768px) {
-  #app {
-    flex-direction: column;
-  }
+#controls button {
+  background-color: #7c3aed;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 10px;
+  font-size: 16px;
+}
 
-  #sidebar {
-    flex-direction: row;
-    justify-content: space-around;
-    width: 100%;
-  }
+#controls button:hover {
+  background-color: #5b21b6;
+}
 
-  #main {
-    padding: 10px;
-  }
-
-  footer {
-    flex-direction: column;
-  }
+#text-display {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  height: calc(100vh - 300px);
+  overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  font-size: 18px;
+  line-height: 1.6;
 }
