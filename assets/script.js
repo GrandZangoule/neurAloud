@@ -1,59 +1,97 @@
-let currentText = "";
-let currentUtterance = null;
 let synth = window.speechSynthesis;
+let sentences = [];
+let currentIndex = 0;
+let utterance = null;
+let paused = false;
 
-function navigate(section) {
-  alert(`Navigation to "${section}" is not implemented yet.`);
+function navigate(page) {
+  alert(`Navigating to ${page} (placeholder)`);
 }
 
-document.getElementById("file-input").addEventListener("change", async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  document.getElementById("file-name").textContent = file.name;
-
-  const reader = new FileReader();
-  const isPDF = file.type === "application/pdf";
-
-  if (isPDF) {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let textContent = "";
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const strings = content.items.map(item => item.str);
-      textContent += strings.join(" ") + "\n\n";
-    }
-    currentText = textContent;
-    document.getElementById("text-display").textContent = textContent;
-  } else {
-    reader.onload = function () {
-      currentText = reader.result;
-      document.getElementById("text-display").textContent = currentText;
-    };
-    reader.readAsText(file);
-  }
-});
-
 function play() {
-  if (!currentText) return;
-  stop(); // Stop any existing speech
-  currentUtterance = new SpeechSynthesisUtterance(currentText);
-  currentUtterance.onend = () => {
-    console.log("Speech finished.");
-  };
-  synth.speak(currentUtterance);
+  if (paused) {
+    synth.resume();
+    paused = false;
+    return;
+  }
+
+  if (!sentences.length) {
+    alert("No text loaded to read.");
+    return;
+  }
+
+  if (synth.speaking) {
+    synth.cancel();
+  }
+
+  readNextSentence();
 }
 
 function pause() {
-  if (synth.speaking && !synth.paused) {
+  if (synth.speaking) {
     synth.pause();
+    paused = true;
   }
 }
 
 function stop() {
-  if (synth.speaking) {
-    synth.cancel();
-  }
+  synth.cancel();
+  currentIndex = 0;
+  clearHighlights();
 }
+
+function clearHighlights() {
+  document.querySelectorAll(".sentence").forEach(span => {
+    span.classList.remove("highlighted");
+  });
+}
+
+function readNextSentence() {
+  if (currentIndex >= sentences.length) {
+    currentIndex = 0;
+    return;
+  }
+
+  clearHighlights();
+  const span = sentences[currentIndex];
+  span.classList.add("highlighted");
+
+  utterance = new SpeechSynthesisUtterance(span.textContent);
+  utterance.onend = () => {
+    currentIndex++;
+    readNextSentence();
+  };
+
+  synth.speak(utterance);
+}
+
+function translateText() {
+  alert("🌍 Translate feature coming soon!");
+}
+
+// On DOM ready, restore last file
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("lastText");
+  if (saved) {
+    const paragraphs = saved.split(/(?<=\.|\!|\?)\s/).map(s => `<span class="sentence">${s}</span>`);
+    document.getElementById("text-display").innerHTML = paragraphs.join(" ");
+    sentences = Array.from(document.querySelectorAll(".sentence"));
+  }
+});
+
+// Hook file parser for localStorage persistence
+document.getElementById("file-input").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file?.type === "text/plain") {
+    const reader = new FileReader();
+    reader.onload = function () {
+      const text = reader.result;
+      const parts = text.split(/(?<=\.|\!|\?)\s/);
+      const html = parts.map(s => `<span class="sentence">${s}</span>`).join(" ");
+      document.getElementById("text-display").innerHTML = html;
+      sentences = Array.from(document.querySelectorAll(".sentence"));
+      localStorage.setItem("lastText", text);
+    };
+    reader.readAsText(file);
+  }
+});
