@@ -1,130 +1,127 @@
-let uploadedFiles = JSON.parse(localStorage.getItem("neurAloudFiles")) || [];
-let currentFile = null;
-let speech = window.speechSynthesis;
-let utterance = null;
+let currentText = '';
 let sentences = [];
-let currentIndex = 0;
+let currentSentence = 0;
+let utterance;
+let synth = window.speechSynthesis;
+let queue = [];
+let selectedVoice = null;
 
-// Load selected file
-document.getElementById("fileInput").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+// DOM elements
+const fileInput = document.getElementById('fileInput');
+const loadFileBtn = document.getElementById('loadFileBtn');
+const textDisplay = document.getElementById('textDisplay');
+const playBtn = document.getElementById('playBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const stopBtn = document.getElementById('stopBtn');
+const queueList = document.getElementById('queueList');
+const ttsEngine = document.getElementById('ttsEngine');
 
-  if (uploadedFiles.length >= 100) {
-    const proceed = confirm(
-      "📁 You’ve reached 100 files. Replace the oldest one?"
-    );
-    if (!proceed) return;
-    uploadedFiles.shift();
+// Load persisted file (if any)
+window.addEventListener('DOMContentLoaded', () => {
+  const last = localStorage.getItem('neurAloud_lastText');
+  if (last) {
+    loadText(last);
   }
-
-  currentFile = file.name;
-  uploadedFiles.push(currentFile);
-  localStorage.setItem("neurAloudFiles", JSON.stringify(uploadedFiles));
-
-  await loadAndDisplayFile(file);
-  updateReadQueue();
+  populateVoices();
 });
 
-// Load and display file content
-async function loadAndDisplayFile(file) {
-  const reader = new FileReader();
+// Update voices when loaded
+function populateVoices() {
+  const voices = synth.getVoices();
+  if (!voices.length) {
+    setTimeout(populateVoices, 100);
+    return;
+  }
+  voices.forEach(v => {
+    const opt = document.createElement('option');
+    opt.textContent = `${v.name} (${v.lang})`;
+    opt.value = v.name;
+    ttsEngine.appendChild(opt);
+  });
+}
 
-  if (file.name.endsWith(".pdf")) {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let text = "";
+// File loader
+loadFileBtn.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  if (!file) return alert("No file selected");
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['txt', 'pdf'].includes(ext)) {
+    alert("Only .txt and .pdf files are supported.");
+    return;
+  }
+
+  let text = '';
+  if (ext === 'txt') {
+    text = await file.text();
+  } else {
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      text += content.items.map((item) => item.str).join(" ") + " ";
+      text += content.items.map(x => x.str).join(' ') + '\n';
     }
-    showText(text);
-  } else {
-    reader.onload = () => {
-      showText(reader.result);
-    };
-    reader.readAsText(file);
   }
+
+  // Save and render
+  localStorage.setItem('neurAloud_lastText', text);
+  loadText(text);
+});
+
+// Load text into viewer
+function loadText(text) {
+  currentText = text;
+  sentences = text.match(/[^\.!\?]+[\.!\?]+/g) || [text];
+  currentSentence = 0;
+  renderText();
+  renderQueue();
 }
 
-// Display text in the preview box
-function showText(text) {
-  const box = document.getElementById("textBox");
-  box.innerHTML = "";
-  sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-  sentences.forEach((s, i) => {
-    const span = document.createElement("span");
-    span.textContent = s.trim() + " ";
-    span.id = `sentence-${i}`;
-    box.appendChild(span);
+// Render full text with highlight
+function renderText() {
+  const html = sentences.map((s, i) =>
+    `<span class="${i === currentSentence ? 'highlight' : ''}">${s.trim()} </span>`).join('');
+  textDisplay.innerHTML = html;
+}
+
+// Render read queue
+function renderQueue() {
+  queueList.innerHTML = '';
+  queue.push(currentText);
+  queue.slice(-10).forEach((item, i) => {
+    const li = document.createElement('li');
+    li.textContent = `File ${queue.length - 10 + i + 1}`;
+    queueList.appendChild(li);
   });
-  currentIndex = 0;
 }
 
-// Highlight current sentence
-function highlightSentence(index) {
-  sentences.forEach((_, i) => {
-    const el = document.getElementById(`sentence-${i}`);
-    if (el) el.classList.remove("highlight");
-  });
-  const active = document.getElementById(`sentence-${index}`);
-  if (active) {
-    active.classList.add("highlight");
-    active.scrollIntoView({ behavior: "smooth", block: "center" });
-  }
-}
+// TTS Functions
+playBtn.addEventListener('click', () => {
+  if (synth.speaking) return;
+  speakSentence(currentSentence);
+});
 
-// Play button
-function play() {
-  if (speech.speaking) return;
-  speakFrom(currentIndex);
-}
+pauseBtn.addEventListener('click', () => {
+  if (synth.speaking) synth.pause();
+  else synth.resume();
+});
 
-// Speak logic
-function speakFrom(index) {
-  if (index >= sentences.length) return stop();
+stopBtn.addEventListener('click', () => {
+  synth.cancel();
+  currentSentence = 0;
+  renderText();
+});
 
+function speakSentence(index) {
+  if (index >= sentences.length) return;
   utterance = new SpeechSynthesisUtterance(sentences[index]);
-  utterance.rate = 1;
-  utterance.pitch = 1;
-
-  utterance.onstart = () => {
-    highlightSentence(index);
-  };
-
+  utterance.voice = synth.getVoices().find(v => v.name === ttsEngine.value) || null;
   utterance.onend = () => {
-    currentIndex++;
-    speakFrom(currentIndex);
+    currentSentence++;
+    renderText();
+    speakSentence(currentSentence);
   };
-
-  speech.speak(utterance);
+  synth.speak(utterance);
 }
-
-// Pause
-function pause() {
-  speech.pause();
-}
-
-// Stop
-function stop() {
-  speech.cancel();
-  currentIndex = 0;
-  highlightSentence(-1);
-}
-
-// Read Queue UI
-function updateReadQueue() {
-  const ul = document.getElementById("queue-list");
-  ul.innerHTML = "";
-  uploadedFiles.slice().reverse().forEach((name) => {
-    const li = document.createElement("li");
-    li.textContent = name;
-    ul.appendChild(li);
-  });
-}
-
-// Load saved files
-window.onload = () => {
-  updateReadQueue();
-};
