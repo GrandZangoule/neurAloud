@@ -16,11 +16,15 @@
 </head>
 <body>
   <header>
-    <!-- Updated Logo with rounded top (purple) and rounded bottom (blue) -->
     <svg width="40" height="40" viewBox="0 0 100 100" style="vertical-align: middle; margin-right: 10px;">
-      <rect x="0" y="0" width="100" height="50" rx="20" ry="20" fill="#a020f0" />
-      <rect x="0" y="50" width="100" height="50" rx="20" ry="20" fill="#0000ff" />
-      <text x="50" y="65" text-anchor="middle" font-size="36" fill="white" font-family="Arial">NA</text>
+      <defs>
+        <linearGradient id="purpleBlue" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#a020f0" />
+          <stop offset="100%" stop-color="#0000ff" />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="100" height="100" rx="20" ry="20" fill="url(#purpleBlue)" />
+      <text x="50" y="60" text-anchor="middle" font-size="40" fill="white" font-family="Arial">NA</text>
     </svg>
     <span class="logo-title">NeurAloud</span>
     <nav>
@@ -34,8 +38,7 @@
 
   <main>
     <div class="controls">
-      <input type="file" id="fileInput" accept=".txt,.pdf" />
-      <button onclick="loadFile()">Load File</button>
+      <input type="file" id="fileInput" accept=".txt,.pdf" onchange="loadFile(event)" />
       <button onclick="play()">▶️ Play</button>
       <button onclick="pause()">⏸️ Pause</button>
       <button onclick="stop()">⏹️ Stop</button>
