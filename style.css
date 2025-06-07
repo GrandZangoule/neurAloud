@@ -1,155 +1,143 @@
-/* General styles */
-body {
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
+}
+
+body {
   font-family: 'Segoe UI', sans-serif;
-  background-color: #f8f9fc;
-  color: #1f2937;
+  background-color: #f5f5fa;
+  color: #222;
   display: flex;
   height: 100vh;
   overflow: hidden;
 }
 
+/* Layout */
 #app {
   display: flex;
   width: 100%;
+  height: 100%;
 }
 
-/* Sidebar styles */
+/* Sidebar */
 #sidebar {
-  background-color: #1e1b4b;
-  color: #fff;
+  background: linear-gradient(to bottom, #6b21a8, #9333ea);
+  color: white;
   width: 200px;
-  padding: 20px;
+  padding: 20px 10px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  gap: 12px;
 }
 
 .nav-button {
-  background-color: transparent;
-  color: #fff;
-  font-size: 16px;
+  background: transparent;
   border: none;
-  text-align: left;
+  color: white;
+  font-size: 16px;
   padding: 10px;
+  text-align: left;
   cursor: pointer;
   border-radius: 6px;
-  transition: background-color 0.3s;
+  transition: background 0.2s;
 }
 
 .nav-button:hover {
-  background-color: #4338ca;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Main section */
+/* Main Content */
 #main {
-  flex: 1;
-  padding: 30px;
+  flex-grow: 1;
+  padding: 24px;
   overflow-y: auto;
-  background: linear-gradient(to bottom right, #ede9fe, #fdf4ff);
-}
-
-header {
-  margin-bottom: 20px;
 }
 
 header h1 {
-  font-size: 28px;
-  margin-bottom: 5px;
-  color: #6b21a8;
+  font-size: 26px;
+  color: #4c1d95;
 }
 
 header p {
-  font-size: 16px;
-  color: #4b5563;
+  margin-top: 4px;
+  font-size: 14px;
+  color: #6b7280;
 }
 
-/* Upload & controls */
 #upload-section {
-  margin-bottom: 20px;
+  margin-top: 20px;
 }
 
 .file-label {
-  background-color: #6b21a8;
+  background: #6b21a8;
   color: white;
-  padding: 10px 15px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: 5px;
   cursor: pointer;
-  font-weight: bold;
 }
 
 input[type="file"] {
   display: none;
 }
 
-#tts-engine {
-  padding: 10px;
-  font-size: 15px;
+select,
+button {
+  padding: 8px 10px;
+  font-size: 14px;
   border-radius: 5px;
-  border: 1px solid #d1d5db;
+  margin-left: 4px;
 }
 
-/* Control buttons */
-#controls button {
-  background-color: #7c3aed;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  font-size: 15px;
-  border-radius: 6px;
-  margin-right: 10px;
+button {
   cursor: pointer;
-  transition: background 0.3s ease;
+  border: none;
+  background-color: #6b21a8;
+  color: white;
+  transition: background 0.2s ease;
 }
 
-#controls button:hover {
-  background-color: #5b21b6;
+button:hover {
+  background-color: #4c1d95;
 }
 
-/* Text display */
+/* Controls */
+#controls {
+  display: flex;
+  gap: 12px;
+}
+
 #display-area {
-  margin-top: 25px;
+  margin-top: 20px;
   background: white;
+  border: 1px solid #ccc;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  height: 60vh;
+  height: 65vh;
   overflow-y: auto;
-  font-size: 16px;
-  line-height: 1.6;
+  border-radius: 8px;
 }
 
-#text-display {
-  white-space: pre-wrap;
-  word-wrap: break-word;
+/* Sentence Highlighting */
+.sentence {
+  display: inline;
+  padding: 0 2px;
 }
 
-/* Responsive tweaks */
-@media (max-width: 768px) {
-  #app {
-    flex-direction: column;
-  }
+.sentence.highlighted {
+  background-color: yellow;
+}
 
+/* Responsive */
+@media screen and (max-width: 768px) {
   #sidebar {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-around;
-    box-shadow: none;
+    width: 100px;
   }
-
+  .nav-button {
+    font-size: 14px;
+    text-align: center;
+  }
   #main {
-    padding: 20px;
-  }
-
-  #controls button {
-    width: 100%;
-    margin-bottom: 10px;
-  }
-
-  #controls {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    padding: 10px;
   }
 }
