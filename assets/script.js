@@ -3,6 +3,7 @@ let currentSentenceIndex = 0;
 let sentences = [];
 let isLooping = false;
 
+// Restore last loaded text
 window.addEventListener("DOMContentLoaded", () => {
   const lastText = localStorage.getItem("lastText");
   if (lastText) {
@@ -16,14 +17,15 @@ function loadFile(event) {
 
   const reader = new FileReader();
 
-  reader.onload = function (e) {
-    const content = e.target.result;
-    localStorage.setItem("lastText", content);
-    displayText(content);
+  reader.onload = () => {
+    const text = reader.result;
+    localStorage.setItem("lastText", text);
+    displayText(text);
   };
 
   if (file.type === "application/pdf") {
-    alert("PDF support will be integrated soon. For now, use .txt files.");
+    reader.readAsArrayBuffer(file); // We'll extend PDF support later with PDF.js
+    alert("PDF support will be added soon. Please upload a .txt file for now.");
   } else {
     reader.readAsText(file);
   }
@@ -32,7 +34,8 @@ function loadFile(event) {
 function displayText(text) {
   sentences = text.split(/(?<=\.|\!|\?)\s/);
   const html = sentences.map(s => `<span class="sentence">${s}</span>`).join(" ");
-  document.getElementById("text-display").innerHTML = html;
+  const box = document.getElementById("text-display");
+  box.innerHTML = html;
 }
 
 function highlightSentence(index) {
@@ -59,7 +62,7 @@ function speakSentence(index) {
   if (index >= sentences.length) {
     if (isLooping) {
       currentSentenceIndex = 0;
-      speakSentence(currentSentenceIndex);
+      speakSentence(0);
     } else {
       stop();
     }
@@ -95,13 +98,13 @@ function stop() {
 
 function toggleLoop() {
   isLooping = !isLooping;
-  alert("🔁 Looping " + (isLooping ? "enabled" : "disabled"));
+  alert("🔁 Looping is now " + (isLooping ? "enabled" : "disabled"));
 }
 
 function navigate(tab) {
-  alert(`🔧 Navigation to "${tab}" coming soon.`);
+  alert(`🔧 Navigation to "${tab}" is not yet wired. Coming soon.`);
 }
 
 function translateText() {
-  alert("🌐 Translation support coming soon!");
+  alert("🌍 Translation will be added soon.");
 }
