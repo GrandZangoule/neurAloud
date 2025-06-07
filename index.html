@@ -6,10 +6,23 @@
   <title>NeurAloud</title>
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
+  <style>
+    .logo-title {
+      font-size: 2em;
+      display: inline-block;
+      vertical-align: middle;
+    }
+  </style>
 </head>
 <body>
   <header>
-    <h1>NeurAloud</h1>
+    <!-- Updated Logo with rounded top (purple) and rounded bottom (blue) -->
+    <svg width="40" height="40" viewBox="0 0 100 100" style="vertical-align: middle; margin-right: 10px;">
+      <rect x="0" y="0" width="100" height="50" rx="20" ry="20" fill="#a020f0" />
+      <rect x="0" y="50" width="100" height="50" rx="20" ry="20" fill="#0000ff" />
+      <text x="50" y="65" text-anchor="middle" font-size="36" fill="white" font-family="Arial">NA</text>
+    </svg>
+    <span class="logo-title">NeurAloud</span>
     <nav>
       <button onclick="navigate('home')">Home</button>
       <button onclick="navigate('library')">Library</button>
