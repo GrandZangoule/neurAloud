@@ -1,75 +1,121 @@
-let uploadedFiles = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
-let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
-let queue = [];
+let currentIndex = 0;
+let sentences = [];
+let utterance;
+let currentFileName = '';
+const queueList = document.getElementById("queue-list");
+const textContainer = document.getElementById("text-container");
 
-function updateQueueList() {
-  const list = document.getElementById("queue-list");
-  list.innerHTML = "";
-  queue.forEach((file, idx) => {
-    const li = document.createElement("li");
-    li.textContent = file.name;
-    if (favorites.includes(file.name)) {
-      li.style.color = "gold";
-    }
-    li.onclick = () => playFile(file);
-    list.appendChild(li);
-  });
-}
+// Load from localStorage on startup
+window.onload = function () {
+  const storedText = localStorage.getItem("lastText");
+  const storedFile = localStorage.getItem("lastFileName");
+  if (storedText && storedFile) {
+    document.getElementById("text-container").innerText = storedText;
+    currentFileName = storedFile;
+    addToQueue(currentFileName);
+  }
+};
 
-function handleFileUpload(event) {
+function loadFile(event) {
   const file = event.target.files[0];
-  if (file) {
-    uploadedFiles.push({ name: file.name, type: file.type });
-    queue.push(file);
-    localStorage.setItem("uploadedFiles", JSON.stringify(uploadedFiles));
-    updateQueueList();
+  if (!file) return;
+
+  currentFileName = file.name;
+  const extension = file.name.split(".").pop().toLowerCase();
+
+  if (extension === "txt") {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const text = e.target.result;
+      displayText(text);
+    };
+    reader.readAsText(file);
+  } else if (extension === "pdf") {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const typedarray = new Uint8Array(e.target.result);
+      pdfjsLib.getDocument({ data: typedarray }).promise.then(pdf => {
+        let allText = '';
+        let pagePromises = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          pagePromises.push(
+            pdf.getPage(i).then(page => {
+              return page.getTextContent().then(textContent => {
+                return textContent.items.map(item => item.str).join(' ');
+              });
+            })
+          );
+        }
+        Promise.all(pagePromises).then(texts => {
+          allText = texts.join('\n');
+          displayText(allText);
+        });
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    alert("Unsupported file type. Please upload .txt or .pdf only.");
   }
 }
 
-function restoreQueueFromStorage() {
-  uploadedFiles.forEach(file => {
-    queue.push(file);
-  });
-  updateQueueList();
+function displayText(text) {
+  localStorage.setItem("lastText", text);
+  localStorage.setItem("lastFileName", currentFileName);
+  textContainer.innerText = text;
+  addToQueue(currentFileName);
+  prepareSentences(text);
 }
 
-function playFile(file) {
-  alert(`🔊 Now reading: ${file.name}`);
-  // TTS engine would be invoked here
+function prepareSentences(text) {
+  sentences = text.match(/[^.!?]+[.!?]+[\])'"`’”]*|.+/g) || [];
+  currentIndex = 0;
+}
+
+function addToQueue(filename) {
+  const li = document.createElement("li");
+  li.textContent = filename;
+  queueList.appendChild(li);
+}
+
+function speakText() {
+  if (currentIndex >= sentences.length) return;
+
+  const text = sentences[currentIndex].trim();
+  highlightSentence(currentIndex);
+
+  utterance = new SpeechSynthesisUtterance(text);
+  utterance.onend = () => {
+    currentIndex++;
+    speakText();
+  };
+  speechSynthesis.speak(utterance);
 }
 
 function play() {
-  if (queue.length > 0) {
-    playFile(queue[0]);
+  if (!utterance || speechSynthesis.paused) {
+    speechSynthesis.resume();
   } else {
-    alert("Queue is empty. Please upload a file.");
+    speakText();
   }
 }
 
 function pause() {
-  alert("⏸️ Playback paused.");
+  speechSynthesis.pause();
 }
 
 function stop() {
-  alert("⏹️ Playback stopped.");
+  speechSynthesis.cancel();
+  currentIndex = 0;
+  clearHighlight();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Restore files on page reload
-  restoreQueueFromStorage();
+function highlightSentence(index) {
+  const highlighted = sentences.map((s, i) =>
+    i === index ? `<span class="highlight">${s}</span>` : s
+  );
+  textContainer.innerHTML = highlighted.join(" ");
+}
 
-  // Create file input dynamically
-  const uploadSection = document.getElementById("tts-panel");
-  const fileInput = document.createElement("input");
-  fileInput.type = "file";
-  fileInput.accept = ".txt,.pdf,.docx,.epub";
-  fileInput.addEventListener("change", handleFileUpload);
-  uploadSection.appendChild(fileInput);
-
-  // Sidebar navigation
-  document.querySelectorAll(".nav-button").forEach(button => {
-    button.addEventListener("click", () => {
-      alert(`🚧 ${button.textContent.trim()} is under development.`);
-    });
-  });
-});
+function clearHighlight() {
+  textContainer.innerHTML = sentences.join(" ");
+}
