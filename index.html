@@ -2,84 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NeurAloud</title>
   <link rel="stylesheet" href="style.css" />
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8803301976531972"
-    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 </head>
 <body>
-  <div id="sidebar">
-    <h2>NeurAloud</h2>
-    <button class="nav-button">🏠 Home</button>
-    <button class="nav-button">📚 Library</button>
-    <button class="nav-button">➕ Upload</button>
-    <button class="nav-button">🛍️ Store</button>
-    <button class="nav-button">👤 Profile</button>
-  </div>
+  <div id="app">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h1>📚 NeurAloud</h1>
 
-  <div id="main">
-    <header>
-      <h1>Welcome to NeurAloud</h1>
-      <p>AI-powered reading assistant to help you read, listen, and learn.</p>
-    </header>
+      <div class="upload-section">
+        <label for="fileInput" class="upload-btn">📂 Upload File</label>
+        <input type="file" id="fileInput" accept=".txt,.pdf" hidden />
+      </div>
 
-    <!-- File Upload -->
-    <div id="file-controls">
-      <input type="file" id="fileInput" accept=".txt,.pdf" />
-      <label for="fileInput" class="custom-upload">📂 Choose File</label>
+      <div class="engine-row">
+        <label for="ttsEngine">🧠 TTS Engine:</label>
+        <select id="ttsEngine">
+          <option>Google TTS</option>
+          <option>SpeechSynthesis (Default)</option>
+        </select>
+      </div>
+
+      <h3>📋 Read Queue</h3>
+      <ul id="queue-list" class="queue"></ul>
+
+      <div class="controls">
+        <button onclick="play()">▶️ Play</button>
+        <button onclick="pause()">⏸️ Pause</button>
+        <button onclick="stop()">⏹️ Stop</button>
+      </div>
     </div>
 
-    <!-- Display Area -->
-    <section id="display-area">
-      <h2>Text Display</h2>
-      <div id="text-container" class="text-box"></div>
-    </section>
-
-    <!-- Playback Controls -->
-    <div id="controls">
-      <button onclick="play()">▶️ Play</button>
-      <button onclick="pause()">⏸️ Pause</button>
-      <button onclick="stop()">⏹️ Stop</button>
+    <!-- Main Viewer -->
+    <div class="viewer">
+      <h2>📝 Text Display</h2>
+      <div id="textBox" class="text-box"></div>
     </div>
-
-    <!-- Read Queue -->
-    <section id="read-queue">
-      <h3>📑 Read Queue</h3>
-      <ul id="queue-list"></ul>
-    </section>
-
-    <!-- TTS Engine Selector -->
-    <section id="tts-panel">
-      <label for="tts-engine">TTS Engine:</label>
-      <select id="tts-engine">
-        <option>Google TTS</option>
-        <option>Azure</option>
-        <option>Amazon Polly</option>
-        <option>Speechify</option>
-        <option>OpenTTS</option>
-      </select>
-    </section>
-
-    <!-- Google Ad -->
-    <section class="ad-section">
-      <ins class="adsbygoogle"
-        style="display:block"
-        data-ad-client="ca-pub-8803301976531972"
-        data-ad-slot="5315996119"
-        data-ad-format="auto"
-        data-full-width-responsive="true"></ins>
-      <script>
-        (adsbygoogle = window.adsbygoogle || []).push({});
-      </script>
-    </section>
-
-    <footer>
-      <p>&copy; 2025 NeurAloud. All rights reserved.</p>
-    </footer>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
