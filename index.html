@@ -36,6 +36,7 @@
           <option>Amazon Polly</option>
           <option>Speechify</option>
         </select>
+        <button onclick="translateText()">🌍 Translate</button>
       </section>
 
       <section id="controls" style="margin-top: 20px;">
@@ -57,8 +58,41 @@
     }
 
     document.getElementById("file-input").addEventListener("change", (e) => {
-      const fileName = e.target.files[0]?.name || "";
+      const file = e.target.files[0];
+      const fileName = file?.name || "";
       document.getElementById("file-name").textContent = fileName;
+      if (file && file.type === 'application/pdf') {
+        const reader = new FileReader();
+        reader.onload = function () {
+          const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(reader.result) });
+          loadingTask.promise.then(pdf => {
+            pdf.getPage(1).then(page => {
+              const viewport = page.getViewport({ scale: 1.5 });
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d');
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+              const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+              };
+              page.render(renderContext).promise.then(() => {
+                document.getElementById("text-display").innerHTML = "";
+                document.getElementById("text-display").appendChild(canvas);
+              });
+            });
+          });
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (file && file.type === 'text/plain') {
+        const reader = new FileReader();
+        reader.onload = function () {
+          const text = reader.result;
+          const paragraphs = text.split(/(?<=\.|\!|\?)\s/).map(sentence => `<span class="sentence">${sentence}</span>`);
+          document.getElementById("text-display").innerHTML = paragraphs.join(" ");
+        };
+        reader.readAsText(file);
+      }
     });
   </script>
   <script src="script.js"></script>
