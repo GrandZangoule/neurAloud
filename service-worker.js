@@ -1,43 +1,22 @@
-const CACHE_NAME = "neurAloud-cache-v1";
-const urlsToCache = [
-  "./",
-  "./index.html",
-  "./style.css",
-  "./script.js",
-  "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png"
-];
-
-// Install Service Worker
-self.addEventListener("install", function (event) {
+self.addEventListener("install", event => {
+  console.log("Service Worker installing...");
   event.waitUntil(
-    caches.open(CACHE_NAME).then(function (cache) {
-      return cache.addAll(urlsToCache);
+    caches.open("neuraloud-cache").then(cache => {
+      return cache.addAll([
+        "./index.html",
+        "./style.css",
+        "./script.js",
+        "./icon.png",
+        "./manifest.json"
+      ]);
     })
   );
 });
 
-// Fetch from Cache First
-self.addEventListener("fetch", function (event) {
+self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request).then(function (response) {
+    caches.match(event.request).then(response => {
       return response || fetch(event.request);
-    })
-  );
-});
-
-// Update Service Worker
-self.addEventListener("activate", function (event) {
-  event.waitUntil(
-    caches.keys().then(function (keyList) {
-      return Promise.all(
-        keyList.map(function (key) {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
     })
   );
 });
