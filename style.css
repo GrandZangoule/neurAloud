@@ -1,10 +1,12 @@
+/* General styles */
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(to bottom right, #a855f7, #fcd34d);
-  color: #1e1b4b;
+  background-color: #f8f9fc;
+  color: #1f2937;
   display: flex;
   height: 100vh;
+  overflow: hidden;
 }
 
 #app {
@@ -12,88 +14,142 @@ body {
   width: 100%;
 }
 
+/* Sidebar styles */
 #sidebar {
-  width: 180px;
   background-color: #1e1b4b;
-  color: white;
+  color: #fff;
+  width: 200px;
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
 }
 
 .nav-button {
   background-color: transparent;
-  border: none;
-  color: white;
+  color: #fff;
   font-size: 16px;
+  border: none;
   text-align: left;
+  padding: 10px;
   cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.3s;
 }
 
 .nav-button:hover {
-  background-color: #4c1d95;
+  background-color: #4338ca;
 }
 
+/* Main section */
 #main {
   flex: 1;
-  padding: 24px;
-  background-color: #f1f5f9;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  padding: 30px;
+  overflow-y: auto;
+  background: linear-gradient(to bottom right, #ede9fe, #fdf4ff);
+}
+
+header {
+  margin-bottom: 20px;
 }
 
 header h1 {
-  margin: 0;
+  font-size: 28px;
+  margin-bottom: 5px;
   color: #6b21a8;
 }
 
 header p {
   font-size: 16px;
-  color: #334155;
+  color: #4b5563;
 }
 
+/* Upload & controls */
 #upload-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .file-label {
   background-color: #6b21a8;
   color: white;
-  padding: 8px 12px;
+  padding: 10px 15px;
   border-radius: 6px;
   cursor: pointer;
+  font-weight: bold;
 }
 
-#file-input {
+input[type="file"] {
   display: none;
 }
 
+#tts-engine {
+  padding: 10px;
+  font-size: 15px;
+  border-radius: 5px;
+  border: 1px solid #d1d5db;
+}
+
+/* Control buttons */
 #controls button {
   background-color: #7c3aed;
   color: white;
   border: none;
-  padding: 10px 16px;
+  padding: 10px 20px;
+  font-size: 15px;
   border-radius: 6px;
-  cursor: pointer;
   margin-right: 10px;
-  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease;
 }
 
 #controls button:hover {
   background-color: #5b21b6;
 }
 
-#text-display {
-  background-color: white;
+/* Text display */
+#display-area {
+  margin-top: 25px;
+  background: white;
   padding: 20px;
   border-radius: 8px;
-  height: calc(100vh - 300px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  height: 60vh;
   overflow-y: auto;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.6;
+}
+
+#text-display {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  #app {
+    flex-direction: column;
+  }
+
+  #sidebar {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-around;
+    box-shadow: none;
+  }
+
+  #main {
+    padding: 20px;
+  }
+
+  #controls button {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  #controls {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
