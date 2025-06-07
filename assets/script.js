@@ -1,121 +1,130 @@
-let currentIndex = 0;
+let uploadedFiles = JSON.parse(localStorage.getItem("neurAloudFiles")) || [];
+let currentFile = null;
+let speech = window.speechSynthesis;
+let utterance = null;
 let sentences = [];
-let utterance;
-let currentFileName = '';
-const queueList = document.getElementById("queue-list");
-const textContainer = document.getElementById("text-container");
+let currentIndex = 0;
 
-// Load from localStorage on startup
-window.onload = function () {
-  const storedText = localStorage.getItem("lastText");
-  const storedFile = localStorage.getItem("lastFileName");
-  if (storedText && storedFile) {
-    document.getElementById("text-container").innerText = storedText;
-    currentFileName = storedFile;
-    addToQueue(currentFileName);
-  }
-};
-
-function loadFile(event) {
-  const file = event.target.files[0];
+// Load selected file
+document.getElementById("fileInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
   if (!file) return;
 
-  currentFileName = file.name;
-  const extension = file.name.split(".").pop().toLowerCase();
+  if (uploadedFiles.length >= 100) {
+    const proceed = confirm(
+      "📁 You’ve reached 100 files. Replace the oldest one?"
+    );
+    if (!proceed) return;
+    uploadedFiles.shift();
+  }
 
-  if (extension === "txt") {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const text = e.target.result;
-      displayText(text);
+  currentFile = file.name;
+  uploadedFiles.push(currentFile);
+  localStorage.setItem("neurAloudFiles", JSON.stringify(uploadedFiles));
+
+  await loadAndDisplayFile(file);
+  updateReadQueue();
+});
+
+// Load and display file content
+async function loadAndDisplayFile(file) {
+  const reader = new FileReader();
+
+  if (file.name.endsWith(".pdf")) {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let text = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map((item) => item.str).join(" ") + " ";
+    }
+    showText(text);
+  } else {
+    reader.onload = () => {
+      showText(reader.result);
     };
     reader.readAsText(file);
-  } else if (extension === "pdf") {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const typedarray = new Uint8Array(e.target.result);
-      pdfjsLib.getDocument({ data: typedarray }).promise.then(pdf => {
-        let allText = '';
-        let pagePromises = [];
-        for (let i = 1; i <= pdf.numPages; i++) {
-          pagePromises.push(
-            pdf.getPage(i).then(page => {
-              return page.getTextContent().then(textContent => {
-                return textContent.items.map(item => item.str).join(' ');
-              });
-            })
-          );
-        }
-        Promise.all(pagePromises).then(texts => {
-          allText = texts.join('\n');
-          displayText(allText);
-        });
-      });
-    };
-    reader.readAsArrayBuffer(file);
-  } else {
-    alert("Unsupported file type. Please upload .txt or .pdf only.");
   }
 }
 
-function displayText(text) {
-  localStorage.setItem("lastText", text);
-  localStorage.setItem("lastFileName", currentFileName);
-  textContainer.innerText = text;
-  addToQueue(currentFileName);
-  prepareSentences(text);
-}
-
-function prepareSentences(text) {
-  sentences = text.match(/[^.!?]+[.!?]+[\])'"`’”]*|.+/g) || [];
+// Display text in the preview box
+function showText(text) {
+  const box = document.getElementById("textBox");
+  box.innerHTML = "";
+  sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  sentences.forEach((s, i) => {
+    const span = document.createElement("span");
+    span.textContent = s.trim() + " ";
+    span.id = `sentence-${i}`;
+    box.appendChild(span);
+  });
   currentIndex = 0;
 }
 
-function addToQueue(filename) {
-  const li = document.createElement("li");
-  li.textContent = filename;
-  queueList.appendChild(li);
+// Highlight current sentence
+function highlightSentence(index) {
+  sentences.forEach((_, i) => {
+    const el = document.getElementById(`sentence-${i}`);
+    if (el) el.classList.remove("highlight");
+  });
+  const active = document.getElementById(`sentence-${index}`);
+  if (active) {
+    active.classList.add("highlight");
+    active.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 }
 
-function speakText() {
-  if (currentIndex >= sentences.length) return;
+// Play button
+function play() {
+  if (speech.speaking) return;
+  speakFrom(currentIndex);
+}
 
-  const text = sentences[currentIndex].trim();
-  highlightSentence(currentIndex);
+// Speak logic
+function speakFrom(index) {
+  if (index >= sentences.length) return stop();
 
-  utterance = new SpeechSynthesisUtterance(text);
+  utterance = new SpeechSynthesisUtterance(sentences[index]);
+  utterance.rate = 1;
+  utterance.pitch = 1;
+
+  utterance.onstart = () => {
+    highlightSentence(index);
+  };
+
   utterance.onend = () => {
     currentIndex++;
-    speakText();
+    speakFrom(currentIndex);
   };
-  speechSynthesis.speak(utterance);
+
+  speech.speak(utterance);
 }
 
-function play() {
-  if (!utterance || speechSynthesis.paused) {
-    speechSynthesis.resume();
-  } else {
-    speakText();
-  }
-}
-
+// Pause
 function pause() {
-  speechSynthesis.pause();
+  speech.pause();
 }
 
+// Stop
 function stop() {
-  speechSynthesis.cancel();
+  speech.cancel();
   currentIndex = 0;
-  clearHighlight();
+  highlightSentence(-1);
 }
 
-function highlightSentence(index) {
-  const highlighted = sentences.map((s, i) =>
-    i === index ? `<span class="highlight">${s}</span>` : s
-  );
-  textContainer.innerHTML = highlighted.join(" ");
+// Read Queue UI
+function updateReadQueue() {
+  const ul = document.getElementById("queue-list");
+  ul.innerHTML = "";
+  uploadedFiles.slice().reverse().forEach((name) => {
+    const li = document.createElement("li");
+    li.textContent = name;
+    ul.appendChild(li);
+  });
 }
 
-function clearHighlight() {
-  textContainer.innerHTML = sentences.join(" ");
-}
+// Load saved files
+window.onload = () => {
+  updateReadQueue();
+};
