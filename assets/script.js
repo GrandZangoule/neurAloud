@@ -1,97 +1,77 @@
-let synth = window.speechSynthesis;
+let utterance;
+let currentSentenceIndex = 0;
 let sentences = [];
-let currentIndex = 0;
-let utterance = null;
-let paused = false;
 
-function navigate(page) {
-  alert(`Navigating to ${page} (placeholder)`);
+window.addEventListener("DOMContentLoaded", () => {
+  const lastText = localStorage.getItem("lastText");
+  if (lastText) {
+    displayText(lastText);
+  }
+});
+
+function displayText(text) {
+  sentences = text.split(/(?<=\.|\!|\?)\s/);
+  const html = sentences.map(s => `<span class="sentence">${s}</span>`).join(" ");
+  document.getElementById("text-display").innerHTML = html;
+}
+
+function highlightSentence(index) {
+  document.querySelectorAll(".sentence").forEach((el, i) => {
+    el.classList.toggle("highlight", i === index);
+  });
 }
 
 function play() {
-  if (paused) {
-    synth.resume();
-    paused = false;
-    return;
-  }
-
   if (!sentences.length) {
-    alert("No text loaded to read.");
+    alert("Please load a document first.");
     return;
   }
 
-  if (synth.speaking) {
-    synth.cancel();
+  if (utterance && speechSynthesis.paused) {
+    speechSynthesis.resume();
+    return;
   }
 
-  readNextSentence();
+  speakSentence(currentSentenceIndex);
+}
+
+function speakSentence(index) {
+  if (index >= sentences.length) {
+    stop();
+    return;
+  }
+
+  const sentence = sentences[index];
+  highlightSentence(index);
+
+  utterance = new SpeechSynthesisUtterance(sentence);
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+
+  utterance.onend = () => {
+    currentSentenceIndex++;
+    speakSentence(currentSentenceIndex);
+  };
+
+  speechSynthesis.speak(utterance);
 }
 
 function pause() {
-  if (synth.speaking) {
-    synth.pause();
-    paused = true;
+  if (speechSynthesis.speaking) {
+    speechSynthesis.pause();
   }
 }
 
 function stop() {
-  synth.cancel();
-  currentIndex = 0;
-  clearHighlights();
+  speechSynthesis.cancel();
+  currentSentenceIndex = 0;
+  highlightSentence(-1);
 }
 
-function clearHighlights() {
-  document.querySelectorAll(".sentence").forEach(span => {
-    span.classList.remove("highlighted");
-  });
-}
-
-function readNextSentence() {
-  if (currentIndex >= sentences.length) {
-    currentIndex = 0;
-    return;
-  }
-
-  clearHighlights();
-  const span = sentences[currentIndex];
-  span.classList.add("highlighted");
-
-  utterance = new SpeechSynthesisUtterance(span.textContent);
-  utterance.onend = () => {
-    currentIndex++;
-    readNextSentence();
-  };
-
-  synth.speak(utterance);
+function navigate(tab) {
+  alert(`🔧 Navigation to "${tab}" is not yet wired. Coming soon.`);
 }
 
 function translateText() {
-  alert("🌍 Translate feature coming soon!");
+  alert("🌍 Translation feature is coming soon!");
 }
-
-// On DOM ready, restore last file
-window.addEventListener("DOMContentLoaded", () => {
-  const saved = localStorage.getItem("lastText");
-  if (saved) {
-    const paragraphs = saved.split(/(?<=\.|\!|\?)\s/).map(s => `<span class="sentence">${s}</span>`);
-    document.getElementById("text-display").innerHTML = paragraphs.join(" ");
-    sentences = Array.from(document.querySelectorAll(".sentence"));
-  }
-});
-
-// Hook file parser for localStorage persistence
-document.getElementById("file-input").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (file?.type === "text/plain") {
-    const reader = new FileReader();
-    reader.onload = function () {
-      const text = reader.result;
-      const parts = text.split(/(?<=\.|\!|\?)\s/);
-      const html = parts.map(s => `<span class="sentence">${s}</span>`).join(" ");
-      document.getElementById("text-display").innerHTML = html;
-      sentences = Array.from(document.querySelectorAll(".sentence"));
-      localStorage.setItem("lastText", text);
-    };
-    reader.readAsText(file);
-  }
-});
