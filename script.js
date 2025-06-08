@@ -1,7 +1,7 @@
 let utterance;
 let currentSentenceIndex = 0;
 let sentences = [];
-let isLooping = false;
+let loop = false;
 
 window.addEventListener("DOMContentLoaded", () => {
   const lastText = localStorage.getItem("lastText");
@@ -13,23 +13,51 @@ function loadFile(event) {
   if (!file) return;
 
   const reader = new FileReader();
+  const ext = file.name.split('.').pop().toLowerCase();
 
-  reader.onload = () => {
-    const text = reader.result;
-    localStorage.setItem("lastText", text);
-    displayText(text);
-  };
-
-  if (file.type === "application/pdf") {
-    alert("📄 PDF support coming soon. Use .txt files for now.");
-    return;
-  } else {
+  if (['txt', 'text', 'md', 'csv', 'sql'].includes(ext)) {
+    reader.onload = () => {
+      const text = reader.result;
+      displayText(text);
+      localStorage.setItem("lastText", text);
+    };
     reader.readAsText(file);
+  } else if (['pdf'].includes(ext)) {
+    reader.onload = async () => {
+      const typedArray = new Uint8Array(reader.result);
+      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map(item => item.str).join(' ');
+        fullText += pageText + "\n";
+      }
+      displayText(fullText);
+      localStorage.setItem("lastText", fullText);
+    };
+    reader.readAsArrayBuffer(file);
+  } else if (['docx'].includes(ext)) {
+    reader.onload = (e) => {
+      mammoth.extractRawText({ arrayBuffer: e.target.result })
+        .then(result => {
+          displayText(result.value);
+          localStorage.setItem("lastText", result.value);
+        });
+    };
+    reader.readAsArrayBuffer(file);
+  } else if (['jpeg', 'jpg', 'png', 'webp', 'bmp'].includes(ext)) {
+    reader.onload = () => {
+      displayText(`📷 Image loaded: ${file.name}`);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    alert("Unsupported format yet. Coming soon!");
   }
 }
 
 function displayText(text) {
-  sentences = text.split(/(?<=\.|\!|\?)\s/);
+  sentences = text.split(/(?<=[.?!])\s+/);
   const html = sentences.map(s => `<span class="sentence">${s}</span>`).join(" ");
   document.getElementById("text-display").innerHTML = html;
 }
@@ -56,9 +84,9 @@ function play() {
 
 function speakSentence(index) {
   if (index >= sentences.length) {
-    if (isLooping) {
+    if (loop) {
       currentSentenceIndex = 0;
-      speakSentence(0);
+      speakSentence(currentSentenceIndex);
     } else {
       stop();
     }
@@ -81,7 +109,9 @@ function speakSentence(index) {
 }
 
 function pause() {
-  if (speechSynthesis.speaking) speechSynthesis.pause();
+  if (speechSynthesis.speaking) {
+    speechSynthesis.pause();
+  }
 }
 
 function stop() {
@@ -91,14 +121,14 @@ function stop() {
 }
 
 function toggleLoop() {
-  isLooping = !isLooping;
-  alert("🔁 Looping is now " + (isLooping ? "enabled" : "disabled"));
+  loop = !loop;
+  alert(`🔁 Looping is now ${loop ? "ON" : "OFF"}`);
 }
 
 function translateText() {
-  alert("🌐 Translation coming soon.");
+  alert("🌐 Translation feature is coming soon!");
 }
 
 function navigate(tab) {
-  alert(`🔧 Navigation to "${tab}" not yet wired.`);
+  alert(`🔧 Navigation to "${tab}" is not yet wired. Coming soon.`);
 }
