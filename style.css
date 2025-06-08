@@ -73,6 +73,7 @@ main {
   transition: transform 0.2s ease;
   touch-action: pan-y;
   transform-origin: center center;
+  position: relative;
 }
 
 .sentence {
@@ -92,7 +93,15 @@ footer {
   margin-top: 2rem;
 }
 
-/* LIBRARY + PLAYLIST SECTIONS */
+/* Section handling for navigation */
+section {
+  display: none;
+}
+section.active-section {
+  display: block;
+}
+
+/* LIBRARY + PLAYLIST STYLING */
 .library-section, .playlist-section {
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -128,7 +137,7 @@ footer {
   gap: 8px;
 }
 
-/* Voice and Engine Select Dropdowns */
+/* Select dropdowns */
 select#tts-engine, select#voice-select {
   padding: 6px;
   font-size: 1em;
@@ -136,7 +145,7 @@ select#tts-engine, select#voice-select {
   border: 1px solid #ccc;
 }
 
-/* MOBILE & RESPONSIVE */
+/* Responsive design */
 @media (max-width: 768px) {
   .controls,
   .sliders,
