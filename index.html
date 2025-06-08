@@ -32,70 +32,34 @@
   </header>
 
   <main>
-    <!-- HOME -->
     <section id="home" class="active-section">
       <div class="text-box">
         <h2>Welcome to NeurAloud</h2>
-        <div>
-          <h3>📘 What is NeurAloud?</h3>
-          <p>NeurAloud is your intelligent TTS companion. It turns documents into speech so you can learn, work, or relax while listening.</p>
-        </div>
-        <div>
-          <h3>🧠 Features</h3>
-          <ul>
-            <li>PDF, DOCX, TXT, EPUB support</li>
-            <li>Save up to 100 files in your Library</li>
-            <li>Create 10-item Playlists</li>
-            <li>Granular rate & pitch</li>
-            <li>Auto resume & sentence highlighting</li>
-          </ul>
-        </div>
-        <div>
-          <h3>🎧 How to Use</h3>
-          <ol>
-            <li>Click <b>Listen</b> to upload a file</li>
-            <li>Choose TTS engine + voice</li>
-            <li>Click ▶️ to start reading</li>
-            <li>Optionally save file to Library or Playlist</li>
-          </ol>
-        </div>
-        <div>
-          <h3>🎁 Why Use NeurAloud?</h3>
-          <ul>
-            <li>Access documents while driving or walking</li>
-            <li>Visually impaired? Let NeurAloud help</li>
-            <li>Multitask while listening</li>
-            <li>Enjoy 1 or more hours of free usage per day</li>
-          </ul>
-        </div>
+        <div><h3>📘 What is NeurAloud?</h3><p>NeurAloud is an advanced document reader that turns PDFs, DOCX, and text into speech, with full highlighting and voice customization.</p></div>
+        <div><h3>🧠 Features</h3><ul><li>PDF, DOCX, TXT, EPUB support</li><li>100-file Library + 10-file Playlist</li><li>Auto-resume, sentence highlighting</li><li>1+ hours free reading daily</li></ul></div>
+        <div><h3>🎧 Usage</h3><ol><li>Upload a file</li><li>Select engine + voice</li><li>Click ▶️ to listen</li><li>Save to Library/Playlist</li></ol></div>
+        <div><h3>🕒 Benefits</h3><ul><li>Multitask while listening</li><li>Visually impaired friendly</li><li>Supports 100+ voices and languages</li></ul></div>
       </div>
     </section>
 
-    <!-- LISTEN -->
     <section id="listen" style="display:none;">
       <div class="controls">
         <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.epub" onchange="loadFile(event)" />
-        <select id="tts-engine" onchange="changeTTSEngine()">
-          <option value="default">Default TTS</option>
-          <option value="responsivevoice">ResponsiveVoice</option>
-          <option value="mozilla">Mozilla TTS</option>
-          <option value="espeak">eSpeak</option>
-          <option value="festival">Festival</option>
-          <option value="custom">Custom Engine</option>
-        </select>
-        <hr style="width: 100%; border-top: 1px solid #ccc;" />
-        <select id="voice-select"></select>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <select id="tts-engine" onchange="changeTTSEngine()"></select>
+          <select id="voice-select"></select>
+        </div>
         <button onclick="play()">▶️ Play</button>
         <button onclick="pause()">⏸️ Pause</button>
         <button onclick="stop()">⏹️ Stop</button>
         <button onclick="toggleLoop()">🔁 Loop</button>
         <label style="margin-left: 10px;">
-          <input type="checkbox" id="auto-resume-toggle" onchange="toggleAutoResume()" />
-          Auto Resume
+          <input type="checkbox" id="auto-resume-toggle" onchange="toggleAutoResume()" /> Auto Resume
         </label>
       </div>
 
       <div class="sliders">
+        <button onclick="saveCurrentFile()" id="saveBtn">📂 Save to Library</button>
         <label>
           Rate:
           <input type="range" id="rate" min="0.5" max="2" step="0.01" value="1" />
@@ -108,17 +72,14 @@
         </label>
       </div>
 
-      <div class="text-box" id="text-display" ondblclick="resetZoom()"></div>
-      <button onclick="saveCurrentFile()">💾 Save to Library</button>
+      <div id="text-display" class="text-box" ondblclick="resetZoom()"></div>
     </section>
 
-    <!-- LIBRARY -->
     <section id="library" style="display:none;">
       <div class="library-section">
         <h3>Library (Saved Files)</h3>
         <div id="library-list"></div>
       </div>
-
       <div class="playlist-section">
         <h3>Playlist (Up to 10)</h3>
         <div id="playlist-list"></div>
@@ -126,25 +87,17 @@
       </div>
     </section>
 
-    <!-- STORE -->
     <section id="store" style="display:none;">
-      <h3>Coming Soon: Premium Features</h3>
-      <ul>
-        <li>Download voice packs</li>
-        <li>High-quality offline TTS</li>
-        <li>Priority support</li>
-        <li>Unlimited playlist hours</li>
-      </ul>
+      <h3>Coming Soon</h3>
+      <p>Premium voices, advanced controls, usage analytics, and offline support</p>
     </section>
 
-    <!-- PROFILE -->
     <section id="profile" style="display:none;">
-      <h3>Your Preferences</h3>
+      <h3>Settings</h3>
       <ul>
-        <li><b>Rate & Pitch</b> persist across sessions</li>
-        <li><b>Voice & Engine</b> auto-reloaded</li>
-        <li><b>Last sentence</b> auto-resumed if enabled</li>
-        <li><b>Saved files</b> available from Library</li>
+        <li>🎹 Last voice and engine remembered</li>
+        <li>🛠 Rate & pitch saved</li>
+        <li>📂 Last file + position saved</li>
       </ul>
     </section>
   </main>
@@ -155,9 +108,10 @@
 
   <script src="script.js"></script>
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
-        .then(() => console.log("Service Worker registered"));
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js").then(() =>
+        console.log("Service Worker registered")
+      );
     }
   </script>
 </body>
