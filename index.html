@@ -8,13 +8,6 @@
   <link rel="manifest" href="manifest.json" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="https://unpkg.com/docx-preview@0.5.6/dist/docx-preview.min.js"></script>
-  <style>
-    .logo-title {
-      font-size: 2em;
-      display: inline-block;
-      vertical-align: middle;
-    }
-  </style>
 </head>
 <body>
   <header>
@@ -39,41 +32,72 @@
   </header>
 
   <main>
-    <div class="controls">
-      <input type="file" id="fileInput" accept=".txt,.pdf,.epub,.docx" onchange="loadFile(event)" />
-      <select id="tts-engine" onchange="changeTTSEngine()">
-        <option value="default">Default TTS</option>
-        <option value="responsivevoice">ResponsiveVoice</option>
-        <option value="mozilla">Mozilla TTS</option>
-        <option value="espeak">eSpeak</option>
-        <option value="festival">Festival</option>
-        <option value="custom">Custom Engine</option>
-      </select>
-      <select id="voice-select"></select>
-      <button onclick="play()">▶️ Play</button>
-      <button onclick="pause()">⏸️ Pause</button>
-      <button onclick="stop()">⏹️ Stop</button>
-      <button onclick="toggleLoop()">🔁 Loop</button>
-      <label style="margin-left: 10px;">
-        <input type="checkbox" id="auto-resume-toggle" onchange="toggleAutoResume()" />
-        Auto Resume
-      </label>
-    </div>
+    <!-- HOME SECTION -->
+    <section id="home" class="active-section">
+      <p>Welcome to NeurAloud – Upload a file to begin reading aloud.</p>
+    </section>
 
-    <div class="sliders">
-      <label>
-        Rate:
-        <input type="range" id="rate" min="0.5" max="2" step="0.01" value="1" />
-        <span id="rateVal">1.00</span>
-      </label>
-      <label>
-        Pitch:
-        <input type="range" id="pitch" min="0" max="2" step="0.01" value="1" />
-        <span id="pitchVal">1.00</span>
-      </label>
-    </div>
+    <!-- UPLOAD SECTION -->
+    <section id="upload" style="display:none;">
+      <div class="controls">
+        <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.epub" onchange="loadFile(event)" />
+        <select id="tts-engine" onchange="changeTTSEngine()">
+          <option value="default">Default TTS</option>
+          <option value="responsivevoice">ResponsiveVoice</option>
+          <option value="mozilla">Mozilla TTS</option>
+          <option value="espeak">eSpeak</option>
+          <option value="festival">Festival</option>
+          <option value="custom">Custom Engine</option>
+        </select>
+        <select id="voice-select"></select>
+        <button onclick="play()">▶️ Play</button>
+        <button onclick="pause()">⏸️ Pause</button>
+        <button onclick="stop()">⏹️ Stop</button>
+        <button onclick="toggleLoop()">🔁 Loop</button>
+        <label style="margin-left: 10px;">
+          <input type="checkbox" id="auto-resume-toggle" onchange="toggleAutoResume()" />
+          Auto Resume
+        </label>
+      </div>
 
-    <div id="text-display" class="text-box" ondblclick="resetZoom()"></div>
+      <div class="sliders">
+        <label>
+          Rate:
+          <input type="range" id="rate" min="0.5" max="2" step="0.01" value="1" />
+          <span id="rateVal">1.00</span>
+        </label>
+        <label>
+          Pitch:
+          <input type="range" id="pitch" min="0" max="2" step="0.01" value="1" />
+          <span id="pitchVal">1.00</span>
+        </label>
+      </div>
+
+      <div id="text-display" class="text-box" ondblclick="resetZoom()"></div>
+    </section>
+
+    <!-- LIBRARY SECTION -->
+    <section id="library" style="display:none;">
+      <div class="library-section">
+        <h3>Library (Saved Files)</h3>
+        <div id="library-list"></div>
+      </div>
+    </section>
+
+    <!-- PLAYLIST SECTION -->
+    <section id="playlist" style="display:none;">
+      <div class="playlist-section">
+        <h3>Playlist (Up to 10)</h3>
+        <div id="playlist-list"></div>
+        <button onclick="playPlaylist()">Play Playlist</button>
+      </div>
+    </section>
+
+    <!-- PROFILE SECTION -->
+    <section id="profile" style="display:none;">
+      <h3>Profile Settings</h3>
+      <p>Pitch, Rate, Voice, and Resume preferences are saved automatically.</p>
+    </section>
   </main>
 
   <footer>
@@ -83,7 +107,7 @@
   <script src="script.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./service-worker.js").then(() =>
+      navigator.serviceWorker.register("service-worker.js").then(() =>
         console.log("Service Worker registered")
       );
     }
