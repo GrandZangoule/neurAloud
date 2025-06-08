@@ -1,11 +1,13 @@
 let utterance;
 let currentSentenceIndex = 0;
 let sentences = [];
-let loop = false;
+let isLooping = false;
 
 window.addEventListener("DOMContentLoaded", () => {
   const lastText = localStorage.getItem("lastText");
-  if (lastText) displayText(lastText);
+  if (lastText) {
+    displayText(lastText);
+  }
 });
 
 function loadFile(event) {
@@ -15,86 +17,71 @@ function loadFile(event) {
   const reader = new FileReader();
   const ext = file.name.split('.').pop().toLowerCase();
 
-  if (['txt', 'text', 'md', 'csv', 'sql'].includes(ext)) {
+  if (ext === "txt") {
     reader.onload = () => {
       const text = reader.result;
-      displayText(text);
       localStorage.setItem("lastText", text);
+      displayText(text);
     };
     reader.readAsText(file);
-  } else if (['pdf'].includes(ext)) {
-    reader.onload = async () => {
-      const typedArray = new Uint8Array(reader.result);
-      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
-      let fullText = '';
+  } else if (ext === "pdf") {
+    const fileReader = new FileReader();
+    fileReader.onload = async () => {
+      const typedarray = new Uint8Array(fileReader.result);
+      const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+      let text = "";
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        const pageText = content.items.map(item => item.str).join(' ');
-        fullText += pageText + "\n";
+        text += content.items.map(item => item.str).join(" ") + "\n";
       }
-      displayText(fullText);
-      localStorage.setItem("lastText", fullText);
+      localStorage.setItem("lastText", text);
+      displayText(text);
+    };
+    fileReader.readAsArrayBuffer(file);
+  } else if (ext === "docx") {
+    reader.onload = async () => {
+      const arrayBuffer = reader.result;
+      const result = await mammoth.convertToText({ arrayBuffer });
+      const text = result.value;
+      localStorage.setItem("lastText", text);
+      displayText(text);
     };
     reader.readAsArrayBuffer(file);
-  } else if (['docx'].includes(ext)) {
-    reader.onload = (e) => {
-      mammoth.extractRawText({ arrayBuffer: e.target.result })
-        .then(result => {
-          displayText(result.value);
-          localStorage.setItem("lastText", result.value);
-        });
-    };
-    reader.readAsArrayBuffer(file);
-  } else if (['jpeg', 'jpg', 'png', 'webp', 'bmp'].includes(ext)) {
-    reader.onload = () => {
-      displayText(`📷 Image loaded: ${file.name}`);
-    };
-    reader.readAsDataURL(file);
   } else {
-    alert("Unsupported format yet. Coming soon!");
+    alert("Unsupported file format for now.");
   }
 }
 
 function displayText(text) {
-  sentences = text.split(/(?<=[.?!])\s+/);
-  const html = sentences.map(s => `<span class="sentence">${s}</span>`).join(" ");
+  sentences = text.split(/(?<=\.|\!|\?)\s/);
+  const html = sentences.map((s, i) =>
+    `<span class="sentence" onclick="jumpTo(${i})">${s}</span>`
+  ).join(" ");
   document.getElementById("text-display").innerHTML = html;
 }
 
 function highlightSentence(index) {
   document.querySelectorAll(".sentence").forEach((el, i) => {
     el.classList.toggle("highlight", i === index);
+    if (i === index) el.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
 
 function play() {
-  if (!sentences.length) {
-    alert("Please load a document first.");
-    return;
-  }
-
-  if (utterance && speechSynthesis.paused) {
-    speechSynthesis.resume();
-    return;
-  }
-
+  if (!sentences.length) return alert("Please load a document first.");
+  if (utterance && speechSynthesis.paused) return speechSynthesis.resume();
   speakSentence(currentSentenceIndex);
 }
 
 function speakSentence(index) {
   if (index >= sentences.length) {
-    if (loop) {
-      currentSentenceIndex = 0;
-      speakSentence(currentSentenceIndex);
-    } else {
-      stop();
-    }
-    return;
+    if (isLooping) currentSentenceIndex = 0;
+    else return stop();
   }
 
-  const sentence = sentences[index];
-  highlightSentence(index);
+  const sentence = sentences[currentSentenceIndex];
+  highlightSentence(currentSentenceIndex);
 
   utterance = new SpeechSynthesisUtterance(sentence);
   utterance.rate = parseFloat(document.getElementById("rate").value);
@@ -109,9 +96,7 @@ function speakSentence(index) {
 }
 
 function pause() {
-  if (speechSynthesis.speaking) {
-    speechSynthesis.pause();
-  }
+  if (speechSynthesis.speaking) speechSynthesis.pause();
 }
 
 function stop() {
@@ -120,15 +105,26 @@ function stop() {
   highlightSentence(-1);
 }
 
-function toggleLoop() {
-  loop = !loop;
-  alert(`🔁 Looping is now ${loop ? "ON" : "OFF"}`);
+function jumpTo(index) {
+  stop();
+  currentSentenceIndex = index;
+  play();
 }
 
-function translateText() {
-  alert("🌐 Translation feature is coming soon!");
+function toggleLoop() {
+  isLooping = !isLooping;
+  alert("Loop is now " + (isLooping ? "enabled" : "disabled"));
+}
+
+function changeTTSEngine() {
+  const engine = document.getElementById("tts-engine").value;
+  alert("Selected TTS engine: " + engine + " (Only default supported for now)");
 }
 
 function navigate(tab) {
   alert(`🔧 Navigation to "${tab}" is not yet wired. Coming soon.`);
+}
+
+function translateText() {
+  alert("🌍 Translation feature is coming soon!");
 }
