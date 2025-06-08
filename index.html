@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NeurAloud</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
   <style>
     .logo-title {
       font-size: 2em;
@@ -38,7 +38,8 @@
 
   <main>
     <div class="controls">
-      <input type="file" id="fileInput" accept=".txt,.pdf,.epub,.text,.md,.doc,.docx,.pptx,.rtf,.csv,.wps,.msg,.sql,.png,.jpeg,.jpg,.webp,.tmp,.jif,.tif,.bmp,.eps,.parquet" onchange="loadFile(event)" />
+      <input type="file" id="fileInput" accept=".txt,.pdf,.epub,.text,.md,.doc,.docx,.pptx,.rtf,.csv,.wps,.msg,.sql,.png,.jpeg,.jpg,.webp,.tmp,.jif,.tif,.bmp,.eps,.parquet"
+             onchange="loadFile(event)" />
       <button onclick="play()">▶️ Play</button>
       <button onclick="pause()">⏸️ Pause</button>
       <button onclick="stop()">⏹️ Stop</button>
@@ -46,8 +47,8 @@
     </div>
 
     <div class="sliders">
-      <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"></label>
-      <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.1" value="1"></label>
+      <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1" /></label>
+      <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.1" value="1" /></label>
     </div>
 
     <div id="text-display" class="text-box"></div>
@@ -57,11 +58,14 @@
     <button onclick="translateText()">🌐 Translate</button>
   </footer>
 
+  <!-- Dependencies for PDF and DOCX reading -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
   <script src="script.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./service-worker.js')
-        .then(() => console.log("Service Worker registered"));
+        .then(() => console.log("✅ Service Worker registered"));
     }
   </script>
 </body>
