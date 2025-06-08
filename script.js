@@ -4,7 +4,7 @@ let sentences = [];
 let isLooping = false;
 let db;
 
-// DOMContentLoaded logic
+// DOM ready
 window.addEventListener("DOMContentLoaded", async () => {
   // Restore settings
   document.getElementById("rate").value = localStorage.getItem("rate") || "1.00";
@@ -15,15 +15,15 @@ window.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("voice-select").value = localStorage.getItem("voice") || "";
   document.getElementById("auto-resume-toggle").checked = localStorage.getItem("autoResume") === "true";
 
-  // Load voices and restore voice
+  // Load voices
   loadVoices();
 
-  // Initialize IndexedDB
+  // Setup IndexedDB
   await initDB();
   loadLibrary();
   loadPlaylist();
 
-  // Restore last text
+  // Restore last file + index
   const lastText = localStorage.getItem("lastText");
   if (lastText) {
     displayText(lastText);
@@ -32,7 +32,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// Update slider values live
+// Slider events
 document.getElementById("rate").oninput = (e) => {
   document.getElementById("rateVal").textContent = parseFloat(e.target.value).toFixed(2);
   localStorage.setItem("rate", e.target.value);
@@ -42,7 +42,7 @@ document.getElementById("pitch").oninput = (e) => {
   localStorage.setItem("pitch", e.target.value);
 };
 
-// Voice and engine persistence
+// Engine + voice
 function changeTTSEngine() {
   const engine = document.getElementById("tts-engine").value;
   localStorage.setItem("engine", engine);
@@ -67,7 +67,7 @@ function loadVoices() {
 }
 speechSynthesis.onvoiceschanged = loadVoices;
 
-// Navigation logic
+// Navigation
 function navigate(tab) {
   document.querySelectorAll("main section").forEach(sec => sec.style.display = "none");
   document.getElementById(tab).style.display = "block";
@@ -83,7 +83,6 @@ function loadFile(event) {
     reader.onload = () => {
       const text = reader.result;
       localStorage.setItem("lastText", text);
-      localStorage.setItem("lastFileType", "text");
       displayText(text);
     };
     reader.readAsText(file);
@@ -93,7 +92,7 @@ function loadFile(event) {
       const typedarray = new Uint8Array(fileReader.result);
       const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
       const container = document.getElementById("text-display");
-      container.innerHTML = "";
+      container.innerHTML = ""; // Show only canvas
       let fullText = "";
 
       for (let i = 1; i <= pdf.numPages; i++) {
@@ -106,12 +105,12 @@ function loadFile(event) {
         await page.render({ canvasContext: context, viewport }).promise;
         container.appendChild(canvas);
 
+        // extract text silently
         const content = await page.getTextContent();
         fullText += content.items.map(item => item.str).join(" ") + " ";
       }
 
       localStorage.setItem("lastText", fullText.trim());
-      localStorage.setItem("lastFileType", "text");
       displayText(fullText.trim());
     };
     fileReader.readAsArrayBuffer(file);
@@ -119,15 +118,14 @@ function loadFile(event) {
     reader.onload = async () => {
       const container = document.getElementById("text-display");
       container.innerHTML = "";
-      const result = await window.docx.renderAsync(reader.result, container);
+      await window.docx.renderAsync(reader.result, container);
       const text = container.innerText;
       localStorage.setItem("lastText", text);
-      localStorage.setItem("lastFileType", "text");
       displayText(text);
     };
     reader.readAsArrayBuffer(file);
   } else {
-    alert("Unsupported file format.");
+    alert("Unsupported file type");
   }
 }
 
@@ -136,8 +134,7 @@ function displayText(text) {
   const html = sentences.map((s, i) =>
     `<span class="sentence" onclick="jumpTo(${i})">${s}</span>`
   ).join(" ");
-  const container = document.getElementById("text-display");
-  container.innerHTML += html; // Appends to PDF canvas
+  document.getElementById("text-display").innerHTML += html;
 }
 
 function highlightSentence(index) {
@@ -201,7 +198,7 @@ function toggleLoop() {
   alert("Looping is now " + (isLooping ? "enabled" : "disabled"));
 }
 function translateText() {
-  alert("🌍 Translation feature coming soon!");
+  alert("🌍 Translation coming soon!");
 }
 function resetZoom() {
   const box = document.getElementById("text-display");
@@ -209,7 +206,7 @@ function resetZoom() {
   box.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// IndexedDB Setup
+// IndexedDB
 function initDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open("neurAloudDB", 1);
@@ -218,27 +215,33 @@ function initDB() {
       db = request.result;
       resolve();
     };
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
       db.createObjectStore("files", { keyPath: "name" });
       db.createObjectStore("playlist", { keyPath: "name" });
     };
   });
 }
 
-// Library management
+function saveCurrentFile() {
+  const name = prompt("Enter a name for this file:");
+  if (!name || !sentences.length) return;
+  const content = localStorage.getItem("lastText");
+  const tx = db.transaction("files", "readwrite").objectStore("files");
+  tx.put({ name, content }).onsuccess = loadLibrary;
+}
+
 function loadLibrary() {
   const tx = db.transaction("files", "readonly").objectStore("files");
-  const req = tx.getAll();
-  req.onsuccess = () => {
+  tx.getAll().onsuccess = (e) => {
     const container = document.getElementById("library-list");
     container.innerHTML = "";
-    req.result.forEach(file => {
+    e.target.result.forEach(file => {
       const div = document.createElement("div");
       div.className = "library-item";
       div.draggable = true;
       div.textContent = file.name;
-      div.ondragstart = (e) => e.dataTransfer.setData("text/plain", file.name);
+      div.ondragstart = (e) => e.dataTransfer.setData("fileName", file.name);
       const btn = document.createElement("button");
       btn.textContent = "Add to Playlist";
       btn.onclick = () => addToPlaylist(file);
@@ -250,23 +253,20 @@ function loadLibrary() {
 
 function addToPlaylist(file) {
   const tx = db.transaction("playlist", "readwrite").objectStore("playlist");
-  const req = tx.add(file);
-  req.onsuccess = loadPlaylist;
+  tx.put(file).onsuccess = loadPlaylist;
 }
 
-// Playlist management
 function loadPlaylist() {
   const tx = db.transaction("playlist", "readonly").objectStore("playlist");
-  const req = tx.getAll();
-  req.onsuccess = () => {
+  tx.getAll().onsuccess = (e) => {
     const container = document.getElementById("playlist-list");
     container.innerHTML = "";
-    req.result.forEach(file => {
+    e.target.result.forEach(file => {
       const div = document.createElement("div");
       div.className = "playlist-item";
       div.draggable = true;
       div.textContent = file.name;
-      div.ondragstart = (e) => e.dataTransfer.setData("playlist", file.name);
+      div.ondragstart = (e) => e.dataTransfer.setData("playlistName", file.name);
       container.appendChild(div);
     });
   };
@@ -274,9 +274,8 @@ function loadPlaylist() {
 
 function playPlaylist() {
   const tx = db.transaction("playlist", "readonly").objectStore("playlist");
-  const req = tx.getAll();
-  req.onsuccess = async () => {
-    for (const file of req.result) {
+  tx.getAll().onsuccess = async (e) => {
+    for (const file of e.target.result) {
       localStorage.setItem("lastText", file.content);
       displayText(file.content);
       await new Promise(resolve => {
