@@ -93,7 +93,6 @@ footer {
   margin-top: 2rem;
 }
 
-/* Section handling for navigation */
 section {
   display: none;
 }
@@ -101,7 +100,6 @@ section.active-section {
   display: block;
 }
 
-/* LIBRARY + PLAYLIST STYLING */
 .library-section, .playlist-section {
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -137,7 +135,6 @@ section.active-section {
   gap: 8px;
 }
 
-/* Select dropdowns */
 select#tts-engine, select#voice-select {
   padding: 6px;
   font-size: 1em;
@@ -145,7 +142,6 @@ select#tts-engine, select#voice-select {
   border: 1px solid #ccc;
 }
 
-/* Responsive design */
 @media (max-width: 768px) {
   .controls,
   .sliders,
