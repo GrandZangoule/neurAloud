@@ -29,32 +29,35 @@ function loadFile(event) {
     fileReader.onload = async () => {
       const typedarray = new Uint8Array(fileReader.result);
       const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
-      let text = "";
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(" ") + "\n";
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement("canvas");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const context = canvas.getContext("2d");
+        await page.render({ canvasContext: context, viewport }).promise;
+        container.appendChild(canvas);
       }
-      localStorage.setItem("lastText", text);
-      displayText(text);
+      localStorage.removeItem("lastText");
+      sentences = [];
     };
     fileReader.readAsArrayBuffer(file);
   } else if (ext === "docx") {
-    reader.onload = async () => {
-      const arrayBuffer = reader.result;
-      const result = await mammoth.convertToText({ arrayBuffer });
-      const text = result.value;
-      localStorage.setItem("lastText", text);
-      displayText(text);
-    };
-    reader.readAsArrayBuffer(file);
+    const container = document.getElementById("text-display");
+    container.innerHTML = "";
+    renderDocx(file, container);
+    localStorage.removeItem("lastText");
+    sentences = [];
   } else {
     alert("Unsupported file format for now.");
   }
 }
 
 function displayText(text) {
-  sentences = text.split(/(?<=\.|\!|\?)\s/);
+  sentences = text.split(/(?<=\.|!|\?)\s/);
   const html = sentences.map((s, i) =>
     `<span class="sentence" onclick="jumpTo(${i})">${s}</span>`
   ).join(" ");
