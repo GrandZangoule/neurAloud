@@ -2,36 +2,76 @@ let utterance;
 let currentSentenceIndex = 0;
 let sentences = [];
 let isLooping = false;
+let db;
 
-window.addEventListener("DOMContentLoaded", () => {
-  const lastText = localStorage.getItem("lastText");
-  const lastType = localStorage.getItem("lastFileType");
-  const lastPitch = localStorage.getItem("lastPitch");
-  const lastRate = localStorage.getItem("lastRate");
-  const lastIndex = parseInt(localStorage.getItem("lastSentenceIndex") || "0", 10);
-  const autoResume = localStorage.getItem("autoResume") === "true";
+// DOMContentLoaded logic
+window.addEventListener("DOMContentLoaded", async () => {
+  // Restore settings
+  document.getElementById("rate").value = localStorage.getItem("rate") || "1.00";
+  document.getElementById("pitch").value = localStorage.getItem("pitch") || "1.00";
+  document.getElementById("rateVal").textContent = parseFloat(document.getElementById("rate").value).toFixed(2);
+  document.getElementById("pitchVal").textContent = parseFloat(document.getElementById("pitch").value).toFixed(2);
+  document.getElementById("tts-engine").value = localStorage.getItem("engine") || "default";
+  document.getElementById("voice-select").value = localStorage.getItem("voice") || "";
+  document.getElementById("auto-resume-toggle").checked = localStorage.getItem("autoResume") === "true";
 
-  if (lastPitch) {
-    document.getElementById("pitch").value = lastPitch;
-    document.getElementById("pitchVal").textContent = parseFloat(lastPitch).toFixed(2);
-  }
-
-  if (lastRate) {
-    document.getElementById("rate").value = lastRate;
-    document.getElementById("rateVal").textContent = parseFloat(lastRate).toFixed(2);
-  }
-
-  document.getElementById("auto-resume-toggle").checked = autoResume;
-
-  if (lastText && lastType === "text") {
-    displayText(lastText);
-    currentSentenceIndex = lastIndex;
-    if (autoResume) play();
-  }
-
+  // Load voices and restore voice
   loadVoices();
+
+  // Initialize IndexedDB
+  await initDB();
+  loadLibrary();
+  loadPlaylist();
+
+  // Restore last text
+  const lastText = localStorage.getItem("lastText");
+  if (lastText) {
+    displayText(lastText);
+    currentSentenceIndex = parseInt(localStorage.getItem("lastIndex") || "0");
+    if (document.getElementById("auto-resume-toggle").checked) play();
+  }
 });
 
+// Update slider values live
+document.getElementById("rate").oninput = (e) => {
+  document.getElementById("rateVal").textContent = parseFloat(e.target.value).toFixed(2);
+  localStorage.setItem("rate", e.target.value);
+};
+document.getElementById("pitch").oninput = (e) => {
+  document.getElementById("pitchVal").textContent = parseFloat(e.target.value).toFixed(2);
+  localStorage.setItem("pitch", e.target.value);
+};
+
+// Voice and engine persistence
+function changeTTSEngine() {
+  const engine = document.getElementById("tts-engine").value;
+  localStorage.setItem("engine", engine);
+}
+function toggleAutoResume() {
+  const checked = document.getElementById("auto-resume-toggle").checked;
+  localStorage.setItem("autoResume", checked);
+}
+function loadVoices() {
+  const select = document.getElementById("voice-select");
+  select.innerHTML = "";
+  const voices = speechSynthesis.getVoices();
+  voices.forEach(voice => {
+    const option = document.createElement("option");
+    option.value = voice.name;
+    option.textContent = `${voice.name} (${voice.lang})`;
+    select.appendChild(option);
+  });
+  const saved = localStorage.getItem("voice");
+  if (saved) select.value = saved;
+  select.onchange = () => localStorage.setItem("voice", select.value);
+}
+speechSynthesis.onvoiceschanged = loadVoices;
+
+// Navigation logic
+function navigate(tab) {
+  document.querySelectorAll("main section").forEach(sec => sec.style.display = "none");
+  document.getElementById(tab).style.display = "block";
+}
 function loadFile(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -54,16 +94,15 @@ function loadFile(event) {
       const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
       const container = document.getElementById("text-display");
       container.innerHTML = "";
-
       let fullText = "";
 
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.5 });
+        const viewport = page.getViewport({ scale: 1.4 });
         const canvas = document.createElement("canvas");
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
         const context = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
         await page.render({ canvasContext: context, viewport }).promise;
         container.appendChild(canvas);
 
@@ -73,43 +112,48 @@ function loadFile(event) {
 
       localStorage.setItem("lastText", fullText.trim());
       localStorage.setItem("lastFileType", "text");
-      sentences = fullText.trim().split(/(?<=\\.|!|\\?)\\s/);
+      displayText(fullText.trim());
     };
     fileReader.readAsArrayBuffer(file);
   } else if (ext === "docx") {
-    const container = document.getElementById("text-display");
-    container.innerHTML = "";
-    renderDocx(file, container);
-    localStorage.removeItem("lastText");
-    sentences = [];
+    reader.onload = async () => {
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
+      const result = await window.docx.renderAsync(reader.result, container);
+      const text = container.innerText;
+      localStorage.setItem("lastText", text);
+      localStorage.setItem("lastFileType", "text");
+      displayText(text);
+    };
+    reader.readAsArrayBuffer(file);
   } else {
     alert("Unsupported file format.");
   }
 }
 
 function displayText(text) {
-  sentences = text.split(/(?<=\\.|!|\\?)\\s/);
+  sentences = text.split(/(?<=\.|\!|\?)\s/);
   const html = sentences.map((s, i) =>
     `<span class="sentence" onclick="jumpTo(${i})">${s}</span>`
   ).join(" ");
-  document.getElementById("text-display").innerHTML = html;
+  const container = document.getElementById("text-display");
+  container.innerHTML += html; // Appends to PDF canvas
 }
 
 function highlightSentence(index) {
-  localStorage.setItem("lastSentenceIndex", index);
+  localStorage.setItem("lastIndex", index);
   document.querySelectorAll(".sentence").forEach((el, i) => {
     el.classList.toggle("highlight", i === index);
     if (i === index) {
       const container = document.getElementById("text-display");
-      const topOffset = el.offsetTop - container.offsetTop;
-      const scrollTarget = topOffset - container.clientHeight * 0.2;
+      const elTop = el.offsetTop - container.offsetTop;
+      const scrollTarget = elTop - container.clientHeight * 0.2;
       container.scrollTo({ top: scrollTarget, behavior: "smooth" });
     }
   });
 }
-
 function play() {
-  if (!sentences.length) return alert("Please load a document first.");
+  if (!sentences.length) return alert("Please load a document.");
   if (utterance && speechSynthesis.paused) return speechSynthesis.resume();
   speakSentence(currentSentenceIndex);
 }
@@ -142,58 +186,110 @@ function speakSentence(index) {
 function pause() {
   if (speechSynthesis.speaking) speechSynthesis.pause();
 }
-
 function stop() {
   speechSynthesis.cancel();
   currentSentenceIndex = 0;
   highlightSentence(-1);
 }
-
 function jumpTo(index) {
   stop();
   currentSentenceIndex = index;
   play();
 }
-
 function toggleLoop() {
   isLooping = !isLooping;
-  alert("Loop is now " + (isLooping ? "enabled" : "disabled"));
+  alert("Looping is now " + (isLooping ? "enabled" : "disabled"));
 }
-
-function changeTTSEngine() {
-  const engine = document.getElementById("tts-engine").value;
-  alert("Selected TTS engine: " + engine);
-}
-
-function toggleAutoResume() {
-  const checked = document.getElementById("auto-resume-toggle").checked;
-  localStorage.setItem("autoResume", checked);
-}
-
 function translateText() {
   alert("🌍 Translation feature coming soon!");
 }
-
-function navigate(tab) {
-  alert(`🔧 Navigation to "${tab}" is not yet implemented.`);
+function resetZoom() {
+  const box = document.getElementById("text-display");
+  box.style.transform = "scale(1)";
+  box.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function loadVoices() {
-  const voiceSelect = document.getElementById("voice-select");
-  voiceSelect.innerHTML = "";
-  const voices = speechSynthesis.getVoices();
-  voices.forEach((voice) => {
-    const option = document.createElement("option");
-    option.value = voice.name;
-    option.textContent = voice.name + " (" + voice.lang + ")";
-    voiceSelect.appendChild(option);
+// IndexedDB Setup
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("neurAloudDB", 1);
+    request.onerror = () => reject("Failed to open IndexedDB");
+    request.onsuccess = () => {
+      db = request.result;
+      resolve();
+    };
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      db.createObjectStore("files", { keyPath: "name" });
+      db.createObjectStore("playlist", { keyPath: "name" });
+    };
   });
 }
 
-speechSynthesis.onvoiceschanged = loadVoices;
+// Library management
+function loadLibrary() {
+  const tx = db.transaction("files", "readonly").objectStore("files");
+  const req = tx.getAll();
+  req.onsuccess = () => {
+    const container = document.getElementById("library-list");
+    container.innerHTML = "";
+    req.result.forEach(file => {
+      const div = document.createElement("div");
+      div.className = "library-item";
+      div.draggable = true;
+      div.textContent = file.name;
+      div.ondragstart = (e) => e.dataTransfer.setData("text/plain", file.name);
+      const btn = document.createElement("button");
+      btn.textContent = "Add to Playlist";
+      btn.onclick = () => addToPlaylist(file);
+      div.appendChild(btn);
+      container.appendChild(div);
+    });
+  };
+}
 
-function resetZoom() {
-  const display = document.getElementById("text-display");
-  display.style.transform = "scale(1)";
-  display.scrollTo({ top: 0, behavior: "smooth" });
+function addToPlaylist(file) {
+  const tx = db.transaction("playlist", "readwrite").objectStore("playlist");
+  const req = tx.add(file);
+  req.onsuccess = loadPlaylist;
+}
+
+// Playlist management
+function loadPlaylist() {
+  const tx = db.transaction("playlist", "readonly").objectStore("playlist");
+  const req = tx.getAll();
+  req.onsuccess = () => {
+    const container = document.getElementById("playlist-list");
+    container.innerHTML = "";
+    req.result.forEach(file => {
+      const div = document.createElement("div");
+      div.className = "playlist-item";
+      div.draggable = true;
+      div.textContent = file.name;
+      div.ondragstart = (e) => e.dataTransfer.setData("playlist", file.name);
+      container.appendChild(div);
+    });
+  };
+}
+
+function playPlaylist() {
+  const tx = db.transaction("playlist", "readonly").objectStore("playlist");
+  const req = tx.getAll();
+  req.onsuccess = async () => {
+    for (const file of req.result) {
+      localStorage.setItem("lastText", file.content);
+      displayText(file.content);
+      await new Promise(resolve => {
+        let i = 0;
+        const playSentence = () => {
+          if (i >= sentences.length) return resolve();
+          highlightSentence(i);
+          const u = new SpeechSynthesisUtterance(sentences[i]);
+          u.onend = () => { i++; playSentence(); };
+          speechSynthesis.speak(u);
+        };
+        playSentence();
+      });
+    }
+  };
 }
