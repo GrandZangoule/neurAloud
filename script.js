@@ -4,26 +4,19 @@ let sentences = [];
 let isLooping = false;
 let db;
 
-// DOM ready
 window.addEventListener("DOMContentLoaded", async () => {
-  // Restore settings
   document.getElementById("rate").value = localStorage.getItem("rate") || "1.00";
   document.getElementById("pitch").value = localStorage.getItem("pitch") || "1.00";
   document.getElementById("rateVal").textContent = parseFloat(document.getElementById("rate").value).toFixed(2);
   document.getElementById("pitchVal").textContent = parseFloat(document.getElementById("pitch").value).toFixed(2);
   document.getElementById("tts-engine").value = localStorage.getItem("engine") || "default";
-  document.getElementById("voice-select").value = localStorage.getItem("voice") || "";
   document.getElementById("auto-resume-toggle").checked = localStorage.getItem("autoResume") === "true";
 
-  // Load voices
-  loadVoices();
-
-  // Setup IndexedDB
   await initDB();
+  loadVoices();
   loadLibrary();
   loadPlaylist();
 
-  // Restore last file + index
   const lastText = localStorage.getItem("lastText");
   if (lastText) {
     displayText(lastText);
@@ -32,7 +25,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// Slider events
 document.getElementById("rate").oninput = (e) => {
   document.getElementById("rateVal").textContent = parseFloat(e.target.value).toFixed(2);
   localStorage.setItem("rate", e.target.value);
@@ -42,34 +34,51 @@ document.getElementById("pitch").oninput = (e) => {
   localStorage.setItem("pitch", e.target.value);
 };
 
-// Engine + voice
 function changeTTSEngine() {
   const engine = document.getElementById("tts-engine").value;
   localStorage.setItem("engine", engine);
 }
+
 function toggleAutoResume() {
   const checked = document.getElementById("auto-resume-toggle").checked;
   localStorage.setItem("autoResume", checked);
 }
+
 function loadVoices() {
   const select = document.getElementById("voice-select");
   select.innerHTML = "";
+
   const voices = speechSynthesis.getVoices();
+  const engines = ['default', 'responsivevoice', 'mozilla', 'espeak', 'festival', 'custom'];
+  engines.forEach(engine => {
+    const opt = document.createElement("option");
+    opt.disabled = true;
+    opt.textContent = `── ${engine.toUpperCase()} ──`;
+    select.appendChild(opt);
+  });
+
+  // Separator
+  const line = document.createElement("option");
+  line.disabled = true;
+  line.textContent = "──────────────";
+  select.appendChild(line);
+
   voices.forEach(voice => {
     const option = document.createElement("option");
     option.value = voice.name;
     option.textContent = `${voice.name} (${voice.lang})`;
     select.appendChild(option);
   });
+
   const saved = localStorage.getItem("voice");
   if (saved) select.value = saved;
+
   select.onchange = () => localStorage.setItem("voice", select.value);
 }
 speechSynthesis.onvoiceschanged = loadVoices;
 
-// Navigation
 function navigate(tab) {
-  document.querySelectorAll("main section").forEach(sec => sec.style.display = "none");
+  document.querySelectorAll("main section").forEach(s => s.style.display = "none");
   document.getElementById(tab).style.display = "block";
 }
 function loadFile(event) {
@@ -91,8 +100,9 @@ function loadFile(event) {
     fileReader.onload = async () => {
       const typedarray = new Uint8Array(fileReader.result);
       const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+
       const container = document.getElementById("text-display");
-      container.innerHTML = ""; // Show only canvas
+      container.innerHTML = "";
       let fullText = "";
 
       for (let i = 1; i <= pdf.numPages; i++) {
@@ -105,13 +115,12 @@ function loadFile(event) {
         await page.render({ canvasContext: context, viewport }).promise;
         container.appendChild(canvas);
 
-        // extract text silently
-        const content = await page.getTextContent();
-        fullText += content.items.map(item => item.str).join(" ") + " ";
+        const textContent = await page.getTextContent();
+        fullText += textContent.items.map(item => item.str).join(" ") + " ";
       }
 
       localStorage.setItem("lastText", fullText.trim());
-      displayText(fullText.trim());
+      displayText(fullText.trim(), false);  // Do not overwrite visual
     };
     fileReader.readAsArrayBuffer(file);
   } else if (ext === "docx") {
@@ -129,12 +138,16 @@ function loadFile(event) {
   }
 }
 
-function displayText(text) {
+function displayText(text, overwrite = true) {
   sentences = text.split(/(?<=\.|\!|\?)\s/);
   const html = sentences.map((s, i) =>
     `<span class="sentence" onclick="jumpTo(${i})">${s}</span>`
   ).join(" ");
-  document.getElementById("text-display").innerHTML += html;
+  if (overwrite) {
+    document.getElementById("text-display").innerHTML = html;
+  } else {
+    document.getElementById("text-display").innerHTML += html;
+  }
 }
 
 function highlightSentence(index) {
@@ -143,9 +156,8 @@ function highlightSentence(index) {
     el.classList.toggle("highlight", i === index);
     if (i === index) {
       const container = document.getElementById("text-display");
-      const elTop = el.offsetTop - container.offsetTop;
-      const scrollTarget = elTop - container.clientHeight * 0.2;
-      container.scrollTo({ top: scrollTarget, behavior: "smooth" });
+      const scrollPos = el.offsetTop - container.offsetTop - container.clientHeight * 0.2;
+      container.scrollTo({ top: scrollPos, behavior: "smooth" });
     }
   });
 }
@@ -183,27 +195,32 @@ function speakSentence(index) {
 function pause() {
   if (speechSynthesis.speaking) speechSynthesis.pause();
 }
+
 function stop() {
   speechSynthesis.cancel();
   currentSentenceIndex = 0;
   highlightSentence(-1);
 }
+
 function jumpTo(index) {
   stop();
   currentSentenceIndex = index;
   play();
 }
+
 function toggleLoop() {
   isLooping = !isLooping;
   alert("Looping is now " + (isLooping ? "enabled" : "disabled"));
 }
-function translateText() {
-  alert("🌍 Translation coming soon!");
-}
+
 function resetZoom() {
   const box = document.getElementById("text-display");
   box.style.transform = "scale(1)";
   box.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function translateText() {
+  alert("🌍 Translate feature coming soon.");
 }
 
 // IndexedDB
