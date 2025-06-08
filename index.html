@@ -1,26 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NeurAloud</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script src="https://unpkg.com/docx-preview@0.5.6/dist/docx-preview.min.js"></script>
   <style>
     .logo-title {
       font-size: 2em;
       display: inline-block;
       vertical-align: middle;
     }
-    .slider-value {
-      margin-left: 10px;
-      font-weight: bold;
-    }
   </style>
-
-  <!-- Required libraries -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-  <script src="https://unpkg.com/docx-preview@0.5.6/dist/docx-preview.min.js"></script>
 </head>
 <body>
   <header>
@@ -46,43 +40,52 @@
 
   <main>
     <div class="controls">
-      <input type="file" id="fileInput" accept=".txt,.pdf,.epub,.text,.md,.doc,.docx,.pptx,.rtf,.csv,.wps,.msg,.sql,.png,.jpeg,.jpg,.webp,.tmp,.jif,.tif,.bmp,.eps,.parquet" onchange="loadFile(event)" />
+      <input type="file" id="fileInput" accept=".txt,.pdf,.epub,.docx" onchange="loadFile(event)" />
       <select id="tts-engine" onchange="changeTTSEngine()">
         <option value="default">Default TTS</option>
-        <option value="google">Google TTS</option>
-        <option value="microsoft">Microsoft Azure</option>
-        <option value="amazon">Amazon Polly</option>
-        <option value="ibm">IBM Watson</option>
         <option value="responsivevoice">ResponsiveVoice</option>
+        <option value="mozilla">Mozilla TTS</option>
         <option value="espeak">eSpeak</option>
         <option value="festival">Festival</option>
-        <option value="mozilla">Mozilla TTS</option>
         <option value="custom">Custom Engine</option>
       </select>
+      <select id="voice-select"></select>
       <button onclick="play()">▶️ Play</button>
       <button onclick="pause()">⏸️ Pause</button>
       <button onclick="stop()">⏹️ Stop</button>
       <button onclick="toggleLoop()">🔁 Loop</button>
+      <label style="margin-left: 10px;">
+        <input type="checkbox" id="auto-resume-toggle" onchange="toggleAutoResume()" />
+        Auto Resume
+      </label>
     </div>
 
     <div class="sliders">
-      <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1" oninput="document.getElementById('rateVal').innerText = this.value"><span id="rateVal" class="slider-value">1</span></label>
-      <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.1" value="1" oninput="document.getElementById('pitchVal').innerText = this.value"><span id="pitchVal" class="slider-value">1</span></label>
+      <label>
+        Rate:
+        <input type="range" id="rate" min="0.5" max="2" step="0.01" value="1" />
+        <span id="rateVal">1.00</span>
+      </label>
+      <label>
+        Pitch:
+        <input type="range" id="pitch" min="0" max="2" step="0.01" value="1" />
+        <span id="pitchVal">1.00</span>
+      </label>
     </div>
 
-    <div id="text-display" class="text-box" style="max-height: 70vh; overflow-y: auto;"></div>
+    <div id="text-display" class="text-box" ondblclick="resetZoom()"></div>
   </main>
 
   <footer>
     <button onclick="translateText()">🌐 Translate</button>
   </footer>
 
-  <!-- Your logic -->
   <script src="script.js"></script>
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./service-worker.js')
-        .then(() => console.log("Service Worker registered"));
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js").then(() =>
+        console.log("Service Worker registered")
+      );
     }
   </script>
 </body>
