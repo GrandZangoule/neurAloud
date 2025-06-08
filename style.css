@@ -93,6 +93,7 @@ main {
   padding: 2px;
   transition: background 0.3s ease;
   cursor: pointer;
+  display: none;
 }
 
 .highlight {
@@ -109,6 +110,7 @@ footer {
 section {
   display: none;
 }
+
 section.active-section {
   display: block;
 }
