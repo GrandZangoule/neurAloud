@@ -15,9 +15,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   const lastText = localStorage.getItem("lastText");
   currentFilename = localStorage.getItem("lastFilename") || "";
   if (lastText) {
-    displayText(lastText, false);
+    displayText(lastText);
     currentSentenceIndex = parseInt(localStorage.getItem("lastIndex") || "0");
-    if (document.getElementById("auto-resume-toggle").checked) play();
+    if (document.getElementById("auto-resume-toggle")?.checked) play();
   }
 });
 
@@ -129,14 +129,14 @@ function loadFile(event) {
         fullText += content.items.map(item => item.str).join(" ") + " ";
       }
       localStorage.setItem("lastText", fullText.trim());
-      displayText(fullText.trim(), false);
+      displayText(fullText.trim());
     };
     reader.readAsArrayBuffer(file);
   }
 }
 
-function displayText(text, overwrite = false) {
-  sentences = text.split(/(?<=\.|\!|\?)\s/);
+function displayText(text) {
+  sentences = text.split(/(?<=\\.|\!|\?)\\s/);
 }
 
 function play() {
@@ -169,7 +169,11 @@ function pause() { if (speechSynthesis.speaking) speechSynthesis.pause(); }
 function stop() { speechSynthesis.cancel(); currentSentenceIndex = 0; }
 function jumpTo(index) { stop(); currentSentenceIndex = index; play(); }
 function toggleLoop() { isLooping = !isLooping; alert("Loop: " + isLooping); }
-function resetZoom() { const box = document.getElementById("text-display"); box.style.transform = "scale(1)"; box.scrollTo({ top: 0 }); }
+function resetZoom() {
+  const box = document.getElementById("text-display");
+  box.style.transform = "scale(1)";
+  box.scrollTo({ top: 0 });
+}
 function translateText() { alert("Translation coming soon."); }
 
 function initDB() {
