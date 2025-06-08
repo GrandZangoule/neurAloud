@@ -15,16 +15,20 @@ header {
 
 nav {
   margin-top: 0.5rem;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 nav button {
-  margin: 0 6px;
   padding: 8px 12px;
   background-color: white;
   border: none;
   border-radius: 5px;
   font-weight: bold;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 nav button:hover {
@@ -38,6 +42,7 @@ main {
 .controls {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
   margin-bottom: 1rem;
 }
@@ -45,8 +50,15 @@ main {
 .sliders {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 20px;
   margin-bottom: 1rem;
+}
+
+.sliders label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .text-box {
@@ -55,13 +67,18 @@ main {
   min-height: 400px;
   max-height: 70vh;
   overflow-y: auto;
+  overflow-x: hidden;
   background-color: #ffffff;
   border-radius: 8px;
+  transition: transform 0.2s ease;
+  touch-action: pan-y;
+  transform-origin: center center;
 }
 
 .sentence {
   padding: 2px;
   transition: background 0.3s ease;
+  cursor: pointer;
 }
 
 .highlight {
@@ -74,114 +91,70 @@ footer {
   background-color: #f0f0f0;
   margin-top: 2rem;
 }
-✅ script.js
-javascript
-Copy
-Edit
-let utterance;
-let currentSentenceIndex = 0;
-let sentences = [];
-let isLooping = false;
 
-window.addEventListener("DOMContentLoaded", () => {
-  const lastText = localStorage.getItem("lastText");
-  if (lastText) displayText(lastText);
-});
+/* LIBRARY + PLAYLIST SECTIONS */
+.library-section, .playlist-section {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #ffffff;
+  margin: 1rem 0;
+  padding: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
 
-function loadFile() {
-  const fileInput = document.getElementById("fileInput");
-  const file = fileInput.files[0];
-  if (!file) return alert("No file selected.");
+.library-section h3, .playlist-section h3 {
+  margin-top: 0;
+}
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    const text = reader.result;
-    localStorage.setItem("lastText", text);
-    displayText(text);
-  };
+.library-item, .playlist-item {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  background-color: #fefefe;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: move;
+}
 
-  if (file.type === "application/pdf") {
-    alert("📄 PDF support coming soon.");
-    return;
+.library-item.dragging, .playlist-item.dragging {
+  opacity: 0.5;
+}
+
+.library-actions, .playlist-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Voice and Engine Select Dropdowns */
+select#tts-engine, select#voice-select {
+  padding: 6px;
+  font-size: 1em;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+/* MOBILE & RESPONSIVE */
+@media (max-width: 768px) {
+  .controls,
+  .sliders,
+  nav {
+    flex-direction: row;
+    overflow-x: auto;
   }
 
-  reader.readAsText(file);
-}
-
-function displayText(text) {
-  sentences = text.split(/(?<=[.?!])\s+/);
-  const html = sentences.map((s, i) => `<span class="sentence" data-index="${i}">${s}</span>`).join(" ");
-  document.getElementById("text-display").innerHTML = html;
-}
-
-function highlightSentence(index) {
-  document.querySelectorAll(".sentence").forEach((el, i) =>
-    el.classList.toggle("highlight", i === index)
-  );
-}
-
-function play() {
-  if (!sentences.length) {
-    alert("Please load a document first.");
-    return;
+  nav {
+    justify-content: flex-start;
+    padding: 0 10px;
   }
 
-  const rate = parseFloat(document.getElementById("rate").value);
-  const pitch = parseFloat(document.getElementById("pitch").value);
-
-  if (utterance && speechSynthesis.paused) {
-    speechSynthesis.resume();
-    return;
+  .text-box {
+    max-width: 100%;
   }
 
-  speakSentence(currentSentenceIndex, rate, pitch);
-}
-
-function speakSentence(index, rate, pitch) {
-  if (index >= sentences.length) {
-    if (isLooping) {
-      currentSentenceIndex = 0;
-      speakSentence(currentSentenceIndex, rate, pitch);
-    } else {
-      stop();
-    }
-    return;
+  .library-section, .playlist-section {
+    max-height: 250px;
   }
-
-  highlightSentence(index);
-  utterance = new SpeechSynthesisUtterance(sentences[index]);
-  utterance.rate = rate;
-  utterance.pitch = pitch;
-
-  utterance.onend = () => {
-    currentSentenceIndex++;
-    speakSentence(currentSentenceIndex, rate, pitch);
-  };
-
-  speechSynthesis.speak(utterance);
-}
-
-function pause() {
-  if (speechSynthesis.speaking) {
-    speechSynthesis.pause();
-  }
-}
-
-function stop() {
-  speechSynthesis.cancel();
-  currentSentenceIndex = 0;
-  highlightSentence(-1);
-}
-
-function toggleLoop() {
-  isLooping = !isLooping;
-  alert("Looping is now " + (isLooping ? "enabled" : "disabled"));
-}
-
-function translateText() {
-  alert("🌍 Translation feature coming soon.");
-}
-
-function navigate(tab) {
-  alert(`📌 Navigation to "${tab}" not implemented yet.`);
 }
