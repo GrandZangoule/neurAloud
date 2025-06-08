@@ -31,8 +31,13 @@ function loadFile(event) {
       const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
       const container = document.getElementById("text-display");
       container.innerHTML = "";
+
+      let fullText = "";
+
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
+
+        // Render visually
         const viewport = page.getViewport({ scale: 1.5 });
         const canvas = document.createElement("canvas");
         canvas.width = viewport.width;
@@ -40,9 +45,15 @@ function loadFile(event) {
         const context = canvas.getContext("2d");
         await page.render({ canvasContext: context, viewport }).promise;
         container.appendChild(canvas);
+
+        // Extract text for TTS
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(" ");
+        fullText += pageText + " ";
       }
-      localStorage.removeItem("lastText");
-      sentences = [];
+
+      localStorage.setItem("lastText", fullText.trim());
+      displayText(fullText.trim());
     };
     fileReader.readAsArrayBuffer(file);
   } else if (ext === "docx") {
@@ -61,13 +72,18 @@ function displayText(text) {
   const html = sentences.map((s, i) =>
     `<span class="sentence" onclick="jumpTo(${i})">${s}</span>`
   ).join(" ");
-  document.getElementById("text-display").innerHTML = html;
+  document.getElementById("text-display").innerHTML += html;
 }
 
 function highlightSentence(index) {
   document.querySelectorAll(".sentence").forEach((el, i) => {
     el.classList.toggle("highlight", i === index);
-    if (i === index) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (i === index) {
+      const container = document.getElementById("text-display");
+      const topOffset = el.offsetTop - container.offsetTop;
+      const scrollTarget = topOffset - container.clientHeight * 0.2;
+      container.scrollTo({ top: scrollTarget, behavior: "smooth" });
+    }
   });
 }
 
