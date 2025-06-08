@@ -5,22 +5,45 @@ let isLooping = false;
 
 window.addEventListener("DOMContentLoaded", () => {
   const lastText = localStorage.getItem("lastText");
-  if (lastText) {
-    displayText(lastText);
+  const lastType = localStorage.getItem("lastFileType");
+  const lastPitch = localStorage.getItem("lastPitch");
+  const lastRate = localStorage.getItem("lastRate");
+  const lastIndex = parseInt(localStorage.getItem("lastSentenceIndex") || "0", 10);
+  const autoResume = localStorage.getItem("autoResume") === "true";
+
+  if (lastPitch) {
+    document.getElementById("pitch").value = lastPitch;
+    document.getElementById("pitchVal").textContent = parseFloat(lastPitch).toFixed(2);
   }
+
+  if (lastRate) {
+    document.getElementById("rate").value = lastRate;
+    document.getElementById("rateVal").textContent = parseFloat(lastRate).toFixed(2);
+  }
+
+  document.getElementById("auto-resume-toggle").checked = autoResume;
+
+  if (lastText && lastType === "text") {
+    displayText(lastText);
+    currentSentenceIndex = lastIndex;
+    if (autoResume) play();
+  }
+
+  loadVoices();
 });
 
 function loadFile(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
   const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
 
   if (ext === "txt") {
     reader.onload = () => {
       const text = reader.result;
       localStorage.setItem("lastText", text);
+      localStorage.setItem("lastFileType", "text");
       displayText(text);
     };
     reader.readAsText(file);
@@ -36,8 +59,6 @@ function loadFile(event) {
 
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-
-        // Render visually
         const viewport = page.getViewport({ scale: 1.5 });
         const canvas = document.createElement("canvas");
         canvas.width = viewport.width;
@@ -46,14 +67,13 @@ function loadFile(event) {
         await page.render({ canvasContext: context, viewport }).promise;
         container.appendChild(canvas);
 
-        // Extract text for TTS
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(" ");
-        fullText += pageText + " ";
+        const content = await page.getTextContent();
+        fullText += content.items.map(item => item.str).join(" ") + " ";
       }
 
       localStorage.setItem("lastText", fullText.trim());
-      displayText(fullText.trim());
+      localStorage.setItem("lastFileType", "text");
+      sentences = fullText.trim().split(/(?<=\\.|!|\\?)\\s/);
     };
     fileReader.readAsArrayBuffer(file);
   } else if (ext === "docx") {
@@ -63,19 +83,20 @@ function loadFile(event) {
     localStorage.removeItem("lastText");
     sentences = [];
   } else {
-    alert("Unsupported file format for now.");
+    alert("Unsupported file format.");
   }
 }
 
 function displayText(text) {
-  sentences = text.split(/(?<=\.|!|\?)\s/);
+  sentences = text.split(/(?<=\\.|!|\\?)\\s/);
   const html = sentences.map((s, i) =>
     `<span class="sentence" onclick="jumpTo(${i})">${s}</span>`
   ).join(" ");
-  document.getElementById("text-display").innerHTML += html;
+  document.getElementById("text-display").innerHTML = html;
 }
 
 function highlightSentence(index) {
+  localStorage.setItem("lastSentenceIndex", index);
   document.querySelectorAll(".sentence").forEach((el, i) => {
     el.classList.toggle("highlight", i === index);
     if (i === index) {
@@ -105,6 +126,10 @@ function speakSentence(index) {
   utterance = new SpeechSynthesisUtterance(sentence);
   utterance.rate = parseFloat(document.getElementById("rate").value);
   utterance.pitch = parseFloat(document.getElementById("pitch").value);
+
+  const selectedVoice = document.getElementById("voice-select").value;
+  const voice = speechSynthesis.getVoices().find(v => v.name === selectedVoice);
+  if (voice) utterance.voice = voice;
 
   utterance.onend = () => {
     currentSentenceIndex++;
@@ -137,13 +162,38 @@ function toggleLoop() {
 
 function changeTTSEngine() {
   const engine = document.getElementById("tts-engine").value;
-  alert("Selected TTS engine: " + engine + " (Only default supported for now)");
+  alert("Selected TTS engine: " + engine);
 }
 
-function navigate(tab) {
-  alert(`🔧 Navigation to "${tab}" is not yet wired. Coming soon.`);
+function toggleAutoResume() {
+  const checked = document.getElementById("auto-resume-toggle").checked;
+  localStorage.setItem("autoResume", checked);
 }
 
 function translateText() {
-  alert("🌍 Translation feature is coming soon!");
+  alert("🌍 Translation feature coming soon!");
+}
+
+function navigate(tab) {
+  alert(`🔧 Navigation to "${tab}" is not yet implemented.`);
+}
+
+function loadVoices() {
+  const voiceSelect = document.getElementById("voice-select");
+  voiceSelect.innerHTML = "";
+  const voices = speechSynthesis.getVoices();
+  voices.forEach((voice) => {
+    const option = document.createElement("option");
+    option.value = voice.name;
+    option.textContent = voice.name + " (" + voice.lang + ")";
+    voiceSelect.appendChild(option);
+  });
+}
+
+speechSynthesis.onvoiceschanged = loadVoices;
+
+function resetZoom() {
+  const display = document.getElementById("text-display");
+  display.style.transform = "scale(1)";
+  display.scrollTo({ top: 0, behavior: "smooth" });
 }
