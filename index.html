@@ -32,26 +32,46 @@
   </header>
 
   <main>
-    <!-- HOME SECTION -->
+    <!-- HOME -->
     <section id="home" class="active-section">
       <div class="text-box">
         <h2>Welcome to NeurAloud</h2>
-        <p><strong>NeurAloud</strong> is your intelligent, all-in-one document reader powered by cutting-edge text-to-speech engines. Whether you're multitasking, visually impaired, studying, or simply prefer listening, NeurAloud turns documents into dynamic, high-quality audio — in your browser.</p>
-        <ul>
-          <li>🎧 Read aloud from PDF, DOCX, TXT, EPUB (and more)</li>
-          <li>🧠 Smart sentence-by-sentence highlighting</li>
-          <li>🗂 Save up to 100 files in your personal Library</li>
-          <li>🎵 Queue up to 10 items in your Playlist for continuous listening</li>
-          <li>🗣 Choose from free male/female/AI voices + engines</li>
-          <li>⚙️ Control pitch, rate, loop, and auto-resume behavior</li>
-          <li>📱 Optimized for mobile and desktop with zoom/reset support</li>
-          <li>🕒 Enjoy 1 or more hours of free listening time every day</li>
-        </ul>
-        <p>Start by visiting the <b>Listen</b> tab to upload your files. All preferences will be saved automatically.</p>
+        <div>
+          <h3>📘 What is NeurAloud?</h3>
+          <p>NeurAloud is your intelligent TTS companion. It turns documents into speech so you can learn, work, or relax while listening.</p>
+        </div>
+        <div>
+          <h3>🧠 Features</h3>
+          <ul>
+            <li>PDF, DOCX, TXT, EPUB support</li>
+            <li>Save up to 100 files in your Library</li>
+            <li>Create 10-item Playlists</li>
+            <li>Granular rate & pitch</li>
+            <li>Auto resume & sentence highlighting</li>
+          </ul>
+        </div>
+        <div>
+          <h3>🎧 How to Use</h3>
+          <ol>
+            <li>Click <b>Listen</b> to upload a file</li>
+            <li>Choose TTS engine + voice</li>
+            <li>Click ▶️ to start reading</li>
+            <li>Optionally save file to Library or Playlist</li>
+          </ol>
+        </div>
+        <div>
+          <h3>🎁 Why Use NeurAloud?</h3>
+          <ul>
+            <li>Access documents while driving or walking</li>
+            <li>Visually impaired? Let NeurAloud help</li>
+            <li>Multitask while listening</li>
+            <li>Enjoy 1 or more hours of free usage per day</li>
+          </ul>
+        </div>
       </div>
     </section>
 
-    <!-- LISTEN SECTION -->
+    <!-- LISTEN -->
     <section id="listen" style="display:none;">
       <div class="controls">
         <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.epub" onchange="loadFile(event)" />
@@ -63,6 +83,7 @@
           <option value="festival">Festival</option>
           <option value="custom">Custom Engine</option>
         </select>
+        <hr style="width: 100%; border-top: 1px solid #ccc;" />
         <select id="voice-select"></select>
         <button onclick="play()">▶️ Play</button>
         <button onclick="pause()">⏸️ Pause</button>
@@ -91,33 +112,39 @@
       <button onclick="saveCurrentFile()">💾 Save to Library</button>
     </section>
 
-    <!-- LIBRARY SECTION -->
+    <!-- LIBRARY -->
     <section id="library" style="display:none;">
       <div class="library-section">
         <h3>Library (Saved Files)</h3>
         <div id="library-list"></div>
       </div>
-    </section>
 
-    <!-- PLAYLIST SECTION -->
-    <section id="playlist" style="display:none;">
       <div class="playlist-section">
         <h3>Playlist (Up to 10)</h3>
         <div id="playlist-list"></div>
-        <button onclick="playPlaylist()">Play Playlist</button>
+        <button onclick="playPlaylist()">▶️ Play Playlist</button>
       </div>
     </section>
 
-    <!-- PROFILE SECTION -->
-    <section id="profile" style="display:none;">
-      <h3>Profile Settings</h3>
-      <p>Your preferences are saved automatically and synced across sessions:</p>
+    <!-- STORE -->
+    <section id="store" style="display:none;">
+      <h3>Coming Soon: Premium Features</h3>
       <ul>
-        <li>Selected Voice</li>
-        <li>Engine</li>
-        <li>Rate, Pitch</li>
-        <li>Auto-resume toggle</li>
-        <li>Last read position</li>
+        <li>Download voice packs</li>
+        <li>High-quality offline TTS</li>
+        <li>Priority support</li>
+        <li>Unlimited playlist hours</li>
+      </ul>
+    </section>
+
+    <!-- PROFILE -->
+    <section id="profile" style="display:none;">
+      <h3>Your Preferences</h3>
+      <ul>
+        <li><b>Rate & Pitch</b> persist across sessions</li>
+        <li><b>Voice & Engine</b> auto-reloaded</li>
+        <li><b>Last sentence</b> auto-resumed if enabled</li>
+        <li><b>Saved files</b> available from Library</li>
       </ul>
     </section>
   </main>
@@ -128,10 +155,9 @@
 
   <script src="script.js"></script>
   <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js").then(() =>
-        console.log("Service Worker registered")
-      );
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log("Service Worker registered"));
     }
   </script>
 </body>
