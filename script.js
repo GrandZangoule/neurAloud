@@ -1,5 +1,3 @@
-// Part 1 of 3 already shared earlier — now pasting FULL merged script.js
-
 let utterance;
 let currentSentenceIndex = 0;
 let sentences = [];
@@ -45,6 +43,7 @@ document.getElementById("rate").oninput = (e) => {
   document.getElementById("rateVal").textContent = val;
   localStorage.setItem("rate", val);
 };
+
 document.getElementById("pitch").oninput = (e) => {
   const val = parseFloat(e.target.value).toFixed(2);
   document.getElementById("pitchVal").textContent = val;
@@ -173,5 +172,89 @@ function toggleLoop() { isLooping = !isLooping; alert("Loop: " + isLooping); }
 function resetZoom() { const box = document.getElementById("text-display"); box.style.transform = "scale(1)"; box.scrollTo({ top: 0 }); }
 function translateText() { alert("Translation coming soon."); }
 
-// Save/load logic remains same as pasted earlier (indexedDB + playlist)
-// Let me know if you want that re-pasted too
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("neurAloudDB", 1);
+    request.onerror = () => reject("Failed to open IndexedDB");
+    request.onsuccess = () => {
+      db = request.result;
+      resolve();
+    };
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      db.createObjectStore("files", { keyPath: "name" });
+      db.createObjectStore("playlist", { keyPath: "name" });
+    };
+  });
+}
+
+function saveCurrentFile() {
+  if (!sentences.length) return;
+  const defaultName = currentFilename || "untitled.txt";
+  const name = prompt("Save as:", defaultName);
+  if (!name) return;
+  const content = localStorage.getItem("lastText") || "";
+  const tx = db.transaction("files", "readwrite").objectStore("files");
+  tx.put({ name, content }).onsuccess = loadLibrary;
+}
+
+function loadLibrary() {
+  const tx = db.transaction("files", "readonly").objectStore("files");
+  tx.getAll().onsuccess = (e) => {
+    const container = document.getElementById("library-list");
+    container.innerHTML = "";
+    e.target.result.forEach(file => {
+      const div = document.createElement("div");
+      div.className = "library-item";
+      div.draggable = true;
+      div.textContent = file.name;
+      div.ondragstart = (e) => e.dataTransfer.setData("fileName", file.name);
+      const btn = document.createElement("button");
+      btn.textContent = "➕ Playlist";
+      btn.onclick = () => addToPlaylist(file);
+      div.appendChild(btn);
+      container.appendChild(div);
+    });
+  };
+}
+
+function addToPlaylist(file) {
+  const tx = db.transaction("playlist", "readwrite").objectStore("playlist");
+  tx.put(file).onsuccess = loadPlaylist;
+}
+
+function loadPlaylist() {
+  const tx = db.transaction("playlist", "readonly").objectStore("playlist");
+  tx.getAll().onsuccess = (e) => {
+    const container = document.getElementById("playlist-list");
+    container.innerHTML = "";
+    e.target.result.forEach(file => {
+      const div = document.createElement("div");
+      div.className = "playlist-item";
+      div.draggable = true;
+      div.textContent = file.name;
+      div.ondragstart = (e) => e.dataTransfer.setData("playlistName", file.name);
+      container.appendChild(div);
+    });
+  };
+}
+
+function playPlaylist() {
+  const tx = db.transaction("playlist", "readonly").objectStore("playlist");
+  tx.getAll().onsuccess = async (e) => {
+    for (const file of e.target.result) {
+      localStorage.setItem("lastText", file.content);
+      displayText(file.content);
+      await new Promise(resolve => {
+        let i = 0;
+        const playSentence = () => {
+          if (i >= sentences.length) return resolve();
+          const u = new SpeechSynthesisUtterance(sentences[i]);
+          u.onend = () => { i++; playSentence(); };
+          speechSynthesis.speak(u);
+        };
+        playSentence();
+      });
+    }
+  };
+}
