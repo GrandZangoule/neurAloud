@@ -1,86 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NeurAloud</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
-  <style>
-    .logo-title {
-      font-size: 2em;
-      display: inline-block;
-      vertical-align: middle;
-    }
-    .slider-value {
-      margin-left: 10px;
-      font-weight: bold;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <svg width="40" height="40" viewBox="0 0 100 100" style="vertical-align: middle; margin-right: 10px;">
-      <defs>
-        <linearGradient id="purpleBlue" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#a020f0" />
-          <stop offset="100%" stop-color="#0000ff" />
-        </linearGradient>
-      </defs>
-      <rect x="0" y="0" width="100" height="100" rx="20" ry="20" fill="url(#purpleBlue)" />
-      <text x="50" y="60" text-anchor="middle" font-size="40" fill="white" font-family="Arial">NA</text>
-    </svg>
-    <span class="logo-title">NeurAloud</span>
-    <nav>
-      <button onclick="navigate('home')">Home</button>
-      <button onclick="navigate('library')">Library</button>
-      <button onclick="navigate('upload')">Upload</button>
-      <button onclick="navigate('store')">Store</button>
-      <button onclick="navigate('profile')">Profile</button>
-    </nav>
-  </header>
-
-  <main>
-    <div class="controls">
-      <input type="file" id="fileInput" accept=".txt,.pdf,.epub,.text,.md,.doc,.docx,.pptx,.rtf,.csv,.wps,.msg,.sql,.png,.jpeg,.jpg,.webp,.tmp,.jif,.tif,.bmp,.eps,.parquet" onchange="loadFile(event)" />
-      <select id="tts-engine" onchange="changeTTSEngine()">
-        <option value="default">Default TTS</option>
-        <option value="google">Google TTS</option>
-        <option value="microsoft">Microsoft Azure</option>
-        <option value="amazon">Amazon Polly</option>
-        <option value="ibm">IBM Watson</option>
-        <option value="responsivevoice">ResponsiveVoice</option>
-        <option value="espeak">eSpeak</option>
-        <option value="festival">Festival</option>
-        <option value="mozilla">Mozilla TTS</option>
-        <option value="custom">Custom Engine</option>
-      </select>
-      <button onclick="play()">▶️ Play</button>
-      <button onclick="pause()">⏸️ Pause</button>
-      <button onclick="stop()">⏹️ Stop</button>
-      <button onclick="toggleLoop()">🔁 Loop</button>
-    </div>
-
-    <div class="sliders">
-      <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1" oninput="document.getElementById('rateVal').innerText = this.value"><span id="rateVal" class="slider-value">1</span></label>
-      <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.1" value="1" oninput="document.getElementById('pitchVal').innerText = this.value"><span id="pitchVal" class="slider-value">1</span></label>
-    </div>
-
-    <div id="text-display" class="text-box" style="max-height: 70vh; overflow-y: auto;"></div>
-  </main>
-
-  <footer>
-    <button onclick="translateText()">🌐 Translate</button>
-  </footer>
-
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h2>📚 NeurAloud</h2>
+      <button onclick="navigate('home')">🏠 Home</button>
+      <button onclick="navigate('library')">📁 Library</button>
+      <button onclick="navigate('upload')">📤 Upload</button>
+      <button onclick="navigate('store')">🛒 Store</button>
+      <button onclick="navigate('profile')">👤 Profile</button>
+    </aside>
+
+    <main class="main">
+      <section id="home" class="view-section">
+        <h1>Welcome to NeurAloud</h1>
+        <p>The AI-powered reading assistant. Upload a file and hit ▶️ Play.</p>
+      </section>
+
+      <section id="upload" class="view-section">
+        <label for="file-input" class="file-label">📂 Choose File</label>
+        <input type="file" id="file-input" accept=".txt,.pdf,.docx" />
+        <span id="file-name"></span>
+      </section>
+
+      <section id="controls">
+        <label for="tts-engine">TTS Engine:</label>
+        <select id="tts-engine">
+          <option>Default</option>
+          <option>Google TTS</option>
+          <option>Azure</option>
+          <option>Amazon Polly</option>
+          <option>Speechify</option>
+          <option>ResponsiveVoice</option>
+          <option>iSpeech</option>
+          <option>IBM Watson</option>
+          <option>Voxygen</option>
+          <option>NeuralTalk</option>
+        </select>
+
+        <label>Rate:
+          <input type="range" id="rate-slider" min="0.5" max="2" step="0.1">
+          <span id="rate-value"></span>
+        </label>
+
+        <label>Pitch:
+          <input type="range" id="pitch-slider" min="0" max="2" step="0.1">
+          <span id="pitch-value"></span>
+        </label>
+
+        <button onclick="play()">▶️ Play</button>
+        <button onclick="pause()">⏸️ Pause</button>
+        <button onclick="stop()">⏹️ Stop</button>
+      </section>
+
+      <section id="display-area">
+        <div id="text-display">Upload a document to begin reading.</div>
+      </section>
+
+      <section id="library" class="view-section">
+        <h2>Your Library</h2>
+        <ul id="library-list"></ul>
+      </section>
+
+      <section id="profile" class="view-section">
+        <h2>Profile</h2>
+        <p>Theme, stats, and voice preferences coming soon.</p>
+      </section>
+
+      <section id="store" class="view-section">
+        <h2>Store</h2>
+        <p>Upgrade to premium or buy credits (coming soon).</p>
+      </section>
+    </main>
+  </div>
+
   <script src="script.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./service-worker.js')
-        .then(() => console.log("Service Worker registered"));
-    }
-  </script>
 </body>
 </html>
