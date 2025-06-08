@@ -1,130 +1,162 @@
-let utterance;
-let currentSentenceIndex = 0;
-let sentences = [];
-let isLooping = false;
+let currentText = "";
+let currentFile = null;
+let utterance = null;
+let synth = window.speechSynthesis;
 
-window.addEventListener("DOMContentLoaded", () => {
-  const lastText = localStorage.getItem("lastText");
-  if (lastText) {
-    displayText(lastText);
-  }
-});
+const fileInput = document.getElementById("file-input");
+const textDisplay = document.getElementById("text-display");
+const fileNameDisplay = document.getElementById("file-name");
+const libraryList = document.getElementById("library-list");
 
-function loadFile(event) {
+fileInput.addEventListener("change", handleFile);
+
+function handleFile(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  const ext = file.name.split('.').pop().toLowerCase();
+  const ext = file.name.split(".").pop().toLowerCase();
+  fileNameDisplay.textContent = file.name;
+  currentFile = file;
 
-  if (ext === "txt") {
-    reader.onload = () => {
-      const text = reader.result;
-      localStorage.setItem("lastText", text);
-      displayText(text);
-    };
-    reader.readAsText(file);
-  } else if (ext === "pdf") {
-    const fileReader = new FileReader();
-    fileReader.onload = async () => {
-      const typedarray = new Uint8Array(fileReader.result);
-      const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
-      let text = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(" ") + "\n";
-      }
-      localStorage.setItem("lastText", text);
-      displayText(text);
-    };
-    fileReader.readAsArrayBuffer(file);
-  } else if (ext === "docx") {
-    reader.onload = async () => {
-      const arrayBuffer = reader.result;
-      const result = await mammoth.convertToText({ arrayBuffer });
-      const text = result.value;
-      localStorage.setItem("lastText", text);
-      displayText(text);
-    };
-    reader.readAsArrayBuffer(file);
-  } else {
-    alert("Unsupported file format for now.");
+  if (ext === "pdf") readPDF(file);
+  else if (ext === "docx") readDOCX(file);
+  else if (ext === "txt") readTXT(file);
+  else {
+    textDisplay.innerHTML = "Unsupported file format.";
   }
+
+  saveToLibrary(file.name);
 }
 
-function displayText(text) {
-  sentences = text.split(/(?<=\.|\!|\?)\s/);
-  const html = sentences.map((s, i) =>
-    `<span class="sentence" onclick="jumpTo(${i})">${s}</span>`
-  ).join(" ");
-  document.getElementById("text-display").innerHTML = html;
+function readTXT(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    currentText = reader.result;
+    textDisplay.textContent = currentText;
+  };
+  reader.readAsText(file);
 }
 
-function highlightSentence(index) {
-  document.querySelectorAll(".sentence").forEach((el, i) => {
-    el.classList.toggle("highlight", i === index);
-    if (i === index) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
+function readDOCX(file) {
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    mammoth.convertToHtml({ arrayBuffer: event.target.result }).then((result) => {
+      currentText = result.value.replace(/<[^>]+>/g, "");
+      textDisplay.innerHTML = result.value;
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function readPDF(file) {
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const pdf = await pdfjsLib.getDocument({ data: reader.result }).promise;
+    let fullText = "";
+    textDisplay.innerHTML = "";
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 1.5 });
+
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      await page.render({ canvasContext: context, viewport }).promise;
+      textDisplay.appendChild(canvas);
+
+      const textContent = await page.getTextContent();
+      fullText += textContent.items.map(item => item.str).join(" ") + " ";
+    }
+
+    currentText = fullText;
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 function play() {
-  if (!sentences.length) return alert("Please load a document first.");
-  if (utterance && speechSynthesis.paused) return speechSynthesis.resume();
-  speakSentence(currentSentenceIndex);
+  if (!currentText) return;
+
+  stop();
+  utterance = new SpeechSynthesisUtterance(currentText);
+
+  utterance.rate = parseFloat(localStorage.getItem("neurAloudRate") || "1");
+  utterance.pitch = parseFloat(localStorage.getItem("neurAloudPitch") || "1");
+
+  const selectedEngine = document.getElementById("tts-engine").value;
+  applyTTS(selectedEngine, utterance);
 }
 
-function speakSentence(index) {
-  if (index >= sentences.length) {
-    if (isLooping) currentSentenceIndex = 0;
-    else return stop();
+function applyTTS(engine, utterance) {
+  switch (engine.toLowerCase()) {
+    case "default":
+      synth.speak(utterance);
+      break;
+    default:
+      alert(`${engine} support will be added in premium version. Default voice used.`);
+      synth.speak(utterance);
   }
-
-  const sentence = sentences[currentSentenceIndex];
-  highlightSentence(currentSentenceIndex);
-
-  utterance = new SpeechSynthesisUtterance(sentence);
-  utterance.rate = parseFloat(document.getElementById("rate").value);
-  utterance.pitch = parseFloat(document.getElementById("pitch").value);
-
-  utterance.onend = () => {
-    currentSentenceIndex++;
-    speakSentence(currentSentenceIndex);
-  };
-
-  speechSynthesis.speak(utterance);
 }
 
 function pause() {
-  if (speechSynthesis.speaking) speechSynthesis.pause();
+  if (synth.speaking && !synth.paused) synth.pause();
 }
 
 function stop() {
-  speechSynthesis.cancel();
-  currentSentenceIndex = 0;
-  highlightSentence(-1);
+  if (synth.speaking) synth.cancel();
 }
 
-function jumpTo(index) {
-  stop();
-  currentSentenceIndex = index;
-  play();
+document.getElementById("rate-slider").oninput = (e) => {
+  const value = e.target.value;
+  document.getElementById("rate-value").textContent = value;
+  localStorage.setItem("neurAloudRate", value);
+};
+
+document.getElementById("pitch-slider").oninput = (e) => {
+  const value = e.target.value;
+  document.getElementById("pitch-value").textContent = value;
+  localStorage.setItem("neurAloudPitch", value);
+};
+
+function loadSettings() {
+  const savedRate = localStorage.getItem("neurAloudRate") || "1";
+  const savedPitch = localStorage.getItem("neurAloudPitch") || "1";
+
+  document.getElementById("rate-slider").value = savedRate;
+  document.getElementById("rate-value").textContent = savedRate;
+
+  document.getElementById("pitch-slider").value = savedPitch;
+  document.getElementById("pitch-value").textContent = savedPitch;
 }
 
-function toggleLoop() {
-  isLooping = !isLooping;
-  alert("Loop is now " + (isLooping ? "enabled" : "disabled"));
+function navigate(section) {
+  document.querySelectorAll(".view-section").forEach(el => el.style.display = "none");
+  const active = document.getElementById(section);
+  if (active) active.style.display = "block";
+
+  if (section === "library") showLibrary();
 }
 
-function changeTTSEngine() {
-  const engine = document.getElementById("tts-engine").value;
-  alert("Selected TTS engine: " + engine + " (Only default supported for now)");
+function saveToLibrary(filename) {
+  let files = JSON.parse(localStorage.getItem("neurAloudLibrary") || "[]");
+  if (!files.includes(filename)) {
+    if (files.length >= 100) files.shift();
+    files.push(filename);
+    localStorage.setItem("neurAloudLibrary", JSON.stringify(files));
+  }
 }
 
-function navigate(tab) {
-  alert(`🔧 Navigation to "${tab}" is not yet wired. Coming soon.`);
+function showLibrary() {
+  let files = JSON.parse(localStorage.getItem("neurAloudLibrary") || "[]");
+  libraryList.innerHTML = "";
+  files.reverse().forEach(file => {
+    const li = document.createElement("li");
+    li.textContent = file;
+    libraryList.appendChild(li);
+  });
 }
 
-function translateText() {
-  alert("🌍 Translation feature is coming soon!");
-}
+navigate("home");
+loadSettings();
