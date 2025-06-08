@@ -1,16 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NeurAloud</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
   <style>
     .logo-title {
       font-size: 2em;
       display: inline-block;
       vertical-align: middle;
+    }
+    .slider-value {
+      margin-left: 10px;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -38,8 +42,19 @@
 
   <main>
     <div class="controls">
-      <input type="file" id="fileInput" accept=".txt,.pdf,.epub,.text,.md,.doc,.docx,.pptx,.rtf,.csv,.wps,.msg,.sql,.png,.jpeg,.jpg,.webp,.tmp,.jif,.tif,.bmp,.eps,.parquet"
-             onchange="loadFile(event)" />
+      <input type="file" id="fileInput" accept=".txt,.pdf,.epub,.text,.md,.doc,.docx,.pptx,.rtf,.csv,.wps,.msg,.sql,.png,.jpeg,.jpg,.webp,.tmp,.jif,.tif,.bmp,.eps,.parquet" onchange="loadFile(event)" />
+      <select id="tts-engine" onchange="changeTTSEngine()">
+        <option value="default">Default TTS</option>
+        <option value="google">Google TTS</option>
+        <option value="microsoft">Microsoft Azure</option>
+        <option value="amazon">Amazon Polly</option>
+        <option value="ibm">IBM Watson</option>
+        <option value="responsivevoice">ResponsiveVoice</option>
+        <option value="espeak">eSpeak</option>
+        <option value="festival">Festival</option>
+        <option value="mozilla">Mozilla TTS</option>
+        <option value="custom">Custom Engine</option>
+      </select>
       <button onclick="play()">▶️ Play</button>
       <button onclick="pause()">⏸️ Pause</button>
       <button onclick="stop()">⏹️ Stop</button>
@@ -47,25 +62,24 @@
     </div>
 
     <div class="sliders">
-      <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1" /></label>
-      <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.1" value="1" /></label>
+      <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1" oninput="document.getElementById('rateVal').innerText = this.value"><span id="rateVal" class="slider-value">1</span></label>
+      <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.1" value="1" oninput="document.getElementById('pitchVal').innerText = this.value"><span id="pitchVal" class="slider-value">1</span></label>
     </div>
 
-    <div id="text-display" class="text-box"></div>
+    <div id="text-display" class="text-box" style="max-height: 70vh; overflow-y: auto;"></div>
   </main>
 
   <footer>
     <button onclick="translateText()">🌐 Translate</button>
   </footer>
 
-  <!-- Dependencies for PDF and DOCX reading -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
   <script src="script.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./service-worker.js')
-        .then(() => console.log("✅ Service Worker registered"));
+        .then(() => console.log("Service Worker registered"));
     }
   </script>
 </body>
