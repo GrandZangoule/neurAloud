@@ -15,19 +15,23 @@ header {
 
 .logo-title {
   font-size: 1.8em;
+  display: block;
 }
 
 nav {
-  margin-top: 0.5rem;
   display: flex;
   justify-content: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
+  flex-shrink: 0;
+  flex-grow: 0;
+  overflow-x: auto;
+  padding: 0.5rem;
 }
 
 nav button {
-  margin: 4px;
-  padding: 8px 14px;
+  white-space: nowrap;
+  padding: 6px 14px;
   background-color: white;
   border: none;
   border-radius: 5px;
@@ -39,7 +43,6 @@ nav button:hover {
   background-color: #eee;
 }
 
-/* ✅ CONTAIN ALL PAGE SECTIONS WITHIN A CENTERED BOX */
 main {
   max-width: 960px;
   margin: 0 auto;
@@ -154,7 +157,21 @@ footer {
   margin-top: 2rem;
 }
 
+/* Profile page horizontal divider */
+.profile-divider {
+  height: 2px;
+  border: none;
+  background: linear-gradient(to right, transparent, #888 50%, transparent);
+  margin: 20px 0;
+}
+
 @media (max-width: 768px) {
+  nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
   .controls,
   .sliders {
     flex-direction: column;
@@ -168,9 +185,5 @@ footer {
   .listen-library,
   .capture-library {
     width: 100%;
-  }
-
-  nav {
-    flex-direction: column;
   }
 }
