@@ -2,101 +2,78 @@ let utterance;
 let currentSentenceIndex = 0;
 let sentences = [];
 let isLooping = false;
-let activeTab = localStorage.getItem("activeTab") || "home";
-let pdfDoc = null, currentFile = null, canvas = null, ctx = null;
-let extractedText = "";
-let voices = [];
-let captureChunks = [];
-let captureText = "";
+let currentFile = null;
 
-// Initialization
-window.addEventListener("DOMContentLoaded", () => {
-  showTab(activeTab);
-  canvas = document.getElementById("pdf-canvas");
-  ctx = canvas.getContext("2d");
-
-  loadSettings();
-  populateTTSEngines();
-  populateVoices();
-
-  const storedFile = localStorage.getItem("loadedFile");
-  if (storedFile) {
-    currentFile = JSON.parse(storedFile);
-    if (currentFile.type === "pdf") loadPDF(currentFile.buffer);
-    else displayText(currentFile.text);
-  }
+document.addEventListener("DOMContentLoaded", () => {
+  loadPreferences();
+  navigate(localStorage.getItem("lastSection") || "home");
+  const savedText = localStorage.getItem("lastText");
+  if (savedText) displayText(savedText);
 });
-
-function showTab(tab) {
-  document.querySelectorAll("section").forEach(s => s.classList.remove("active-section"));
-  document.getElementById(tab).classList.add("active-section");
-  localStorage.setItem("activeTab", tab);
-}
-
-function navigate(tab) {
-  showTab(tab);
-}
 
 function loadFile(event) {
   const file = event.target.files[0];
   if (!file) return;
-  currentFile = { name: file.name };
 
-  const reader = new FileReader();
+  currentFile = file;
+  localStorage.setItem("lastFilename", file.name);
   const ext = file.name.split('.').pop().toLowerCase();
 
+  const reader = new FileReader();
   if (ext === "pdf") {
     reader.onload = () => {
-      const arrayBuffer = reader.result;
-      currentFile.type = "pdf";
-      currentFile.buffer = arrayBuffer;
-      localStorage.setItem("loadedFile", JSON.stringify(currentFile));
-      loadPDF(arrayBuffer);
+      const typedarray = new Uint8Array(reader.result);
+      pdfjsLib.getDocument({ data: typedarray }).promise.then(pdf => {
+        localStorage.setItem("pdfPages", pdf.numPages);
+        pdf.getPage(1).then(page => {
+          const scale = 1.5;
+          const viewport = page.getViewport({ scale });
+          const canvas = document.createElement("canvas");
+          canvas.id = "pdf-canvas";
+          const context = canvas.getContext("2d");
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          page.render({ canvasContext: context, viewport });
+          document.getElementById("text-display").innerHTML = "";
+          document.getElementById("text-display").appendChild(canvas);
+        });
+
+        let text = "";
+        const loadAllPages = async () => {
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map(item => item.str).join(" ") + "\n";
+          }
+          localStorage.setItem("lastText", text);
+          sentences = text.split(/(?<=[.?!])\s+/);
+        };
+        loadAllPages();
+      });
     };
     reader.readAsArrayBuffer(file);
-  } else {
+  } else if (ext === "txt") {
     reader.onload = () => {
       const text = reader.result;
-      currentFile.type = "text";
-      currentFile.text = text;
-      localStorage.setItem("loadedFile", JSON.stringify(currentFile));
+      localStorage.setItem("lastText", text);
       displayText(text);
     };
     reader.readAsText(file);
+  } else {
+    alert("Unsupported file type.");
   }
-}
-
-async function loadPDF(buffer) {
-  const loadingTask = pdfjsLib.getDocument({ data: buffer });
-  pdfDoc = await loadingTask.promise;
-  const page = await pdfDoc.getPage(1);
-
-  const viewport = page.getViewport({ scale: 1.5 });
-  canvas.height = viewport.height;
-  canvas.width = viewport.width;
-
-  const renderContext = {
-    canvasContext: ctx,
-    viewport: viewport
-  };
-
-  await page.render(renderContext).promise;
-
-  const content = await page.getTextContent();
-  extractedText = content.items.map(item => item.str).join(" ");
-  sentences = extractedText.split(/(?<=[.?!])\s+/);
 }
 
 function displayText(text) {
   sentences = text.split(/(?<=[.?!])\s+/);
-  const html = sentences.map((s, i) =>
-    `<span class="sentence" onclick="jumpTo(${i})">${s}</span>`
-  ).join(" ");
-  document.getElementById("text-display").innerHTML = html;
+  const html = sentences.map((s, i) => `<span class="sentence" data-index="${i}">${s}</span>`).join(" ");
+  const container = document.getElementById("text-display");
+  container.innerHTML = html;
 }
 
 function highlightSentence(index) {
-  document.querySelectorAll(".sentence").forEach((el, i) => {
+  const all = document.querySelectorAll(".sentence");
+  all.forEach((el, i) => {
     el.classList.toggle("highlight", i === index);
     if (i === index) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -105,18 +82,15 @@ function highlightSentence(index) {
 }
 
 function play() {
-  if (!sentences.length) return alert("Please load a document.");
-  const rate = parseFloat(document.getElementById("rate").value);
-  const pitch = parseFloat(document.getElementById("pitch").value);
-
+  if (!sentences.length) return alert("Please load a file.");
   if (utterance && speechSynthesis.paused) {
     speechSynthesis.resume();
     return;
   }
-  speakSentence(currentSentenceIndex, rate, pitch);
+  speakSentence(currentSentenceIndex);
 }
 
-function speakSentence(index, rate, pitch) {
+function speakSentence(index) {
   if (index >= sentences.length) {
     if (isLooping) {
       currentSentenceIndex = 0;
@@ -126,15 +100,16 @@ function speakSentence(index, rate, pitch) {
     }
   }
 
-  highlightSentence(index);
-  utterance = new SpeechSynthesisUtterance(sentences[index]);
-  utterance.rate = rate;
-  utterance.pitch = pitch;
-  utterance.voice = speechSynthesis.getVoices().find(v => v.name === document.getElementById("voice-select").value);
+  const sentence = sentences[currentSentenceIndex];
+  highlightSentence(currentSentenceIndex);
+
+  utterance = new SpeechSynthesisUtterance(sentence);
+  utterance.rate = parseFloat(document.getElementById("rate").value);
+  utterance.pitch = parseFloat(document.getElementById("pitch").value);
 
   utterance.onend = () => {
     currentSentenceIndex++;
-    speakSentence(currentSentenceIndex, rate, pitch);
+    speakSentence(currentSentenceIndex);
   };
 
   speechSynthesis.speak(utterance);
@@ -150,103 +125,68 @@ function stop() {
   highlightSentence(-1);
 }
 
-function jumpTo(index) {
-  stop();
-  currentSentenceIndex = index;
-  play();
-}
-
 function toggleLoop() {
   isLooping = !isLooping;
-  alert("Loop is now " + (isLooping ? "enabled" : "disabled"));
+  alert("Looping is now " + (isLooping ? "enabled" : "disabled"));
 }
 
-function saveToLibrary(tab) {
-  const name = prompt("Save file as:", currentFile?.name || "Untitled");
+function translateText() {
+  alert("🌍 Translation is coming soon!");
+}
+
+function navigate(section) {
+  document.querySelectorAll("section").forEach(s => s.classList.remove("active-section"));
+  const active = document.getElementById(section);
+  if (active) active.classList.add("active-section");
+  localStorage.setItem("lastSection", section);
+}
+
+function saveToLibrary(context) {
+  const name = prompt("Save file as:", localStorage.getItem("lastFilename") || "unnamed.txt");
   if (!name) return;
-  const key = tab === "capture" ? "capture-library" : "listen-library";
-  let library = JSON.parse(localStorage.getItem(key) || "[]");
-  if (library.length >= 100) library.shift();
-  library.push({ name, content: tab === "capture" ? captureText : extractedText });
-  localStorage.setItem(key, JSON.stringify(library));
-  alert("Saved to library.");
+  const libKey = context === "capture" ? "captureLibrary" : "listenLibrary";
+  const data = JSON.parse(localStorage.getItem(libKey) || "[]");
+  const entry = { name, text: localStorage.getItem("lastText") || "" };
+  data.unshift(entry);
+  localStorage.setItem(libKey, JSON.stringify(data.slice(0, 100)));
+  alert("Saved to Library.");
 }
-
-function loadSettings() {
-  document.getElementById("rate").value = localStorage.getItem("rate") || "1";
-  document.getElementById("pitch").value = localStorage.getItem("pitch") || "1";
-  document.getElementById("rateVal").innerText = document.getElementById("rate").value;
-  document.getElementById("pitchVal").innerText = document.getElementById("pitch").value;
-}
-
-document.getElementById("rate").oninput = (e) => {
-  localStorage.setItem("rate", e.target.value);
-  document.getElementById("rateVal").innerText = e.target.value;
-};
-
-document.getElementById("pitch").oninput = (e) => {
-  localStorage.setItem("pitch", e.target.value);
-  document.getElementById("pitchVal").innerText = e.target.value;
-};
 
 function changeTTSEngine(context) {
-  const engine = document.getElementById(context === "listen" ? "tts-engine" : "capture-tts-engine").value;
-  localStorage.setItem(`${context}-engine`, engine);
-  populateVoices();
+  const engine = document.getElementById(context === "capture" ? "capture-tts-engine" : "tts-engine").value;
+  localStorage.setItem(context + "Engine", engine);
+  updateVoiceList(context);
 }
 
 function changeVoice(context) {
-  const voice = document.getElementById(context === "listen" ? "voice-select" : "capture-voice-select").value;
-  localStorage.setItem(`${context}-voice`, voice);
+  const voice = document.getElementById(context === "capture" ? "capture-voice-select" : "voice-select").value;
+  localStorage.setItem(context + "Voice", voice);
 }
 
-function populateTTSEngines() {
-  const engines = ["Google", "IBM", "ResponsiveVoice"];
-  const listen = document.getElementById("tts-engine");
-  const capture = document.getElementById("capture-tts-engine");
-  engines.forEach(engine => {
-    listen.innerHTML += `<option value="${engine}">${engine}</option>`;
-    capture.innerHTML += `<option value="${engine}">${engine}</option>`;
+function loadPreferences() {
+  ["tts-engine", "capture-tts-engine"].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = `
+      <option value="google">Google TTS</option>
+      <option value="ibm">IBM Watson</option>
+      <option value="responsivevoice">ResponsiveVoice</option>
+    `;
+    const engine = localStorage.getItem(id.replace("-", ""));
+    if (engine) sel.value = engine;
   });
+
+  document.getElementById("rate").value = localStorage.getItem("rate") || 1;
+  document.getElementById("pitch").value = localStorage.getItem("pitch") || 1;
+  document.getElementById("rateVal").textContent = document.getElementById("rate").value;
+  document.getElementById("pitchVal").textContent = document.getElementById("pitch").value;
 }
 
-function populateVoices() {
-  voices = speechSynthesis.getVoices();
-  const list = voices.map(v => `<option value="${v.name}">${v.name} (${v.lang})</option>`).join('');
-  document.getElementById("voice-select").innerHTML = `<option disabled>──────────────</option>${list}`;
-  document.getElementById("capture-voice-select").innerHTML = `<option disabled>──────────────</option>${list}`;
-}
+document.getElementById("rate").oninput = function () {
+  document.getElementById("rateVal").textContent = this.value;
+  localStorage.setItem("rate", this.value);
+};
 
-speechSynthesis.onvoiceschanged = populateVoices;
-
-function translateText() {
-  alert("🌍 Translate coming soon.");
-}
-
-// Capture
-function startCapture() {
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-    const recorder = new MediaRecorder(stream);
-    captureChunks = [];
-    recorder.ondataavailable = e => captureChunks.push(e.data);
-    recorder.onstop = () => {
-      const blob = new Blob(captureChunks, { type: 'audio/wav' });
-      const reader = new FileReader();
-      reader.onload = () => {
-        captureText = "[captured text placeholder from audio]"; // Replace with STT logic
-        document.getElementById("capture-display").innerText = captureText;
-      };
-      reader.readAsText(blob);
-    };
-    recorder.start();
-    setTimeout(() => recorder.stop(), 5000); // Record for 5 seconds
-  });
-}
-
-function playCaptured() {
-  if (!captureText) return;
-  const utter = new SpeechSynthesisUtterance(captureText);
-  utter.rate = parseFloat(document.getElementById("capture-rate").value);
-  utter.pitch = parseFloat(document.getElementById("capture-pitch").value);
-  speechSynthesis.speak(utter);
-}
+document.getElementById("pitch").oninput = function () {
+  document.getElementById("pitchVal").textContent = this.value;
+  localStorage.setItem("pitch", this.value);
+};
