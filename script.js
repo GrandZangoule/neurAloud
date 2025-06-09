@@ -4,21 +4,26 @@ let sentences = [];
 let isLooping = false;
 let db;
 let currentFilename = "";
+let loadedCanvas = [];
 
 window.addEventListener("DOMContentLoaded", async () => {
-  restoreState();
   await initDB();
+  restoreState();
   loadVoices();
   loadLibrary();
   loadPlaylist();
 
   const lastText = localStorage.getItem("lastText");
   currentFilename = localStorage.getItem("lastFilename") || "";
+
   if (lastText) {
     displayText(lastText);
     currentSentenceIndex = parseInt(localStorage.getItem("lastIndex") || "0");
     if (document.getElementById("auto-resume-toggle")?.checked) play();
   }
+
+  const fileWasPDF = localStorage.getItem("lastFileType") === "pdf";
+  if (fileWasPDF) renderPersistedPDF();
 });
 
 function restoreState() {
@@ -26,9 +31,10 @@ function restoreState() {
   navigate(section);
   document.getElementById("rate").value = localStorage.getItem("rate") || "1.00";
   document.getElementById("pitch").value = localStorage.getItem("pitch") || "1.00";
-  document.getElementById("rateVal").textContent = parseFloat(document.getElementById("rate").value).toFixed(2);
-  document.getElementById("pitchVal").textContent = parseFloat(document.getElementById("pitch").value).toFixed(2);
+  document.getElementById("rateVal").textContent = document.getElementById("rate").value;
+  document.getElementById("pitchVal").textContent = document.getElementById("pitch").value;
   document.getElementById("tts-engine").value = localStorage.getItem("engine") || "default";
+  document.getElementById("voice-select").value = localStorage.getItem("voice") || "";
   document.getElementById("auto-resume-toggle").checked = localStorage.getItem("autoResume") === "true";
 }
 
@@ -69,22 +75,17 @@ function loadVoices() {
   select.innerHTML = "";
   const voices = speechSynthesis.getVoices();
 
-  const languages = {};
+  const langMap = {};
   voices.forEach(voice => {
-    const lang = voice.lang || "Unknown";
-    if (!languages[lang]) languages[lang] = [];
-    languages[lang].push(voice);
+    const lang = voice.lang;
+    if (!langMap[lang]) langMap[lang] = [];
+    langMap[lang].push(voice);
   });
 
-  const commonLangs = ["en", "es", "pt", "la", "fr", "de"];
-  const sorted = Object.keys(languages).sort((a, b) => {
-    const aRank = commonLangs.findIndex(prefix => a.startsWith(prefix));
-    const bRank = commonLangs.findIndex(prefix => b.startsWith(prefix));
-    return (aRank === -1 ? 99 : aRank) - (bRank === -1 ? 99 : bRank);
-  });
+  const sortedLangs = Object.keys(langMap).sort();
 
-  sorted.forEach(lang => {
-    languages[lang].slice(0, 3).forEach(voice => {
+  sortedLangs.forEach(lang => {
+    langMap[lang].forEach(voice => {
       const opt = document.createElement("option");
       opt.value = voice.name;
       opt.textContent = `${voice.name} (${voice.lang})`;
@@ -100,9 +101,13 @@ speechSynthesis.onvoiceschanged = loadVoices;
 function loadFile(event) {
   const file = event.target.files[0];
   if (!file) return;
+
+  clearPDFCanvas();
+
   const ext = file.name.split(".").pop().toLowerCase();
   currentFilename = file.name;
   localStorage.setItem("lastFilename", currentFilename);
+
   const reader = new FileReader();
   const container = document.getElementById("text-display");
   container.innerHTML = "";
@@ -112,6 +117,7 @@ function loadFile(event) {
       const typedarray = new Uint8Array(reader.result);
       const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
       let fullText = "";
+      let pages = [];
 
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
@@ -124,19 +130,51 @@ function loadFile(event) {
         canvas.style.height = "auto";
         await page.render({ canvasContext: context, viewport }).promise;
         container.appendChild(canvas);
+        loadedCanvas.push(canvas);
 
         const content = await page.getTextContent();
-        fullText += content.items.map(item => item.str).join(" ") + " ";
+        const textPage = content.items.map(item => item.str).join(" ");
+        fullText += textPage + " ";
+        pages.push(canvas.toDataURL("image/png"));
       }
+
       localStorage.setItem("lastText", fullText.trim());
+      localStorage.setItem("lastFileType", "pdf");
+      localStorage.setItem("pdfPages", JSON.stringify(pages));
       displayText(fullText.trim());
     };
     reader.readAsArrayBuffer(file);
   }
 }
 
+function renderPersistedPDF() {
+  const pages = JSON.parse(localStorage.getItem("pdfPages") || "[]");
+  const container = document.getElementById("text-display");
+  container.innerHTML = "";
+  pages.forEach(dataUrl => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.style.width = "100%";
+      ctx.drawImage(img, 0, 0);
+    };
+    img.src = dataUrl;
+    container.appendChild(canvas);
+    loadedCanvas.push(canvas);
+  });
+}
+
+function clearPDFCanvas() {
+  loadedCanvas.forEach(canvas => canvas.remove());
+  loadedCanvas = [];
+  document.getElementById("text-display").innerHTML = "";
+}
+
 function displayText(text) {
-  sentences = text.split(/(?<=\\.|\!|\?)\\s/);
+  sentences = text.split(/(?<=[.?!])\s+/);
 }
 
 function play() {
@@ -150,6 +188,7 @@ function speakSentence(index) {
     if (isLooping) currentSentenceIndex = 0;
     else return stop();
   }
+
   const sentence = sentences[currentSentenceIndex];
   localStorage.setItem("lastIndex", currentSentenceIndex);
   utterance = new SpeechSynthesisUtterance(sentence);
@@ -158,10 +197,12 @@ function speakSentence(index) {
   const selected = document.getElementById("voice-select").value;
   const voice = speechSynthesis.getVoices().find(v => v.name === selected);
   if (voice) utterance.voice = voice;
+
   utterance.onend = () => {
     currentSentenceIndex++;
     speakSentence(currentSentenceIndex);
   };
+
   speechSynthesis.speak(utterance);
 }
 
@@ -176,10 +217,10 @@ function resetZoom() {
 }
 function translateText() { alert("Translation coming soon."); }
 
-function initDB() {
+async function initDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open("neurAloudDB", 1);
-    request.onerror = () => reject("Failed to open IndexedDB");
+    request.onerror = () => reject("IndexedDB failed");
     request.onsuccess = () => {
       db = request.result;
       resolve();
@@ -194,12 +235,10 @@ function initDB() {
 
 function saveCurrentFile() {
   if (!sentences.length) return;
-  const defaultName = currentFilename || "untitled.txt";
-  const name = prompt("Save as:", defaultName);
+  const name = prompt("Save as:", currentFilename || "untitled.txt");
   if (!name) return;
   const content = localStorage.getItem("lastText") || "";
-  const tx = db.transaction("files", "readwrite").objectStore("files");
-  tx.put({ name, content }).onsuccess = loadLibrary;
+  db.transaction("files", "readwrite").objectStore("files").put({ name, content }).onsuccess = loadLibrary;
 }
 
 function loadLibrary() {
@@ -210,11 +249,9 @@ function loadLibrary() {
     e.target.result.forEach(file => {
       const div = document.createElement("div");
       div.className = "library-item";
-      div.draggable = true;
       div.textContent = file.name;
-      div.ondragstart = (e) => e.dataTransfer.setData("fileName", file.name);
       const btn = document.createElement("button");
-      btn.textContent = "➕ Playlist";
+      btn.textContent = "➕";
       btn.onclick = () => addToPlaylist(file);
       div.appendChild(btn);
       container.appendChild(div);
@@ -223,8 +260,7 @@ function loadLibrary() {
 }
 
 function addToPlaylist(file) {
-  const tx = db.transaction("playlist", "readwrite").objectStore("playlist");
-  tx.put(file).onsuccess = loadPlaylist;
+  db.transaction("playlist", "readwrite").objectStore("playlist").put(file).onsuccess = loadPlaylist;
 }
 
 function loadPlaylist() {
@@ -235,9 +271,7 @@ function loadPlaylist() {
     e.target.result.forEach(file => {
       const div = document.createElement("div");
       div.className = "playlist-item";
-      div.draggable = true;
       div.textContent = file.name;
-      div.ondragstart = (e) => e.dataTransfer.setData("playlistName", file.name);
       container.appendChild(div);
     });
   };
@@ -249,15 +283,17 @@ function playPlaylist() {
     for (const file of e.target.result) {
       localStorage.setItem("lastText", file.content);
       displayText(file.content);
+      currentSentenceIndex = 0;
       await new Promise(resolve => {
-        let i = 0;
-        const playSentence = () => {
-          if (i >= sentences.length) return resolve();
-          const u = new SpeechSynthesisUtterance(sentences[i]);
-          u.onend = () => { i++; playSentence(); };
+        const step = () => {
+          if (currentSentenceIndex >= sentences.length) return resolve();
+          const u = new SpeechSynthesisUtterance(sentences[currentSentenceIndex]);
+          u.rate = parseFloat(document.getElementById("rate").value);
+          u.pitch = parseFloat(document.getElementById("pitch").value);
+          u.onend = () => { currentSentenceIndex++; step(); };
           speechSynthesis.speak(u);
         };
-        playSentence();
+        step();
       });
     }
   };
