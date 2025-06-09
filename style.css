@@ -72,6 +72,15 @@ section {
   resize: vertical;
 }
 
+canvas#pdf-canvas {
+  display: block;
+  margin: 1rem auto;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
 .slider-value {
   font-weight: bold;
   margin-left: 6px;
@@ -118,6 +127,7 @@ section {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: grab;
 }
 
 .library-list div:hover {
