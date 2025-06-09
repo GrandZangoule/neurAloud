@@ -9,20 +9,20 @@ window.addEventListener("DOMContentLoaded", async () => {
   await initDB();
   loadSettings();
   restoreLastFile();
-  loadTTSEngines('listen');
-  loadTTSEngines('capture');
+  loadTTSEngines("listen");
+  loadTTSEngines("capture");
   restoreSection();
 });
 
 function initDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("neurAloudDB", 1);
-    request.onerror = () => reject("DB failed");
-    request.onsuccess = () => {
-      db = request.result;
+    const req = indexedDB.open("neurAloudDB", 1);
+    req.onerror = () => reject("DB failed");
+    req.onsuccess = () => {
+      db = req.result;
       resolve();
     };
-    request.onupgradeneeded = (e) => {
+    req.onupgradeneeded = e => {
       db = e.target.result;
       db.createObjectStore("files", { keyPath: "id", autoIncrement: true });
       db.createObjectStore("settings", { keyPath: "key" });
@@ -33,16 +33,20 @@ function initDB() {
 function saveToLibrary(type) {
   const name = prompt("Save as filename:", localStorage.getItem("lastFileName") || "untitled");
   if (!name) return;
-  const content = type === 'listen' ? localStorage.getItem("lastText") : capturedText;
-  const list = document.getElementById(type === 'listen' ? "listen-library-list" : "capture-library-list");
+  const content = type === "listen" ? localStorage.getItem("lastText") : capturedText;
+  const list = document.getElementById(type === "listen" ? "listen-library-list" : "capture-library-list");
   const item = document.createElement("div");
   item.className = "library-item";
   item.textContent = name;
   item.draggable = true;
-  item.ondragstart = (e) => e.dataTransfer.setData("text/plain", JSON.stringify({ name, content }));
+  item.ondragstart = e => e.dataTransfer.setData("text/plain", JSON.stringify({ name, content }));
   const del = document.createElement("button");
   del.textContent = "−";
-  del.onclick = () => list.removeChild(item);
+  del.onclick = () => {
+    if (confirm("Are you sure you want to remove this item?")) {
+      list.removeChild(item);
+    }
+  };
   item.appendChild(del);
   list.appendChild(item);
 }
@@ -50,29 +54,43 @@ function saveToLibrary(type) {
 function loadFile(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
   localStorage.setItem("lastFileName", file.name);
 
-  if (file.type === "application/pdf") {
+  const reader = new FileReader();
+  const ext = file.name.split(".").pop().toLowerCase();
+
+  if (ext === "pdf") {
     reader.onload = async () => {
       const typedArray = new Uint8Array(reader.result);
       const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
       let text = "";
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      document.getElementById("text-display").innerHTML = "";
+
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.5 });
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
         canvas.height = viewport.height;
         canvas.width = viewport.width;
         await page.render({ canvasContext: ctx, viewport }).promise;
-        document.getElementById("text-display").appendChild(canvas.cloneNode(true));
+        container.appendChild(canvas);
         const content = await page.getTextContent();
         text += content.items.map(item => item.str).join(" ") + "\n";
       }
+
       localStorage.setItem("lastText", text);
       sentences = text.split(/(?<=[.?!])\s+/);
+    };
+    reader.readAsArrayBuffer(file);
+  } else if (ext === "docx") {
+    reader.onload = async () => {
+      const result = await mammoth.convertToText({ arrayBuffer: reader.result });
+      const text = result.value;
+      localStorage.setItem("lastText", text);
+      sentences = text.split(/(?<=[.?!])\s+/);
+      displayText(sentences);
     };
     reader.readAsArrayBuffer(file);
   } else {
@@ -149,15 +167,15 @@ function toggleLoop() {
 }
 
 function translateText() {
-  alert("🌍 Translation feature is coming soon!");
+  alert("🌍 Translation coming soon!");
 }
 
 function startCapture() {
   const recognition = new webkitSpeechRecognition();
   recognition.lang = document.getElementById("capture-lang-in").value;
   recognition.continuous = true;
-  recognition.onresult = (event) => {
-    capturedText = Array.from(event.results).map(r => r[0].transcript).join(" ");
+  recognition.onresult = (e) => {
+    capturedText = Array.from(e.results).map(r => r[0].transcript).join(" ");
     document.getElementById("capture-display").innerText = capturedText;
   };
   recognition.start();
@@ -184,6 +202,7 @@ function changeVoice(section) {
 function loadTTSEngines(section) {
   const engines = ["default", "google", "ibm", "responsivevoice"];
   const select = document.getElementById(section === "listen" ? "tts-engine" : "capture-tts-engine");
+  select.innerHTML = "";
   engines.forEach(engine => {
     const opt = document.createElement("option");
     opt.value = engine;
