@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -35,20 +34,18 @@
     <section id="home" class="active-section">
       <div class="text-box">
         <h2>Welcome to NeurAloud</h2>
-        <div><h3>📘 What is NeurAloud?</h3><p>NeurAloud is an advanced document reader that turns PDFs, DOCX, and text into speech, with full highlighting and voice customization.</p></div>
-        <div><h3>🧠 Features</h3><ul><li>PDF, DOCX, TXT, EPUB support</li><li>100-file Library + 10-file Playlist</li><li>Auto-resume, sentence highlighting</li><li>1+ hours free reading daily</li></ul></div>
-        <div><h3>🎧 Usage</h3><ol><li>Upload a file</li><li>Select engine + voice</li><li>Click ▶️ to listen</li><li>Save to Library/Playlist</li></ol></div>
-        <div><h3>🕒 Benefits</h3><ul><li>Multitask while listening</li><li>Visually impaired friendly</li><li>Supports 100+ voices and languages</li></ul></div>
+        <div><h3>📘 What is NeurAloud?</h3><p>AI-powered multilingual reading app supporting PDF, DOCX, EPUB, and text files.</p></div>
+        <div><h3>🧠 Features</h3><ul><li>PDF highlight and reading overlay</li><li>Library and Playlist with drag-drop</li><li>1 hour free TTS daily</li></ul></div>
+        <div><h3>🎧 Supported Voices</h3><ul><li>100+ free voices across languages</li><li>Custom pitch, rate, loop & auto-resume</li></ul></div>
+        <div><h3>📲 Platform</h3><ul><li>Responsive Web + PWA support</li><li>Offline mode via Service Worker</li></ul></div>
       </div>
     </section>
 
     <section id="listen" style="display:none;">
       <div class="controls">
         <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.epub" onchange="loadFile(event)" />
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <select id="tts-engine" onchange="changeTTSEngine()"></select>
-          <select id="voice-select"></select>
-        </div>
+        <select id="tts-engine" onchange="changeTTSEngine()"></select>
+        <select id="voice-select"></select>
       </div>
 
       <div class="controls">
@@ -56,23 +53,13 @@
         <button onclick="pause()">⏸️ Pause</button>
         <button onclick="stop()">⏹️ Stop</button>
         <button onclick="toggleLoop()">🔁 Loop</button>
-        <label style="margin-left: 10px;">
-          <input type="checkbox" id="auto-resume-toggle" onchange="toggleAutoResume()" /> Auto Resume
-        </label>
+        <label><input type="checkbox" id="auto-resume-toggle" onchange="toggleAutoResume()" /> Auto Resume</label>
       </div>
 
       <div class="sliders">
-        <button onclick="saveCurrentFile()" id="saveBtn">📂 Save to Library</button>
-        <label>
-          Rate:
-          <input type="range" id="rate" min="0.5" max="2" step="0.01" value="1" />
-          <span id="rateVal">1.00</span>
-        </label>
-        <label>
-          Pitch:
-          <input type="range" id="pitch" min="0" max="2" step="0.01" value="1" />
-          <span id="pitchVal">1.00</span>
-        </label>
+        <button onclick="saveCurrentFile()" id="saveBtn">💾 Save to Library</button>
+        <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.01" value="1" /> <span id="rateVal">1.00</span></label>
+        <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.01" value="1" /> <span id="pitchVal">1.00</span></label>
       </div>
 
       <div id="text-display" class="text-box" ondblclick="resetZoom()"></div>
@@ -92,15 +79,15 @@
 
     <section id="store" style="display:none;">
       <h3>Coming Soon</h3>
-      <p>Premium voices, advanced controls, usage analytics, and offline support</p>
+      <p>Premium features, extra voices, translation packages, and analytics.</p>
     </section>
 
     <section id="profile" style="display:none;">
       <h3>Settings</h3>
       <ul>
-        <li>🎹 Last voice and engine remembered</li>
-        <li>🛠 Rate & pitch saved</li>
-        <li>📂 Last file + position saved</li>
+        <li>🗂 Resume previous file and reading position</li>
+        <li>🎚 Saved rate, pitch, engine, and voice</li>
+        <li>📅 Auto resume toggle and preferences</li>
       </ul>
     </section>
   </main>
@@ -112,9 +99,8 @@
   <script src="script.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js").then(() =>
-        console.log("Service Worker registered")
-      );
+      navigator.serviceWorker.register("service-worker.js")
+        .then(() => console.log("✅ Service Worker Registered"));
     }
   </script>
 </body>
