@@ -39,7 +39,10 @@ nav button:hover {
   background-color: #eee;
 }
 
+/* ✅ CONTAIN ALL PAGE SECTIONS WITHIN A CENTERED BOX */
 main {
+  max-width: 960px;
+  margin: 0 auto;
   padding: 1rem;
 }
 
@@ -51,7 +54,8 @@ section {
   display: block;
 }
 
-.controls, .sliders {
+.controls,
+.sliders {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -93,7 +97,8 @@ canvas#pdf-canvas {
   align-items: flex-start;
 }
 
-.listen-library, .capture-library {
+.listen-library,
+.capture-library {
   flex-grow: 1;
   padding: 10px;
 }
@@ -150,7 +155,8 @@ footer {
 }
 
 @media (max-width: 768px) {
-  .controls, .sliders {
+  .controls,
+  .sliders {
     flex-direction: column;
     align-items: stretch;
   }
@@ -159,7 +165,8 @@ footer {
     flex-direction: column;
   }
 
-  .listen-library, .capture-library {
+  .listen-library,
+  .capture-library {
     width: 100%;
   }
 
