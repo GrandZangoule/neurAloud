@@ -95,6 +95,7 @@ function loadFile(event) {
   if (ext === "pdf") {
     reader.onload = async () => {
       const typedArray = new Uint8Array(reader.result);
+      localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
       const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
       const container = document.getElementById("text-display");
       container.innerHTML = "";
@@ -115,40 +116,48 @@ function loadFile(event) {
 
       localStorage.setItem("lastText", text);
       localStorage.setItem("lastFileType", "pdf");
-      localStorage.setItem("lastPDFData", reader.result);
-      sentences = text.split(/(?<=[.?!])\s+/);
-    };
-    reader.readAsArrayBuffer(file);
-  } else if (ext === "docx") {
-    reader.onload = async () => {
-      const result = await mammoth.convertToText({ arrayBuffer: reader.result });
-      const text = result.value;
-      localStorage.setItem("lastText", text);
       sentences = text.split(/(?<=[.?!])\s+/);
       displayText(sentences);
     };
     reader.readAsArrayBuffer(file);
-  } else {
-    reader.onload = () => {
-      const text = reader.result;
-      localStorage.setItem("lastText", text);
-      sentences = text.split(/(?<=[.?!])\s+/);
-      displayText(sentences);
-    };
-    reader.readAsText(file);
+  }
+}
+
+function restoreLastFile() {
+  const type = localStorage.getItem("lastFileType");
+  if (type === "pdf" && localStorage.getItem("lastPDFData")) {
+    const data = new Uint8Array(JSON.parse(localStorage.getItem("lastPDFData")));
+    pdfjsLib.getDocument({ data }).promise.then(async (pdf) => {
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        container.appendChild(canvas);
+      }
+    });
+  }
+
+  const last = localStorage.getItem("lastText");
+  if (last) {
+    sentences = last.split(/(?<=[.?!])\s+/);
+    displayText(sentences);
   }
 }
 
 function displayText(sentencesArr) {
   const html = sentencesArr.map((s, i) => `<span class="sentence" data-index="${i}">${s}</span>`).join(" ");
-  document.getElementById("text-display").innerHTML = html;
+  document.getElementById("text-display").innerHTML += html;
 }
 
 function highlightSentence(index) {
   const el = document.querySelector(`.sentence[data-index="${index}"]`);
-  if (el) {
-    el.scrollIntoView({ block: "center", behavior: "smooth" });
-  }
+  if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
   document.querySelectorAll(".sentence").forEach((el, i) =>
     el.classList.toggle("highlight", i === index)
   );
@@ -172,13 +181,26 @@ function speakSentence(index) {
   utterance = new SpeechSynthesisUtterance(sentence);
   utterance.rate = parseFloat(document.getElementById("rate").value);
   utterance.pitch = parseFloat(document.getElementById("pitch").value);
-
   utterance.onend = () => {
     currentSentenceIndex++;
     speakSentence(currentSentenceIndex);
   };
 
   speechSynthesis.speak(utterance);
+}
+
+function stop() {
+  speechSynthesis.cancel();
+  currentSentenceIndex = 0;
+  highlightSentence(-1);
+}
+function pause() {
+  if (speechSynthesis.speaking) speechSynthesis.pause();
+}
+
+function toggleLoop() {
+  isLooping = !isLooping;
+  alert("Loop is now " + (isLooping ? "enabled" : "disabled"));
 }
 
 function playCaptured() {
@@ -188,21 +210,6 @@ function playCaptured() {
   tts.rate = parseFloat(document.getElementById("capture-rate").value);
   tts.pitch = parseFloat(document.getElementById("capture-pitch").value);
   speechSynthesis.speak(tts);
-}
-
-function pause() {
-  if (speechSynthesis.speaking) speechSynthesis.pause();
-}
-
-function stop() {
-  speechSynthesis.cancel();
-  currentSentenceIndex = 0;
-  highlightSentence(-1);
-}
-
-function toggleLoop() {
-  isLooping = !isLooping;
-  alert("Loop is now " + (isLooping ? "enabled" : "disabled"));
 }
 
 function translateText() {
@@ -268,32 +275,45 @@ function loadSettings() {
   document.getElementById("capture-pitch").value = localStorage.getItem("capture-pitch") || 1;
 }
 
-function restoreLastFile() {
-  const last = localStorage.getItem("lastText");
-  const type = localStorage.getItem("lastFileType");
-  if (type === "pdf" && localStorage.getItem("lastPDFData")) {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const typedArray = new Uint8Array(reader.result);
-      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
-      const container = document.getElementById("text-display");
-      container.innerHTML = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.2 });
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        container.appendChild(canvas);
-      }
+// Handle drag from Listen Library to Playlist
+document.addEventListener("DOMContentLoaded", () => {
+  const playlist = document.getElementById("playlist");
+  playlist.ondragover = (e) => e.preventDefault();
+  playlist.ondrop = (e) => {
+    e.preventDefault();
+    const { name, content } = JSON.parse(e.dataTransfer.getData("text/plain"));
+    const item = document.createElement("div");
+    item.className = "playlist-item";
+    item.textContent = name;
+    item.onclick = () => {
+      localStorage.setItem("lastText", content);
+      sentences = content.split(/(?<=[.?!])\s+/);
+      displayText(sentences);
     };
-    const base64 = localStorage.getItem("lastPDFData");
-    reader.readAsArrayBuffer(new Blob([new Uint8Array(base64.split(",").map(c => c.charCodeAt(0)))]));
-  }
-  if (last) {
-    sentences = last.split(/(?<=[.?!])\s+/);
+    const removeBtn = document.createElement("button");
+    removeBtn.textContent = "−";
+    removeBtn.onclick = () => playlist.removeChild(item);
+    item.appendChild(removeBtn);
+    playlist.appendChild(item);
+  };
+});
+
+// Add Load to Playlist button functionality
+function loadToPlaylist() {
+  const text = localStorage.getItem("lastText");
+  const name = prompt("Name for playlist item:", localStorage.getItem("lastFileName") || "untitled");
+  if (!text || !name) return;
+  const playlist = document.getElementById("playlist");
+  const item = document.createElement("div");
+  item.className = "playlist-item";
+  item.textContent = name;
+  item.onclick = () => {
+    sentences = text.split(/(?<=[.?!])\s+/);
     displayText(sentences);
-  }
+  };
+  const removeBtn = document.createElement("button");
+  removeBtn.textContent = "−";
+  removeBtn.onclick = () => playlist.removeChild(item);
+  item.appendChild(removeBtn);
+  playlist.appendChild(item);
 }
