@@ -84,17 +84,9 @@ function restoreLibraryItems(type) {
   });
 }
 
-function loadFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  localStorage.setItem("lastFileName", file.name);
-  const reader = new FileReader();
-  const ext = file.name.split(".").pop().toLowerCase();
-
-  if (ext === "pdf") {
+ if (ext === "pdf") {
     reader.onload = async () => {
       const typedArray = new Uint8Array(reader.result);
-      localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
       const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
       const container = document.getElementById("text-display");
       container.innerHTML = "";
@@ -114,11 +106,26 @@ function loadFile(event) {
       }
 
       localStorage.setItem("lastText", text);
-      localStorage.setItem("lastFileType", "pdf");
+      sentences = text.split(/(?<=[.?!])\s+/);
+    };
+    reader.readAsArrayBuffer(file);
+  } else if (ext === "docx") {
+    reader.onload = async () => {
+      const result = await mammoth.convertToText({ arrayBuffer: reader.result });
+      const text = result.value;
+      localStorage.setItem("lastText", text);
       sentences = text.split(/(?<=[.?!])\s+/);
       displayText(sentences);
     };
     reader.readAsArrayBuffer(file);
+  } else {
+    reader.onload = () => {
+      const text = reader.result;
+      localStorage.setItem("lastText", text);
+      sentences = text.split(/(?<=[.?!])\s+/);
+      displayText(sentences);
+    };
+    reader.readAsText(file);
   }
 }
 
