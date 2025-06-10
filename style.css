@@ -197,9 +197,11 @@ footer {
     align-items: stretch;
   }
 
-  nav button, .controls button, .sliders input, .sliders label {
-    font-size: 0.8rem;
+  .controls button, .sliders input, .sliders label {
+    font-size: 14px;
     padding: 6px 10px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .quad-container {
