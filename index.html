@@ -51,17 +51,17 @@
         <select id="voice-select" onchange="changeVoice('listen')"></select>
       </div>
       <div class="controls">
-        <button class="control-btn" onclick="play()">▶️ Play</button>
-        <button class="control-btn" onclick="pause()">⏸️ Pause</button>
-        <button class="control-btn" onclick="stop()">⏹️ Stop</button>
-        <button class="control-btn" onclick="toggleLoop()">🔁 Loop</button>
-        <button class="control-btn" onclick="translateText()">🌐 Translate</button>
-        <button class="control-btn" onclick="playPlaylist()">📂 Play Playlist</button>
+        <button onclick="play()">▶️ Play</button>
+        <button onclick="pause()">⏸️ Pause</button>
+        <button onclick="stop()">⏹️ Stop</button>
+        <button onclick="toggleLoop()">🔁 Loop</button>
+        <button onclick="translateText()">🌐 Translate</button>
+        <button onclick="playPlaylist()">📂 Play Playlist</button>
       </div>
       <div class="sliders">
         <button onclick="saveToLibrary('listen')">💾 Save to Library</button>
-        <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.01" /><span id="rateVal">1</span></label>
-        <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.01" /><span id="pitchVal">1</span></label>
+        <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.01" oninput="document.getElementById('rateVal').innerText = this.value"/><span id="rateVal">1</span></label>
+        <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.01" oninput="document.getElementById('pitchVal').innerText = this.value"/><span id="pitchVal">1</span></label>
       </div>
       <div id="text-display" class="text-box"></div>
     </section>
@@ -74,16 +74,16 @@
         <select id="capture-lang-out"><option value="en-US">Read Out: English</option></select>
       </div>
       <div class="controls">
-        <button class="control-btn" onclick="startCapture()">🎧 Start Capture</button>
-        <button class="control-btn" onclick="playCaptured()">▶️ Play</button>
-        <button class="control-btn" onclick="stop()">⏹️ Stop</button>
-        <button class="control-btn" onclick="toggleLoop()">🔁 Loop</button>
-        <button class="control-btn" onclick="translateText()">🌐 Translate</button>
+        <button onclick="startCapture()">🎧 Start Capture</button>
+        <button onclick="playCaptured()">▶️ Play</button>
+        <button onclick="stop()">⏹️ Stop</button>
+        <button onclick="toggleLoop()">🔁 Loop</button>
+        <button onclick="translateText()">🌐 Translate</button>
       </div>
       <div class="sliders">
         <button onclick="saveToLibrary('capture')">💾 Save to Library</button>
-        <label>Rate: <input type="range" id="capture-rate" min="0.5" max="2" step="0.01" /><span id="captureRateVal">1</span></label>
-        <label>Pitch: <input type="range" id="capture-pitch" min="0" max="2" step="0.01" /><span id="capturePitchVal">1</span></label>
+        <label>Rate: <input type="range" id="capture-rate" min="0.5" max="2" step="0.01" oninput="document.getElementById('captureRateVal').innerText = this.value"/><span id="captureRateVal">1</span></label>
+        <label>Pitch: <input type="range" id="capture-pitch" min="0" max="2" step="0.01" oninput="document.getElementById('capturePitchVal').innerText = this.value"/><span id="capturePitchVal">1</span></label>
       </div>
       <div id="capture-display" class="text-box"></div>
     </section>
@@ -92,8 +92,7 @@
       <div class="library-split">
         <div class="listen-library">
           <h3>Playlist (max 10)</h3>
-          <div id="playlist" class="library-list" ondrop="dropToPlaylist(event)" ondragover="event.preventDefault()"></div>
-          <button onclick="loadSelectedToPlaylist()">➕ Load to Playlist</button>
+          <div id="playlist" class="library-list"></div>
           <h3>Saved Listen Files</h3>
           <div id="listen-library-list" class="library-list"></div>
         </div>
