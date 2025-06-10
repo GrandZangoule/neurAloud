@@ -134,19 +134,21 @@ function restoreLastFile() {
   const name = localStorage.getItem("lastPDFFileName");
 
   if (type === "pdf" && name) {
-    alert('📦 Found stored PDF. Attempting to load...');
     getPDFBufferFromDB(name).then(async (buffer) => {
-      if (!buffer || buffer.length === 0) {
-        alert("❌ No valid PDF buffer found. Skipping restore.");
+      if (!buffer || buffer.byteLength === 0) {
+        alert("❌ No valid PDF buffer found in IndexedDB. Skipping restore.");
         return;
       }
 
+      alert('📦 Valid PDF buffer found. Loading...');
       try {
         const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
         const container = document.getElementById("text-display");
         container.innerHTML = "";
+        let pagesRendered = 0;
+
         for (let i = 1; i <= pdf.numPages; i++) {
-          alert(`🖼️ Rendering stored PDF page ${i}...`);
+          alert(`🖼️ Rendering page ${i}...`);
           const page = await pdf.getPage(i);
           const viewport = page.getViewport({ scale: 1.2 });
           const canvas = document.createElement("canvas");
@@ -158,7 +160,14 @@ function restoreLastFile() {
           canvas.height = viewport.height;
           await page.render({ canvasContext: ctx, viewport }).promise;
           container.appendChild(canvas);
+          pagesRendered++;
         }
+
+        if (pagesRendered === 0) {
+          alert("⚠️ No pages rendered. Skipping restore.");
+          return;
+        }
+
         const last = localStorage.getItem("lastText");
         if (last) {
           sentences = last.split(/(?<=[.?!])\s+/);
@@ -166,9 +175,11 @@ function restoreLastFile() {
         }
         alert("✅ PDF restored and displayed.");
       } catch (err) {
-        alert("❌ Failed to restore PDF: " + err.message);
+        alert("❌ Failed to render stored PDF: " + err.message);
       }
     });
+  } else {
+    alert("ℹ️ No PDF restore conditions met.");
   }
 }
 
