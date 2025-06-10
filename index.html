@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -60,8 +60,8 @@
       </div>
       <div class="sliders">
         <button onclick="saveToLibrary('listen')">💾 Save to Library</button>
-        <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.01" /><span id="rateVal">1</span></label>
-        <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.01" /><span id="pitchVal">1</span></label>
+        <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.01" oninput="document.getElementById('rateVal').innerText = this.value"/><span id="rateVal">1</span></label>
+        <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.01" oninput="document.getElementById('pitchVal').innerText = this.value"/><span id="pitchVal">1</span></label>
       </div>
       <div id="text-display" class="text-box"></div>
     </section>
@@ -82,8 +82,8 @@
       </div>
       <div class="sliders">
         <button onclick="saveToLibrary('capture')">💾 Save to Library</button>
-        <label>Rate: <input type="range" id="capture-rate" min="0.5" max="2" step="0.01" /><span id="captureRateVal">1</span></label>
-        <label>Pitch: <input type="range" id="capture-pitch" min="0" max="2" step="0.01" /><span id="capturePitchVal">1</span></label>
+        <label>Rate: <input type="range" id="capture-rate" min="0.5" max="2" step="0.01" oninput="document.getElementById('captureRateVal').innerText = this.value"/><span id="captureRateVal">1</span></label>
+        <label>Pitch: <input type="range" id="capture-pitch" min="0" max="2" step="0.01" oninput="document.getElementById('capturePitchVal').innerText = this.value"/><span id="capturePitchVal">1</span></label>
       </div>
       <div id="capture-display" class="text-box"></div>
     </section>
@@ -103,7 +103,9 @@
       </div>
     </section>
 
-    <section id="store"><h2>Coming Soon</h2></section>
+    <section id="store">
+      <h2>Coming Soon</h2>
+    </section>
 
     <section id="profile">
       <div>
@@ -124,6 +126,7 @@
     <p>&copy; 2025 NeurAloud. All rights reserved.</p>
   </footer>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
