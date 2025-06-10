@@ -314,7 +314,6 @@ function translateText() {
   alert("🌍 Translation coming soon!");
 }
 
-// ✅ Canvas-based PDF Reader Logic
 const canvas = document.getElementById("pdf-canvas");
 const ctx = canvas?.getContext("2d");
 
@@ -324,23 +323,69 @@ let scale = 1.5;
 let currentSentenceIndex = 0;
 let textItems = [];
 let utterance = null;
+let db;
 
-const fileInput = document.getElementById("file-input");
-if (fileInput) {
-  fileInput.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (file?.type === "application/pdf") {
-      const reader = new FileReader();
-      reader.onload = async function () {
-        const typedArray = new Uint8Array(this.result);
-        pdfDoc = await pdfjsLib.getDocument({ data: typedArray }).promise;
-        pageNum = 1;
-        await renderPageWithText(pageNum);
-        speakNextSentence();
-      };
-      reader.readAsArrayBuffer(file);
-    }
+// ✅ Initialize IndexedDB
+function initIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("NeurAloudPDFs", 1);
+    request.onerror = () => reject("IndexedDB error");
+    request.onsuccess = () => {
+      db = request.result;
+      resolve();
+    };
+    request.onupgradeneeded = (e) => {
+      db = e.target.result;
+      if (!db.objectStoreNames.contains("pdfs")) {
+        db.createObjectStore("pdfs", { keyPath: "name" });
+      }
+    };
   });
+}
+
+// ✅ Save PDF to IndexedDB
+async function savePDFToDB(name, buffer) {
+  const tx = db.transaction("pdfs", "readwrite");
+  const store = tx.objectStore("pdfs");
+  await store.put({ name, buffer });
+  await tx.done;
+}
+
+// ✅ Retrieve PDF from IndexedDB
+async function getPDFBufferFromDB(name) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("pdfs", "readonly");
+    const store = tx.objectStore("pdfs");
+    const request = store.get(name);
+    request.onsuccess = () => resolve(request.result?.buffer || null);
+    request.onerror = () => reject(null);
+  });
+}
+
+// ✅ File input handling
+document.getElementById("file-input")?.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (file?.type === "application/pdf") {
+    const reader = new FileReader();
+    reader.onload = async function () {
+      const typedArray = new Uint8Array(this.result);
+      await savePDFToDB(file.name, typedArray);
+      localStorage.setItem("lastPDFFileName", file.name);
+      await loadAndRenderPDF(file.name);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+});
+
+// ✅ Load and render stored PDF
+async function loadAndRenderPDF(fileName) {
+  const buffer = await getPDFBufferFromDB(fileName);
+  if (!buffer) return;
+
+  pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
+  pageNum = 1;
+  await renderPageWithText(pageNum);
+  speakNextSentence();
 }
 
 async function renderPageWithText(num) {
@@ -389,3 +434,10 @@ function highlightTextBox(item) {
     ctx.fillRect(item.x, item.y - item.height, item.width, item.height);
   });
 }
+
+// ✅ Load previous session if available
+window.addEventListener("DOMContentLoaded", async () => {
+  await initIndexedDB();
+  const lastFile = localStorage.getItem("lastPDFFileName");
+  if (lastFile) await loadAndRenderPDF(lastFile);
+});
