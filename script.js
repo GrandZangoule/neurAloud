@@ -87,36 +87,46 @@ function restoreLibraryItems(type) {
 function loadFile(event) {
   const file = event.target.files[0];
   if (!file) return;
+
   localStorage.setItem("lastFileName", file.name);
   const reader = new FileReader();
   const ext = file.name.split(".").pop().toLowerCase();
 
   if (ext === "pdf") {
     reader.onload = async () => {
-      const typedArray = new Uint8Array(reader.result);
-      localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
-      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
-      const container = document.getElementById("text-display");
-      container.innerHTML = "";
-      let text = "";
+      try {
+        const typedArray = new Uint8Array(reader.result);
+        localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
 
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.2 });
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        container.appendChild(canvas);
-        const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(" ") + "\n";
+        const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+        const container = document.getElementById("text-display");
+        container.innerHTML = "";
+        let text = "";
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.2 });
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          container.appendChild(canvas);
+
+          const content = await page.getTextContent();
+          text += content.items.map(item => item.str).join(" ") + " ";
+        }
+
+        localStorage.setItem("lastText", text);
+        localStorage.setItem("lastFileType", "pdf");
+
+        // ✅ THIS LINE WAS MISSING IN EARLIER ATTEMPTS
+        sentences = text.split(/(?<=[.?!])\s+/);
+        displayText(sentences);
+
+      } catch (err) {
+        alert("Failed to load PDF: " + err.message);
       }
-
-      localStorage.setItem("lastText", text);
-      localStorage.setItem("lastFileType", "pdf");
-      sentences = text.split(/(?<=[.?!])\s+/);
-      displayText(sentences);
     };
     reader.readAsArrayBuffer(file);
   }
