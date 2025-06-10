@@ -197,6 +197,12 @@ footer {
     align-items: stretch;
   }
 
+  .controls button, .sliders input[type="range"] {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    margin: 4px 0;
+  }
+
   .quad-container {
     height: auto;
     display: block;
