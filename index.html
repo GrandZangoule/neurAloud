@@ -67,7 +67,7 @@
       <div id="text-display" class="text-box"></div>
 
       <div class="pdf-section">
-        <input type="file" id="file-input" accept=".pdf" />
+        <input type="file" id="file-input" accept=".pdf" onchange="loadFile(event)" />
         <canvas id="pdf-canvas" style="display:none;"></canvas>
       </div>
     </section>
