@@ -8,7 +8,7 @@ let db;
 window.addEventListener("DOMContentLoaded", async () => {
   await initDB();
   loadSettings();
-  restoreLastFile();
+  restoreLastFile();  // 🟦 Now restores PDF view and extracted text
   loadTTSEngines("listen");
   loadTTSEngines("capture");
   restoreSection();
@@ -61,6 +61,9 @@ function loadFile(event) {
 
   if (ext === "pdf") {
     reader.onload = async () => {
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(reader.result)));
+      localStorage.setItem("lastPDFData", base64);
+
       const typedArray = new Uint8Array(reader.result);
       const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
       const container = document.getElementById("text-display");
@@ -81,15 +84,6 @@ function loadFile(event) {
       }
 
       localStorage.setItem("lastText", text);
-      localStorage.setItem("lastPdf", reader.result); // NEW
-      sentences = text.split(/(?<=[.?!])\s+/);
-    };
-    reader.readAsArrayBuffer(file);
-  } else if (ext === "docx") {
-    reader.onload = async () => {
-      const result = await mammoth.convertToText({ arrayBuffer: reader.result });
-      const text = result.value;
-      localStorage.setItem("lastText", text);
       sentences = text.split(/(?<=[.?!])\s+/);
       displayText(sentences);
     };
@@ -107,13 +101,17 @@ function loadFile(event) {
 
 function displayText(sentencesArr) {
   const html = sentencesArr.map((s, i) => `<span class="sentence" data-index="${i}">${s}</span>`).join(" ");
-  document.getElementById("text-display").innerHTML = html;
+  document.getElementById("text-display").insertAdjacentHTML("beforeend", `<div class="text-box">${html}</div>`);
 }
 
 function highlightSentence(index) {
   document.querySelectorAll(".sentence").forEach((el, i) =>
     el.classList.toggle("highlight", i === index)
   );
+  const target = document.querySelector(`.sentence[data-index="${index}"]`);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 }
 
 function play() {
@@ -143,15 +141,6 @@ function speakSentence(index) {
   speechSynthesis.speak(utterance);
 }
 
-function playCaptured() {
-  const voice = document.getElementById("capture-voice-select").value;
-  const tts = new SpeechSynthesisUtterance(capturedText);
-  tts.voice = speechSynthesis.getVoices().find(v => v.name === voice);
-  tts.rate = parseFloat(document.getElementById("capture-rate").value);
-  tts.pitch = parseFloat(document.getElementById("capture-pitch").value);
-  speechSynthesis.speak(tts);
-}
-
 function pause() {
   if (speechSynthesis.speaking) speechSynthesis.pause();
 }
@@ -162,9 +151,32 @@ function stop() {
   highlightSentence(-1);
 }
 
-function toggleLoop() {
-  isLooping = !isLooping;
-  alert("Loop is now " + (isLooping ? "enabled" : "disabled"));
+function restoreLastFile() {
+  const text = localStorage.getItem("lastText");
+  const base64 = localStorage.getItem("lastPDFData");
+  const container = document.getElementById("text-display");
+
+  if (base64) {
+    const byteArray = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    pdfjsLib.getDocument({ data: byteArray }).promise.then(async pdf => {
+      container.innerHTML = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        container.appendChild(canvas);
+      }
+    });
+  }
+
+  if (text) {
+    sentences = text.split(/(?<=[.?!])\s+/);
+    displayText(sentences);
+  }
 }
 
 function translateText() {
@@ -228,30 +240,4 @@ function loadSettings() {
   document.getElementById("pitch").value = localStorage.getItem("pitch") || 1;
   document.getElementById("capture-rate").value = localStorage.getItem("capture-rate") || 1;
   document.getElementById("capture-pitch").value = localStorage.getItem("capture-pitch") || 1;
-}
-
-function restoreLastFile() {
-  const last = localStorage.getItem("lastText");
-  const lastPdf = localStorage.getItem("lastPdf");
-  if (last && lastPdf) {
-    const container = document.getElementById("text-display");
-    container.innerHTML = "";
-    const typedArray = new Uint8Array(JSON.parse(lastPdf));
-    pdfjsLib.getDocument({ data: typedArray }).promise.then(pdf => {
-      for (let i = 1; i <= pdf.numPages; i++) {
-        pdf.getPage(i).then(page => {
-          const viewport = page.getViewport({ scale: 1.2 });
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-          page.render({ canvasContext: ctx, viewport }).promise.then(() => {
-            container.appendChild(canvas);
-          });
-        });
-      }
-    });
-    sentences = last.split(/(?<=[.?!])\s+/);
-    displayText(sentences);
-  }
 }
