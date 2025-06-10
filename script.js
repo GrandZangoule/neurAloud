@@ -88,7 +88,6 @@ function loadFile(event) {
   const file = event.target.files[0];
   if (!file) return;
   localStorage.setItem("lastFileName", file.name);
-
   const reader = new FileReader();
   const ext = file.name.split(".").pop().toLowerCase();
 
@@ -177,7 +176,6 @@ function speakSentence(index) {
 
   const sentence = sentences[currentSentenceIndex];
   highlightSentence(currentSentenceIndex);
-
   utterance = new SpeechSynthesisUtterance(sentence);
   utterance.rate = parseFloat(document.getElementById("rate").value);
   utterance.pitch = parseFloat(document.getElementById("pitch").value);
@@ -185,7 +183,6 @@ function speakSentence(index) {
     currentSentenceIndex++;
     speakSentence(currentSentenceIndex);
   };
-
   speechSynthesis.speak(utterance);
 }
 
@@ -194,6 +191,7 @@ function stop() {
   currentSentenceIndex = 0;
   highlightSentence(-1);
 }
+
 function pause() {
   if (speechSynthesis.speaking) speechSynthesis.pause();
 }
@@ -203,79 +201,25 @@ function toggleLoop() {
   alert("Loop is now " + (isLooping ? "enabled" : "disabled"));
 }
 
-function playCaptured() {
-  const voice = document.getElementById("capture-voice-select").value;
-  const tts = new SpeechSynthesisUtterance(capturedText);
-  tts.voice = speechSynthesis.getVoices().find(v => v.name === voice);
-  tts.rate = parseFloat(document.getElementById("capture-rate").value);
-  tts.pitch = parseFloat(document.getElementById("capture-pitch").value);
-  speechSynthesis.speak(tts);
-}
-
-function translateText() {
-  alert("🌍 Translation coming soon!");
-}
-
-function startCapture() {
-  const recognition = new webkitSpeechRecognition();
-  recognition.lang = document.getElementById("capture-lang-in").value;
-  recognition.continuous = true;
-  recognition.onresult = (e) => {
-    capturedText = Array.from(e.results).map(r => r[0].transcript).join(" ");
-    document.getElementById("capture-display").innerText = capturedText;
+function loadToPlaylist() {
+  const text = localStorage.getItem("lastText");
+  const name = prompt("Name for playlist item:", localStorage.getItem("lastFileName") || "untitled");
+  if (!text || !name) return;
+  const playlist = document.getElementById("playlist");
+  const item = document.createElement("div");
+  item.className = "playlist-item";
+  item.textContent = name;
+  item.onclick = () => {
+    sentences = text.split(/(?<=[.?!])\s+/);
+    displayText(sentences);
   };
-  recognition.start();
+  const removeBtn = document.createElement("button");
+  removeBtn.textContent = "−";
+  removeBtn.onclick = () => playlist.removeChild(item);
+  item.appendChild(removeBtn);
+  playlist.appendChild(item);
 }
 
-function changeTTSEngine(section) {
-  const engine = document.getElementById(section === "listen" ? "tts-engine" : "capture-tts-engine").value;
-  const voiceSelect = document.getElementById(section === "listen" ? "voice-select" : "capture-voice-select");
-  voiceSelect.innerHTML = "";
-  const voices = speechSynthesis.getVoices().filter(v => v.name.toLowerCase().includes(engine));
-  voices.forEach(v => {
-    const opt = document.createElement("option");
-    opt.value = v.name;
-    opt.textContent = `${v.name} (${v.lang})`;
-    voiceSelect.appendChild(opt);
-  });
-}
-
-function changeVoice(section) {
-  const voice = document.getElementById(section === "listen" ? "voice-select" : "capture-voice-select").value;
-  localStorage.setItem(section + "-voice", voice);
-}
-
-function loadTTSEngines(section) {
-  const engines = ["default", "google", "ibm", "responsivevoice"];
-  const select = document.getElementById(section === "listen" ? "tts-engine" : "capture-tts-engine");
-  select.innerHTML = "";
-  engines.forEach(engine => {
-    const opt = document.createElement("option");
-    opt.value = engine;
-    opt.textContent = engine.toUpperCase();
-    select.appendChild(opt);
-  });
-}
-
-function restoreSection() {
-  const section = localStorage.getItem("lastSection") || "home";
-  navigate(section);
-}
-
-function navigate(tab) {
-  localStorage.setItem("lastSection", tab);
-  document.querySelectorAll("main section").forEach(s => s.style.display = "none");
-  document.getElementById(tab).style.display = "block";
-}
-
-function loadSettings() {
-  document.getElementById("rate").value = localStorage.getItem("rate") || 1;
-  document.getElementById("pitch").value = localStorage.getItem("pitch") || 1;
-  document.getElementById("capture-rate").value = localStorage.getItem("capture-rate") || 1;
-  document.getElementById("capture-pitch").value = localStorage.getItem("capture-pitch") || 1;
-}
-
-// Handle drag from Listen Library to Playlist
 document.addEventListener("DOMContentLoaded", () => {
   const playlist = document.getElementById("playlist");
   playlist.ondragover = (e) => e.preventDefault();
@@ -298,22 +242,74 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 });
 
-// Add Load to Playlist button functionality
-function loadToPlaylist() {
-  const text = localStorage.getItem("lastText");
-  const name = prompt("Name for playlist item:", localStorage.getItem("lastFileName") || "untitled");
-  if (!text || !name) return;
-  const playlist = document.getElementById("playlist");
-  const item = document.createElement("div");
-  item.className = "playlist-item";
-  item.textContent = name;
-  item.onclick = () => {
-    sentences = text.split(/(?<=[.?!])\s+/);
-    displayText(sentences);
+function loadSettings() {
+  document.getElementById("rate").value = localStorage.getItem("rate") || 1;
+  document.getElementById("pitch").value = localStorage.getItem("pitch") || 1;
+  document.getElementById("capture-rate").value = localStorage.getItem("capture-rate") || 1;
+  document.getElementById("capture-pitch").value = localStorage.getItem("capture-pitch") || 1;
+}
+
+function restoreSection() {
+  const section = localStorage.getItem("lastSection") || "home";
+  navigate(section);
+}
+
+function navigate(tab) {
+  localStorage.setItem("lastSection", tab);
+  document.querySelectorAll("main section").forEach(s => s.style.display = "none");
+  document.getElementById(tab).style.display = "block";
+}
+
+function loadTTSEngines(section) {
+  const engines = ["default", "google", "ibm", "responsivevoice"];
+  const select = document.getElementById(section === "listen" ? "tts-engine" : "capture-tts-engine");
+  select.innerHTML = "";
+  engines.forEach(engine => {
+    const opt = document.createElement("option");
+    opt.value = engine;
+    opt.textContent = engine.toUpperCase();
+    select.appendChild(opt);
+  });
+}
+
+function changeTTSEngine(section) {
+  const engine = document.getElementById(section === "listen" ? "tts-engine" : "capture-tts-engine").value;
+  const voiceSelect = document.getElementById(section === "listen" ? "voice-select" : "capture-voice-select");
+  voiceSelect.innerHTML = "";
+  const voices = speechSynthesis.getVoices().filter(v => v.name.toLowerCase().includes(engine));
+  voices.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v.name;
+    opt.textContent = `${v.name} (${v.lang})`;
+    voiceSelect.appendChild(opt);
+  });
+}
+
+function changeVoice(section) {
+  const voice = document.getElementById(section === "listen" ? "voice-select" : "capture-voice-select").value;
+  localStorage.setItem(section + "-voice", voice);
+}
+
+function playCaptured() {
+  const voice = document.getElementById("capture-voice-select").value;
+  const tts = new SpeechSynthesisUtterance(capturedText);
+  tts.voice = speechSynthesis.getVoices().find(v => v.name === voice);
+  tts.rate = parseFloat(document.getElementById("capture-rate").value);
+  tts.pitch = parseFloat(document.getElementById("capture-pitch").value);
+  speechSynthesis.speak(tts);
+}
+
+function startCapture() {
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = document.getElementById("capture-lang-in").value;
+  recognition.continuous = true;
+  recognition.onresult = (e) => {
+    capturedText = Array.from(e.results).map(r => r[0].transcript).join(" ");
+    document.getElementById("capture-display").innerText = capturedText;
   };
-  const removeBtn = document.createElement("button");
-  removeBtn.textContent = "−";
-  removeBtn.onclick = () => playlist.removeChild(item);
-  item.appendChild(removeBtn);
-  playlist.appendChild(item);
+  recognition.start();
+}
+
+function translateText() {
+  alert("🌍 Translation coming soon!");
 }
