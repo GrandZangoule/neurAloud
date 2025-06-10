@@ -61,7 +61,7 @@ function saveToLibrary(type) {
 }
 
 function restoreLibraryItems(type) {
-    const list = document.getElementById(type === "listen" ? "listen-library-list" : "capture-library-list");
+  const list = document.getElementById(type === "listen" ? "listen-library-list" : "capture-library-list");
   const saved = JSON.parse(localStorage.getItem(type + "-library") || "[]");
   saved.forEach(({ name, content }) => {
     const item = document.createElement("div");
@@ -115,10 +115,15 @@ function loadFile(event) {
 
       localStorage.setItem("lastText", text);
       localStorage.setItem("lastFileType", "pdf");
+      sentences = text.split(/(?<=[.?!])\s+/);
+      displayText(sentences);
     };
     reader.readAsArrayBuffer(file);
   }
 }
+
+function restoreLastFile() {
+  const type = localStorage.getItem("lastFileType");
   if (type === "pdf" && localStorage.getItem("lastPDFData")) {
     const data = new Uint8Array(JSON.parse(localStorage.getItem("lastPDFData")));
     pdfjsLib.getDocument({ data }).promise.then(async (pdf) => {
@@ -182,7 +187,7 @@ function speakSentence(index) {
 }
 
 function stop() {
-    speechSynthesis.cancel();
+  speechSynthesis.cancel();
   currentSentenceIndex = 0;
   highlightSentence(-1);
 }
@@ -245,7 +250,7 @@ function loadSettings() {
 }
 
 function restoreSection() {
-    const section = localStorage.getItem("lastSection") || "home";
+  const section = localStorage.getItem("lastSection") || "home";
   navigate(section);
 }
 
