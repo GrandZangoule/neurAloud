@@ -81,6 +81,7 @@ function loadFile(event) {
       }
 
       localStorage.setItem("lastText", text);
+      localStorage.setItem("lastPdf", reader.result); // NEW
       sentences = text.split(/(?<=[.?!])\s+/);
     };
     reader.readAsArrayBuffer(file);
@@ -231,7 +232,25 @@ function loadSettings() {
 
 function restoreLastFile() {
   const last = localStorage.getItem("lastText");
-  if (last) {
+  const lastPdf = localStorage.getItem("lastPdf");
+  if (last && lastPdf) {
+    const container = document.getElementById("text-display");
+    container.innerHTML = "";
+    const typedArray = new Uint8Array(JSON.parse(lastPdf));
+    pdfjsLib.getDocument({ data: typedArray }).promise.then(pdf => {
+      for (let i = 1; i <= pdf.numPages; i++) {
+        pdf.getPage(i).then(page => {
+          const viewport = page.getViewport({ scale: 1.2 });
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          page.render({ canvasContext: ctx, viewport }).promise.then(() => {
+            container.appendChild(canvas);
+          });
+        });
+      }
+    });
     sentences = last.split(/(?<=[.?!])\s+/);
     displayText(sentences);
   }
