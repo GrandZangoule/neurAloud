@@ -93,6 +93,8 @@ function loadFile(event) {
 
   if (ext === "pdf") {
     reader.onload = async () => {
+  const loadingEl = document.getElementById("loading-indicator");
+  if (loadingEl) loadingEl.style.display = "block";
       const typedArray = new Uint8Array(reader.result);
       localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
       const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
@@ -117,6 +119,10 @@ function loadFile(event) {
       localStorage.setItem("lastFileType", "pdf");
       sentences = text.split(/(?<=[.?!])\s+/);
       displayText(sentences);
+  const loadingEl = document.getElementById("loading-indicator");
+  if (loadingEl) loadingEl.style.display = "none";
+  const canvasEl = document.getElementById("pdf-canvas");
+  if (canvasEl) canvasEl.style.display = "block";
     };
     reader.readAsArrayBuffer(file);
   }
@@ -146,6 +152,10 @@ function restoreLastFile() {
   if (last) {
     sentences = last.split(/(?<=[.?!])\s+/);
     displayText(sentences);
+  const loadingEl = document.getElementById("loading-indicator");
+  if (loadingEl) loadingEl.style.display = "none";
+  const canvasEl = document.getElementById("pdf-canvas");
+  if (canvasEl) canvasEl.style.display = "block";
   }
 }
 
@@ -212,6 +222,10 @@ function loadToPlaylist() {
   item.onclick = () => {
     sentences = text.split(/(?<=[.?!])\s+/);
     displayText(sentences);
+  const loadingEl = document.getElementById("loading-indicator");
+  if (loadingEl) loadingEl.style.display = "none";
+  const canvasEl = document.getElementById("pdf-canvas");
+  if (canvasEl) canvasEl.style.display = "block";
   };
   const removeBtn = document.createElement("button");
   removeBtn.textContent = "−";
@@ -233,6 +247,10 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("lastText", content);
       sentences = content.split(/(?<=[.?!])\s+/);
       displayText(sentences);
+  const loadingEl = document.getElementById("loading-indicator");
+  if (loadingEl) loadingEl.style.display = "none";
+  const canvasEl = document.getElementById("pdf-canvas");
+  if (canvasEl) canvasEl.style.display = "block";
     };
     const removeBtn = document.createElement("button");
     removeBtn.textContent = "−";
@@ -341,6 +359,8 @@ function loadFile(event) {
 
   if (ext === "pdf") {
     reader.onload = async () => {
+  const loadingEl = document.getElementById("loading-indicator");
+  if (loadingEl) loadingEl.style.display = "block";
       const typedArray = new Uint8Array(reader.result);
       await savePDFToDB(file.name, typedArray);
       localStorage.setItem("lastFileType", "pdf");
@@ -366,6 +386,10 @@ function loadFile(event) {
       localStorage.setItem("lastText", text);
       sentences = text.split(/(?<=[.?!])\s+/);
       displayText(sentences);
+  const loadingEl = document.getElementById("loading-indicator");
+  if (loadingEl) loadingEl.style.display = "none";
+  const canvasEl = document.getElementById("pdf-canvas");
+  if (canvasEl) canvasEl.style.display = "block";
     };
     reader.readAsArrayBuffer(file);
   }
@@ -398,5 +422,9 @@ function restoreLastFile() {
   if (last) {
     sentences = last.split(/(?<=[.?!])\s+/);
     displayText(sentences);
+  const loadingEl = document.getElementById("loading-indicator");
+  if (loadingEl) loadingEl.style.display = "none";
+  const canvasEl = document.getElementById("pdf-canvas");
+  if (canvasEl) canvasEl.style.display = "block";
   }
 }
