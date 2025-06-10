@@ -93,21 +93,9 @@ function loadFile(event) {
 
   if (ext === "pdf") {
     reader.onload = async () => {
-  alert("📂 PDF file selected. Preparing to read.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "block";
       const typedArray = new Uint8Array(reader.result);
       localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
-      let pdf;
-  try {
-    alert("📄 Sending PDF to pdf.js for parsing...");
-    pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
-    alert("✅ PDF loaded successfully.");
-  } catch (error) {
-    alert("❌ Failed to load PDF: " + error.message);
-    if (loadingEl) loadingEl.style.display = "none";
-    return;
-  }
+      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
       const container = document.getElementById("text-display");
       container.innerHTML = "";
       let text = "";
@@ -129,11 +117,6 @@ function loadFile(event) {
       localStorage.setItem("lastFileType", "pdf");
       sentences = text.split(/(?<=[.?!])\s+/);
       displayText(sentences);
-  alert("📝 Text extracted and rendered.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
     };
     reader.readAsArrayBuffer(file);
   }
@@ -163,11 +146,6 @@ function restoreLastFile() {
   if (last) {
     sentences = last.split(/(?<=[.?!])\s+/);
     displayText(sentences);
-  alert("📝 Text extracted and rendered.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
   }
 }
 
@@ -234,11 +212,6 @@ function loadToPlaylist() {
   item.onclick = () => {
     sentences = text.split(/(?<=[.?!])\s+/);
     displayText(sentences);
-  alert("📝 Text extracted and rendered.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
   };
   const removeBtn = document.createElement("button");
   removeBtn.textContent = "−";
@@ -260,11 +233,6 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("lastText", content);
       sentences = content.split(/(?<=[.?!])\s+/);
       displayText(sentences);
-  alert("📝 Text extracted and rendered.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
     };
     const removeBtn = document.createElement("button");
     removeBtn.textContent = "−";
@@ -373,23 +341,11 @@ function loadFile(event) {
 
   if (ext === "pdf") {
     reader.onload = async () => {
-  alert("📂 PDF file selected. Preparing to read.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "block";
       const typedArray = new Uint8Array(reader.result);
       await savePDFToDB(file.name, typedArray);
       localStorage.setItem("lastFileType", "pdf");
       localStorage.setItem("lastPDFFileName", file.name);
-      let pdf;
-  try {
-    alert("📄 Sending PDF to pdf.js for parsing...");
-    pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
-    alert("✅ PDF loaded successfully.");
-  } catch (error) {
-    alert("❌ Failed to load PDF: " + error.message);
-    if (loadingEl) loadingEl.style.display = "none";
-    return;
-  }
+      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
       const container = document.getElementById("text-display");
       container.innerHTML = "";
       let text = "";
@@ -410,11 +366,6 @@ function loadFile(event) {
       localStorage.setItem("lastText", text);
       sentences = text.split(/(?<=[.?!])\s+/);
       displayText(sentences);
-  alert("📝 Text extracted and rendered.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
     };
     reader.readAsArrayBuffer(file);
   }
@@ -447,10 +398,5 @@ function restoreLastFile() {
   if (last) {
     sentences = last.split(/(?<=[.?!])\s+/);
     displayText(sentences);
-  alert("📝 Text extracted and rendered.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
   }
 }
