@@ -85,6 +85,7 @@ function restoreLibraryItems(type) {
 }
 
 function loadFile(event) {
+  alert('📁 Starting to load file...');
   const file = event.target.files[0];
   if (!file) return;
   localStorage.setItem("lastFileName", file.name);
@@ -92,6 +93,7 @@ function loadFile(event) {
   const ext = file.name.split(".").pop().toLowerCase();
 
   if (ext === "pdf") {
+    alert('📥 Reading PDF data...');
     reader.onload = async () => {
       const typedArray = new Uint8Array(reader.result);
       localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
@@ -101,6 +103,7 @@ function loadFile(event) {
       let text = "";
 
       for (let i = 1; i <= pdf.numPages; i++) {
+        alert(`📄 Rendering page ${i}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.2 });
         const canvas = document.createElement("canvas");
@@ -118,18 +121,22 @@ function loadFile(event) {
       sentences = text.split(/(?<=[.?!])\s+/);
       displayText(sentences);
     };
+    alert('✅ PDF reading initiated.');
     reader.readAsArrayBuffer(file);
   }
 }
 
 function restoreLastFile() {
+  alert('🔄 Attempting to restore last loaded file...');
   const type = localStorage.getItem("lastFileType");
+    alert('📦 Found stored PDF. Loading...');
   if (type === "pdf" && localStorage.getItem("lastPDFData")) {
     const data = new Uint8Array(JSON.parse(localStorage.getItem("lastPDFData")));
     pdfjsLib.getDocument({ data }).promise.then(async (pdf) => {
       const container = document.getElementById("text-display");
       container.innerHTML = "";
       for (let i = 1; i <= pdf.numPages; i++) {
+        alert(`🖼️ Rendering stored PDF page ${i}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.2 });
         const canvas = document.createElement("canvas");
@@ -145,6 +152,7 @@ function restoreLastFile() {
   const last = localStorage.getItem("lastText");
   if (last) {
     sentences = last.split(/(?<=[.?!])\s+/);
+  alert('✅ Text loaded and displayed.');
     displayText(sentences);
   }
 }
@@ -333,6 +341,7 @@ async function getPDFBufferFromDB(name) {
 
 // Override loadFile for PDF using IndexedDB
 function loadFile(event) {
+  alert('📁 Starting to load file...');
   const file = event.target.files[0];
   if (!file) return;
   localStorage.setItem("lastFileName", file.name);
@@ -340,8 +349,10 @@ function loadFile(event) {
   const ext = file.name.split(".").pop().toLowerCase();
 
   if (ext === "pdf") {
+    alert('📥 Reading PDF data...');
     reader.onload = async () => {
       const typedArray = new Uint8Array(reader.result);
+      alert('💾 Saving PDF to IndexedDB...');
       await savePDFToDB(file.name, typedArray);
       localStorage.setItem("lastFileType", "pdf");
       localStorage.setItem("lastPDFFileName", file.name);
@@ -351,6 +362,7 @@ function loadFile(event) {
       let text = "";
 
       for (let i = 1; i <= pdf.numPages; i++) {
+        alert(`📄 Rendering page ${i}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.2 });
         const canvas = document.createElement("canvas");
@@ -367,14 +379,17 @@ function loadFile(event) {
       sentences = text.split(/(?<=[.?!])\s+/);
       displayText(sentences);
     };
+    alert('✅ PDF reading initiated.');
     reader.readAsArrayBuffer(file);
   }
 }
 
 // Override restoreLastFile using IndexedDB
 function restoreLastFile() {
+  alert('🔄 Attempting to restore last loaded file...');
   const type = localStorage.getItem("lastFileType");
   const name = localStorage.getItem("lastPDFFileName");
+    alert('📦 Found stored PDF. Loading...');
   if (type === "pdf" && name) {
     getPDFBufferFromDB(name).then(async (buffer) => {
       if (!buffer) return;
@@ -382,6 +397,7 @@ function restoreLastFile() {
       const container = document.getElementById("text-display");
       container.innerHTML = "";
       for (let i = 1; i <= pdf.numPages; i++) {
+        alert(`🖼️ Rendering stored PDF page ${i}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.2 });
         const canvas = document.createElement("canvas");
@@ -397,6 +413,7 @@ function restoreLastFile() {
   const last = localStorage.getItem("lastText");
   if (last) {
     sentences = last.split(/(?<=[.?!])\s+/);
+  alert('✅ Text loaded and displayed.');
     displayText(sentences);
   }
 }
