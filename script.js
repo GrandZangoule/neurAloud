@@ -87,46 +87,36 @@ function restoreLibraryItems(type) {
 function loadFile(event) {
   const file = event.target.files[0];
   if (!file) return;
-
   localStorage.setItem("lastFileName", file.name);
   const reader = new FileReader();
   const ext = file.name.split(".").pop().toLowerCase();
 
   if (ext === "pdf") {
     reader.onload = async () => {
-      try {
-        const typedArray = new Uint8Array(reader.result);
-        localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
+      const typedArray = new Uint8Array(reader.result);
+      localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
+      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
+      let text = "";
 
-        const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
-        const container = document.getElementById("text-display");
-        container.innerHTML = "";
-        let text = "";
-
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1.2 });
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-          await page.render({ canvasContext: ctx, viewport }).promise;
-          container.appendChild(canvas);
-
-          const content = await page.getTextContent();
-          text += content.items.map(item => item.str).join(" ") + " ";
-        }
-
-        localStorage.setItem("lastText", text);
-        localStorage.setItem("lastFileType", "pdf");
-
-        // ✅ THIS LINE WAS MISSING IN EARLIER ATTEMPTS
-        sentences = text.split(/(?<=[.?!])\s+/);
-        displayText(sentences);
-
-      } catch (err) {
-        alert("Failed to load PDF: " + err.message);
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        container.appendChild(canvas);
+        const content = await page.getTextContent();
+        text += content.items.map(item => item.str).join(" ") + "\n";
       }
+
+      localStorage.setItem("lastText", text);
+      localStorage.setItem("lastFileType", "pdf");
+      sentences = text.split(/(?<=[.?!])\s+/);
+      displayText(sentences);
     };
     reader.readAsArrayBuffer(file);
   }
@@ -322,4 +312,80 @@ function startCapture() {
 
 function translateText() {
   alert("🌍 Translation coming soon!");
+}
+
+// ✅ Canvas-based PDF Reader Logic
+const canvas = document.getElementById("pdf-canvas");
+const ctx = canvas?.getContext("2d");
+
+let pdfDoc = null;
+let pageNum = 1;
+let scale = 1.5;
+let currentSentenceIndex = 0;
+let textItems = [];
+let utterance = null;
+
+const fileInput = document.getElementById("file-input");
+if (fileInput) {
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (file?.type === "application/pdf") {
+      const reader = new FileReader();
+      reader.onload = async function () {
+        const typedArray = new Uint8Array(this.result);
+        pdfDoc = await pdfjsLib.getDocument({ data: typedArray }).promise;
+        pageNum = 1;
+        await renderPageWithText(pageNum);
+        speakNextSentence();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  });
+}
+
+async function renderPageWithText(num) {
+  const page = await pdfDoc.getPage(num);
+  const viewport = page.getViewport({ scale });
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+
+  await page.render({ canvasContext: ctx, viewport }).promise;
+
+  const textContent = await page.getTextContent();
+  textItems = textContent.items.map(item => {
+    const [x, y, , fontHeight] = item.transform;
+    return {
+      str: item.str,
+      x: x * scale,
+      y: (viewport.height - y * scale),
+      width: item.width * scale,
+      height: fontHeight * scale
+    };
+  });
+}
+
+function speakNextSentence() {
+  if (currentSentenceIndex >= textItems.length) {
+    currentSentenceIndex = 0;
+    return;
+  }
+
+  const item = textItems[currentSentenceIndex];
+  const sentence = item.str;
+
+  highlightTextBox(item);
+
+  utterance = new SpeechSynthesisUtterance(sentence);
+  utterance.onend = () => {
+    currentSentenceIndex++;
+    speakNextSentence();
+  };
+  speechSynthesis.speak(utterance);
+}
+
+function highlightTextBox(item) {
+  renderPageWithText(pageNum).then(() => {
+    ctx.fillStyle = "rgba(255, 255, 0, 0.4)";
+    ctx.fillRect(item.x, item.y - item.height, item.width, item.height);
+  });
 }
