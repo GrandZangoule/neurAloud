@@ -4,7 +4,6 @@ let sentences = [];
 let isLooping = false;
 let capturedText = '';
 let db;
-let lastPdfData = null;
 
 window.addEventListener("DOMContentLoaded", async () => {
   await initDB();
@@ -13,6 +12,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   loadTTSEngines("listen");
   loadTTSEngines("capture");
   restoreSection();
+  restoreLibraryItems("listen");
+  restoreLibraryItems("capture");
 });
 
 function initDB() {
@@ -46,10 +47,41 @@ function saveToLibrary(type) {
   del.onclick = () => {
     if (confirm("Are you sure you want to remove this item?")) {
       list.removeChild(item);
+      let saved = JSON.parse(localStorage.getItem(type + "-library") || "[]");
+      saved = saved.filter(entry => entry.name !== name);
+      localStorage.setItem(type + "-library", JSON.stringify(saved));
     }
   };
   item.appendChild(del);
   list.appendChild(item);
+
+  let saved = JSON.parse(localStorage.getItem(type + "-library") || "[]");
+  saved.push({ name, content });
+  localStorage.setItem(type + "-library", JSON.stringify(saved));
+}
+
+function restoreLibraryItems(type) {
+  const list = document.getElementById(type === "listen" ? "listen-library-list" : "capture-library-list");
+  const saved = JSON.parse(localStorage.getItem(type + "-library") || "[]");
+  saved.forEach(({ name, content }) => {
+    const item = document.createElement("div");
+    item.className = "library-item";
+    item.textContent = name;
+    item.draggable = true;
+    item.ondragstart = e => e.dataTransfer.setData("text/plain", JSON.stringify({ name, content }));
+    const del = document.createElement("button");
+    del.textContent = "−";
+    del.onclick = () => {
+      if (confirm("Are you sure you want to remove this item?")) {
+        list.removeChild(item);
+        let updated = JSON.parse(localStorage.getItem(type + "-library") || "[]");
+        updated = updated.filter(entry => entry.name !== name);
+        localStorage.setItem(type + "-library", JSON.stringify(updated));
+      }
+    };
+    item.appendChild(del);
+    list.appendChild(item);
+  });
 }
 
 function loadFile(event) {
@@ -63,8 +95,28 @@ function loadFile(event) {
   if (ext === "pdf") {
     reader.onload = async () => {
       const typedArray = new Uint8Array(reader.result);
-      localStorage.setItem("lastPdfData", JSON.stringify(Array.from(typedArray)));
-      renderPdf(typedArray);
+      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
+      let text = "";
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        container.appendChild(canvas);
+        const content = await page.getTextContent();
+        text += content.items.map(item => item.str).join(" ") + "\n";
+      }
+
+      localStorage.setItem("lastText", text);
+      localStorage.setItem("lastFileType", "pdf");
+      localStorage.setItem("lastPDFData", reader.result);
+      sentences = text.split(/(?<=[.?!])\s+/);
     };
     reader.readAsArrayBuffer(file);
   } else if (ext === "docx") {
@@ -87,123 +139,161 @@ function loadFile(event) {
   }
 }
 
-async function renderPdf(dataArray) {
-  const pdf = await pdfjsLib.getDocument({ data: dataArray }).promise;
-  const container = document.getElementById("text-display");
-  container.innerHTML = "";
-  let text = "";
-
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 1.2 });
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-    await page.render({ canvasContext: ctx, viewport }).promise;
-    container.appendChild(canvas);
-    const content = await page.getTextContent();
-    text += content.items.map(item => item.str).join(" ") + "\n";
-  }
-
-  localStorage.setItem("lastText", text);
-  sentences = text.split(/(?<=[.?!])\s+/);
-}
-
 function displayText(sentencesArr) {
   const html = sentencesArr.map((s, i) => `<span class="sentence" data-index="${i}">${s}</span>`).join(" ");
-  document.getElementById("text-display").innerHTML += html;
+  document.getElementById("text-display").innerHTML = html;
 }
 
 function highlightSentence(index) {
+  const el = document.querySelector(`.sentence[data-index="${index}"]`);
+  if (el) {
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
   document.querySelectorAll(".sentence").forEach((el, i) =>
     el.classList.toggle("highlight", i === index)
   );
 }
-function speakCurrent() {
-  if (currentSentenceIndex >= sentences.length) {
+
+function play() {
+  if (!sentences.length) return alert("Please load a document first.");
+  if (utterance && speechSynthesis.paused) return speechSynthesis.resume();
+  speakSentence(currentSentenceIndex);
+}
+
+function speakSentence(index) {
+  if (index >= sentences.length) {
     if (isLooping) currentSentenceIndex = 0;
-    else return;
+    else return stop();
   }
 
   const sentence = sentences[currentSentenceIndex];
-  utterance = new SpeechSynthesisUtterance(sentence);
   highlightSentence(currentSentenceIndex);
 
-  utterance.rate = parseFloat(document.getElementById("rate-slider").value);
-  utterance.pitch = parseFloat(document.getElementById("pitch-slider").value);
-  utterance.voice = speechSynthesis.getVoices().find(
-    v => v.name === document.getElementById("voice-select").value
-  );
+  utterance = new SpeechSynthesisUtterance(sentence);
+  utterance.rate = parseFloat(document.getElementById("rate").value);
+  utterance.pitch = parseFloat(document.getElementById("pitch").value);
 
   utterance.onend = () => {
     currentSentenceIndex++;
-    speakCurrent();
+    speakSentence(currentSentenceIndex);
   };
 
   speechSynthesis.speak(utterance);
 }
 
-function pauseSpeech() {
-  speechSynthesis.pause();
+function playCaptured() {
+  const voice = document.getElementById("capture-voice-select").value;
+  const tts = new SpeechSynthesisUtterance(capturedText);
+  tts.voice = speechSynthesis.getVoices().find(v => v.name === voice);
+  tts.rate = parseFloat(document.getElementById("capture-rate").value);
+  tts.pitch = parseFloat(document.getElementById("capture-pitch").value);
+  speechSynthesis.speak(tts);
 }
 
-function resumeSpeech() {
-  speechSynthesis.resume();
+function pause() {
+  if (speechSynthesis.speaking) speechSynthesis.pause();
 }
 
-function stopSpeech() {
+function stop() {
   speechSynthesis.cancel();
-  highlightSentence(-1);
   currentSentenceIndex = 0;
+  highlightSentence(-1);
+}
+
+function toggleLoop() {
+  isLooping = !isLooping;
+  alert("Loop is now " + (isLooping ? "enabled" : "disabled"));
+}
+
+function translateText() {
+  alert("🌍 Translation coming soon!");
+}
+
+function startCapture() {
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = document.getElementById("capture-lang-in").value;
+  recognition.continuous = true;
+  recognition.onresult = (e) => {
+    capturedText = Array.from(e.results).map(r => r[0].transcript).join(" ");
+    document.getElementById("capture-display").innerText = capturedText;
+  };
+  recognition.start();
+}
+
+function changeTTSEngine(section) {
+  const engine = document.getElementById(section === "listen" ? "tts-engine" : "capture-tts-engine").value;
+  const voiceSelect = document.getElementById(section === "listen" ? "voice-select" : "capture-voice-select");
+  voiceSelect.innerHTML = "";
+  const voices = speechSynthesis.getVoices().filter(v => v.name.toLowerCase().includes(engine));
+  voices.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v.name;
+    opt.textContent = `${v.name} (${v.lang})`;
+    voiceSelect.appendChild(opt);
+  });
+}
+
+function changeVoice(section) {
+  const voice = document.getElementById(section === "listen" ? "voice-select" : "capture-voice-select").value;
+  localStorage.setItem(section + "-voice", voice);
 }
 
 function loadTTSEngines(section) {
-  const select = document.getElementById(section + "-voice-select");
+  const engines = ["default", "google", "ibm", "responsivevoice"];
+  const select = document.getElementById(section === "listen" ? "tts-engine" : "capture-tts-engine");
   select.innerHTML = "";
-  speechSynthesis.onvoiceschanged = () => {
-    speechSynthesis.getVoices().forEach(v => {
-      const opt = document.createElement("option");
-      opt.textContent = v.name;
-      opt.value = v.name;
-      select.appendChild(opt);
-    });
-  };
-  speechSynthesis.onvoiceschanged();
-}
-
-function switchSection(id) {
-  document.querySelectorAll("section").forEach(s => s.classList.remove("active-section"));
-  document.getElementById(id).classList.add("active-section");
-  localStorage.setItem("lastSection", id);
+  engines.forEach(engine => {
+    const opt = document.createElement("option");
+    opt.value = engine;
+    opt.textContent = engine.toUpperCase();
+    select.appendChild(opt);
+  });
 }
 
 function restoreSection() {
-  const section = localStorage.getItem("lastSection");
-  if (section) switchSection(section);
+  const section = localStorage.getItem("lastSection") || "home";
+  navigate(section);
+}
+
+function navigate(tab) {
+  localStorage.setItem("lastSection", tab);
+  document.querySelectorAll("main section").forEach(s => s.style.display = "none");
+  document.getElementById(tab).style.display = "block";
+}
+
+function loadSettings() {
+  document.getElementById("rate").value = localStorage.getItem("rate") || 1;
+  document.getElementById("pitch").value = localStorage.getItem("pitch") || 1;
+  document.getElementById("capture-rate").value = localStorage.getItem("capture-rate") || 1;
+  document.getElementById("capture-pitch").value = localStorage.getItem("capture-pitch") || 1;
 }
 
 function restoreLastFile() {
-  const lastText = localStorage.getItem("lastText");
-  const lastPdfRaw = localStorage.getItem("lastPdfData");
-  if (lastPdfRaw) {
-    const uint8array = new Uint8Array(JSON.parse(lastPdfRaw));
-    renderPdf(uint8array);
-  } else if (lastText) {
-    sentences = lastText.split(/(?<=[.?!])\s+/);
+  const last = localStorage.getItem("lastText");
+  const type = localStorage.getItem("lastFileType");
+  if (type === "pdf" && localStorage.getItem("lastPDFData")) {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const typedArray = new Uint8Array(reader.result);
+      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        container.appendChild(canvas);
+      }
+    };
+    const base64 = localStorage.getItem("lastPDFData");
+    reader.readAsArrayBuffer(new Blob([new Uint8Array(base64.split(",").map(c => c.charCodeAt(0)))]));
+  }
+  if (last) {
+    sentences = last.split(/(?<=[.?!])\s+/);
     displayText(sentences);
   }
 }
-
-document.getElementById("file-input").addEventListener("change", loadFile);
-document.getElementById("play-btn").addEventListener("click", speakCurrent);
-document.getElementById("pause-btn").addEventListener("click", pauseSpeech);
-document.getElementById("resume-btn").addEventListener("click", resumeSpeech);
-document.getElementById("stop-btn").addEventListener("click", stopSpeech);
-document.getElementById("loop-btn").addEventListener("click", () => {
-  isLooping = !isLooping;
-  document.getElementById("loop-btn").textContent = isLooping ? "Loop: On" : "Loop: Off";
-});
-
-document.getElementById("save-listen").addEventListener("click", () => saveToLibrary("listen"));
-document.getElementById("save-capture").addEventListener("click", () => saveToLibrary("capture"));
