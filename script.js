@@ -314,130 +314,89 @@ function translateText() {
   alert("🌍 Translation coming soon!");
 }
 
-const canvas = document.getElementById("pdf-canvas");
-const ctx = canvas?.getContext("2d");
-
-let pdfDoc = null;
-let pageNum = 1;
-let scale = 1.5;
-let currentSentenceIndex = 0;
-let textItems = [];
-let utterance = null;
-let db;
-
-// ✅ Initialize IndexedDB
-function initIndexedDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open("NeurAloudPDFs", 1);
-    request.onerror = () => reject("IndexedDB error");
-    request.onsuccess = () => {
-      db = request.result;
-      resolve();
-    };
-    request.onupgradeneeded = (e) => {
-      db = e.target.result;
-      if (!db.objectStoreNames.contains("pdfs")) {
-        db.createObjectStore("pdfs", { keyPath: "name" });
-      }
-    };
-  });
-}
-
-// ✅ Save PDF to IndexedDB
+// ✅ Enhanced PDF Storage and Reload with IndexedDB
 async function savePDFToDB(name, buffer) {
-  const tx = db.transaction("pdfs", "readwrite");
-  const store = tx.objectStore("pdfs");
-  await store.put({ name, buffer });
-  await tx.done;
+  const tx = db.transaction("files", "readwrite");
+  const store = tx.objectStore("files");
+  await store.put({ id: name, buffer });
 }
 
-// ✅ Retrieve PDF from IndexedDB
 async function getPDFBufferFromDB(name) {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction("pdfs", "readonly");
-    const store = tx.objectStore("pdfs");
+    const tx = db.transaction("files", "readonly");
+    const store = tx.objectStore("files");
     const request = store.get(name);
     request.onsuccess = () => resolve(request.result?.buffer || null);
     request.onerror = () => reject(null);
   });
 }
 
-// ✅ File input handling
-document.getElementById("file-input")?.addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (file?.type === "application/pdf") {
-    const reader = new FileReader();
-    reader.onload = async function () {
-      const typedArray = new Uint8Array(this.result);
+// Override loadFile for PDF using IndexedDB
+function loadFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  localStorage.setItem("lastFileName", file.name);
+  const reader = new FileReader();
+  const ext = file.name.split(".").pop().toLowerCase();
+
+  if (ext === "pdf") {
+    reader.onload = async () => {
+      const typedArray = new Uint8Array(reader.result);
       await savePDFToDB(file.name, typedArray);
+      localStorage.setItem("lastFileType", "pdf");
       localStorage.setItem("lastPDFFileName", file.name);
-      await loadAndRenderPDF(file.name);
+      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
+      let text = "";
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        container.appendChild(canvas);
+        const content = await page.getTextContent();
+        text += content.items.map(item => item.str).join(" ") + "\n";
+      }
+
+      localStorage.setItem("lastText", text);
+      sentences = text.split(/(?<=[.?!])\s+/);
+      displayText(sentences);
     };
     reader.readAsArrayBuffer(file);
   }
-});
-
-// ✅ Load and render stored PDF
-async function loadAndRenderPDF(fileName) {
-  const buffer = await getPDFBufferFromDB(fileName);
-  if (!buffer) return;
-
-  pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
-  pageNum = 1;
-  await renderPageWithText(pageNum);
-  speakNextSentence();
 }
 
-async function renderPageWithText(num) {
-  const page = await pdfDoc.getPage(num);
-  const viewport = page.getViewport({ scale });
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-
-  await page.render({ canvasContext: ctx, viewport }).promise;
-
-  const textContent = await page.getTextContent();
-  textItems = textContent.items.map(item => {
-    const [x, y, , fontHeight] = item.transform;
-    return {
-      str: item.str,
-      x: x * scale,
-      y: (viewport.height - y * scale),
-      width: item.width * scale,
-      height: fontHeight * scale
-    };
-  });
-}
-
-function speakNextSentence() {
-  if (currentSentenceIndex >= textItems.length) {
-    currentSentenceIndex = 0;
-    return;
+// Override restoreLastFile using IndexedDB
+function restoreLastFile() {
+  const type = localStorage.getItem("lastFileType");
+  const name = localStorage.getItem("lastPDFFileName");
+  if (type === "pdf" && name) {
+    getPDFBufferFromDB(name).then(async (buffer) => {
+      if (!buffer) return;
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        container.appendChild(canvas);
+      }
+    });
   }
 
-  const item = textItems[currentSentenceIndex];
-  const sentence = item.str;
-
-  highlightTextBox(item);
-
-  utterance = new SpeechSynthesisUtterance(sentence);
-  utterance.onend = () => {
-    currentSentenceIndex++;
-    speakNextSentence();
-  };
-  speechSynthesis.speak(utterance);
+  const last = localStorage.getItem("lastText");
+  if (last) {
+    sentences = last.split(/(?<=[.?!])\s+/);
+    displayText(sentences);
+  }
 }
-
-function highlightTextBox(item) {
-  renderPageWithText(pageNum).then(() => {
-    ctx.fillStyle = "rgba(255, 255, 0, 0.4)";
-    ctx.fillRect(item.x, item.y - item.height, item.width, item.height);
-  });
-}
-
-// ✅ Load previous session if available
-window.addEventListener("DOMContentLoaded", async () => {
-  await initIndexedDB();
-  const lastFile = localStorage.getItem("lastPDFFileName");
-  if (lastFile) await loadAndRenderPDF(lastFile);
-});
