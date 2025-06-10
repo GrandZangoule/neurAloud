@@ -197,10 +197,9 @@ footer {
     align-items: stretch;
   }
 
-  .controls button, .sliders input[type="range"] {
+  nav button, .controls button, .sliders input, .sliders label {
     font-size: 0.8rem;
     padding: 6px 10px;
-    margin: 4px 0;
   }
 
   .quad-container {
