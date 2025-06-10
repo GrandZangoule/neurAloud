@@ -226,11 +226,12 @@ footer {
     width: 100%;
   }
 
-  .control-btn,
+  /* Only reduce mobile control button sizes without stretching */
+  .controls button,
+  .sliders button,
   select,
-  input[type="file"],
-  button {
-    width: 100%;
-    box-sizing: border-box;
+  input[type="file"] {
+    max-width: 90%;
+    font-size: 1em;
   }
 }
