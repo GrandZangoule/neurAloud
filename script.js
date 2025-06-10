@@ -131,31 +131,44 @@ function loadFile(event) {
 function restoreLastFile() {
   alert('🔄 Attempting to restore last loaded file...');
   const type = localStorage.getItem("lastFileType");
-    alert('📦 Found stored PDF. Loading...');
-  if (type === "pdf" && localStorage.getItem("lastPDFData")) {
-    const data = new Uint8Array(JSON.parse(localStorage.getItem("lastPDFData")));
-    pdfjsLib.getDocument({ data }).promise.then(async (pdf) => {
-      const container = document.getElementById("text-display");
-      container.innerHTML = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
-        alert(`🖼️ Rendering stored PDF page ${i}...`);
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.2 });
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        container.appendChild(canvas);
+  const name = localStorage.getItem("lastPDFFileName");
+
+  if (type === "pdf" && name) {
+    alert('📦 Found stored PDF. Attempting to load...');
+    getPDFBufferFromDB(name).then(async (buffer) => {
+      if (!buffer || buffer.length === 0) {
+        alert("❌ No valid PDF buffer found. Skipping restore.");
+        return;
+      }
+
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+        const container = document.getElementById("text-display");
+        container.innerHTML = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          alert(`🖼️ Rendering stored PDF page ${i}...`);
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.2 });
+          const canvas = document.createElement("canvas");
+          canvas.style.display = "block";
+          canvas.style.margin = "20px auto";
+          canvas.style.boxShadow = "0 0 5px rgba(0,0,0,0.1)";
+          const ctx = canvas.getContext("2d");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          container.appendChild(canvas);
+        }
+        const last = localStorage.getItem("lastText");
+        if (last) {
+          sentences = last.split(/(?<=[.?!])\s+/);
+          displayText(sentences);
+        }
+        alert("✅ PDF restored and displayed.");
+      } catch (err) {
+        alert("❌ Failed to restore PDF: " + err.message);
       }
     });
-  }
-
-  const last = localStorage.getItem("lastText");
-  if (last) {
-    sentences = last.split(/(?<=[.?!])\s+/);
-  alert('✅ Text loaded and displayed.');
-    displayText(sentences);
   }
 }
 
