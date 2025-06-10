@@ -93,20 +93,18 @@ function loadFile(event) {
 
   if (ext === "pdf") {
     reader.onload = async () => {
-  alert("PDF file selected. Starting to load...");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "block";
+  alert("📂 PDF file selected. Preparing to read.");
   const loadingEl = document.getElementById("loading-indicator");
   if (loadingEl) loadingEl.style.display = "block";
       const typedArray = new Uint8Array(reader.result);
       localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
       let pdf;
   try {
-    alert("Sending PDF to pdfjsLib...");
+    alert("📄 Sending PDF to pdf.js for parsing...");
     pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
-    alert("PDF successfully loaded.");
-  } catch (err) {
-    alert("PDF load failed: " + err.message);
+    alert("✅ PDF loaded successfully.");
+  } catch (error) {
+    alert("❌ Failed to load PDF: " + error.message);
     if (loadingEl) loadingEl.style.display = "none";
     return;
   }
@@ -131,11 +129,7 @@ function loadFile(event) {
       localStorage.setItem("lastFileType", "pdf");
       sentences = text.split(/(?<=[.?!])\s+/);
       displayText(sentences);
-  alert("Text extracted and displayed.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
+  alert("📝 Text extracted and rendered.");
   const loadingEl = document.getElementById("loading-indicator");
   if (loadingEl) loadingEl.style.display = "none";
   const canvasEl = document.getElementById("pdf-canvas");
@@ -169,11 +163,7 @@ function restoreLastFile() {
   if (last) {
     sentences = last.split(/(?<=[.?!])\s+/);
     displayText(sentences);
-  alert("Text extracted and displayed.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
+  alert("📝 Text extracted and rendered.");
   const loadingEl = document.getElementById("loading-indicator");
   if (loadingEl) loadingEl.style.display = "none";
   const canvasEl = document.getElementById("pdf-canvas");
@@ -244,11 +234,7 @@ function loadToPlaylist() {
   item.onclick = () => {
     sentences = text.split(/(?<=[.?!])\s+/);
     displayText(sentences);
-  alert("Text extracted and displayed.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
+  alert("📝 Text extracted and rendered.");
   const loadingEl = document.getElementById("loading-indicator");
   if (loadingEl) loadingEl.style.display = "none";
   const canvasEl = document.getElementById("pdf-canvas");
@@ -274,11 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("lastText", content);
       sentences = content.split(/(?<=[.?!])\s+/);
       displayText(sentences);
-  alert("Text extracted and displayed.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
+  alert("📝 Text extracted and rendered.");
   const loadingEl = document.getElementById("loading-indicator");
   if (loadingEl) loadingEl.style.display = "none";
   const canvasEl = document.getElementById("pdf-canvas");
@@ -391,9 +373,7 @@ function loadFile(event) {
 
   if (ext === "pdf") {
     reader.onload = async () => {
-  alert("PDF file selected. Starting to load...");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "block";
+  alert("📂 PDF file selected. Preparing to read.");
   const loadingEl = document.getElementById("loading-indicator");
   if (loadingEl) loadingEl.style.display = "block";
       const typedArray = new Uint8Array(reader.result);
@@ -402,11 +382,11 @@ function loadFile(event) {
       localStorage.setItem("lastPDFFileName", file.name);
       let pdf;
   try {
-    alert("Sending PDF to pdfjsLib...");
+    alert("📄 Sending PDF to pdf.js for parsing...");
     pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
-    alert("PDF successfully loaded.");
-  } catch (err) {
-    alert("PDF load failed: " + err.message);
+    alert("✅ PDF loaded successfully.");
+  } catch (error) {
+    alert("❌ Failed to load PDF: " + error.message);
     if (loadingEl) loadingEl.style.display = "none";
     return;
   }
@@ -430,11 +410,7 @@ function loadFile(event) {
       localStorage.setItem("lastText", text);
       sentences = text.split(/(?<=[.?!])\s+/);
       displayText(sentences);
-  alert("Text extracted and displayed.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
+  alert("📝 Text extracted and rendered.");
   const loadingEl = document.getElementById("loading-indicator");
   if (loadingEl) loadingEl.style.display = "none";
   const canvasEl = document.getElementById("pdf-canvas");
@@ -471,11 +447,7 @@ function restoreLastFile() {
   if (last) {
     sentences = last.split(/(?<=[.?!])\s+/);
     displayText(sentences);
-  alert("Text extracted and displayed.");
-  const loadingEl = document.getElementById("loading-indicator");
-  if (loadingEl) loadingEl.style.display = "none";
-  const canvasEl = document.getElementById("pdf-canvas");
-  if (canvasEl) canvasEl.style.display = "block";
+  alert("📝 Text extracted and rendered.");
   const loadingEl = document.getElementById("loading-indicator");
   if (loadingEl) loadingEl.style.display = "none";
   const canvasEl = document.getElementById("pdf-canvas");
