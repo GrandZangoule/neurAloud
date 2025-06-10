@@ -192,21 +192,14 @@ footer {
     flex-wrap: wrap;
   }
 
-  .controls,
-  .sliders {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
+  .controls, .sliders {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .controls button,
-  .sliders button,
-  .controls select,
-  .sliders select {
-    flex: 0 1 auto;
+  .controls button, .sliders button {
     width: auto;
+    align-self: flex-start;
   }
 
   .quad-container {
@@ -218,8 +211,7 @@ footer {
     margin-bottom: 10px;
   }
 
-  .quad-cross.horizontal,
-  .quad-cross.vertical {
+  .quad-cross.horizontal, .quad-cross.vertical {
     display: none;
   }
 
@@ -227,8 +219,7 @@ footer {
     flex-direction: column;
   }
 
-  .listen-library,
-  .capture-library {
+  .listen-library, .capture-library {
     width: 100%;
   }
 }
