@@ -1,3 +1,5 @@
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
 let utterance;
 let currentSentenceIndex = 0;
 let sentences = [];
@@ -84,47 +86,7 @@ function restoreLibraryItems(type) {
   });
 }
 
-function loadFile(event) {
-  alert('📁 Starting to load file...');
-  const file = event.target.files[0];
-  if (!file) return;
-  localStorage.setItem("lastFileName", file.name);
-  const reader = new FileReader();
-  const ext = file.name.split(".").pop().toLowerCase();
 
-  if (ext === "pdf") {
-    alert('📥 Reading PDF data...');
-    reader.onload = async () => {
-      const typedArray = new Uint8Array(reader.result);
-      localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
-      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
-      const container = document.getElementById("text-display");
-      container.innerHTML = "";
-      let text = "";
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        alert(`📄 Rendering page ${i}...`);
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.2 });
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        container.appendChild(canvas);
-        const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(" ") + "\n";
-      }
-
-      localStorage.setItem("lastText", text);
-      localStorage.setItem("lastFileType", "pdf");
-      sentences = text.split(/(?<=[.?!])\s+/);
-      displayText(sentences);
-    };
-    alert('✅ PDF reading initiated.');
-    reader.readAsArrayBuffer(file);
-  }
-}
 
 function restoreLastFile() {
   alert('🔄 Attempting to restore last loaded file...');
@@ -340,6 +302,42 @@ async function getPDFBufferFromDB(name) {
 }
 
 // Override loadFile for PDF using IndexedDB
+
+
+// Override restoreLastFile using IndexedDB
+function restoreLastFile() {
+  alert('🔄 Attempting to restore last loaded file...');
+  const type = localStorage.getItem("lastFileType");
+  const name = localStorage.getItem("lastPDFFileName");
+    alert('📦 Found stored PDF. Loading...');
+  if (type === "pdf" && name) {
+    getPDFBufferFromDB(name).then(async (buffer) => {
+      if (!buffer) return;
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        alert(`🖼️ Rendering stored PDF page ${i}...`);
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        container.appendChild(canvas);
+      }
+    });
+  }
+
+  const last = localStorage.getItem("lastText");
+  if (last) {
+    sentences = last.split(/(?<=[.?!])\s+/);
+  alert('✅ Text loaded and displayed.');
+    displayText(sentences);
+  }
+}
+
 function loadFile(event) {
   alert('📁 Starting to load file...');
   const file = event.target.files[0];
@@ -381,39 +379,5 @@ function loadFile(event) {
     };
     alert('✅ PDF reading initiated.');
     reader.readAsArrayBuffer(file);
-  }
-}
-
-// Override restoreLastFile using IndexedDB
-function restoreLastFile() {
-  alert('🔄 Attempting to restore last loaded file...');
-  const type = localStorage.getItem("lastFileType");
-  const name = localStorage.getItem("lastPDFFileName");
-    alert('📦 Found stored PDF. Loading...');
-  if (type === "pdf" && name) {
-    getPDFBufferFromDB(name).then(async (buffer) => {
-      if (!buffer) return;
-      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-      const container = document.getElementById("text-display");
-      container.innerHTML = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
-        alert(`🖼️ Rendering stored PDF page ${i}...`);
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.2 });
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        container.appendChild(canvas);
-      }
-    });
-  }
-
-  const last = localStorage.getItem("lastText");
-  if (last) {
-    sentences = last.split(/(?<=[.?!])\s+/);
-  alert('✅ Text loaded and displayed.');
-    displayText(sentences);
   }
 }
