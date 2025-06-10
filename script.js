@@ -120,3 +120,90 @@ function highlightSentence(index) {
     el.classList.toggle("highlight", i === index)
   );
 }
+function speakCurrent() {
+  if (currentSentenceIndex >= sentences.length) {
+    if (isLooping) currentSentenceIndex = 0;
+    else return;
+  }
+
+  const sentence = sentences[currentSentenceIndex];
+  utterance = new SpeechSynthesisUtterance(sentence);
+  highlightSentence(currentSentenceIndex);
+
+  utterance.rate = parseFloat(document.getElementById("rate-slider").value);
+  utterance.pitch = parseFloat(document.getElementById("pitch-slider").value);
+  utterance.voice = speechSynthesis.getVoices().find(
+    v => v.name === document.getElementById("voice-select").value
+  );
+
+  utterance.onend = () => {
+    currentSentenceIndex++;
+    speakCurrent();
+  };
+
+  speechSynthesis.speak(utterance);
+}
+
+function pauseSpeech() {
+  speechSynthesis.pause();
+}
+
+function resumeSpeech() {
+  speechSynthesis.resume();
+}
+
+function stopSpeech() {
+  speechSynthesis.cancel();
+  highlightSentence(-1);
+  currentSentenceIndex = 0;
+}
+
+function loadTTSEngines(section) {
+  const select = document.getElementById(section + "-voice-select");
+  select.innerHTML = "";
+  speechSynthesis.onvoiceschanged = () => {
+    speechSynthesis.getVoices().forEach(v => {
+      const opt = document.createElement("option");
+      opt.textContent = v.name;
+      opt.value = v.name;
+      select.appendChild(opt);
+    });
+  };
+  speechSynthesis.onvoiceschanged();
+}
+
+function switchSection(id) {
+  document.querySelectorAll("section").forEach(s => s.classList.remove("active-section"));
+  document.getElementById(id).classList.add("active-section");
+  localStorage.setItem("lastSection", id);
+}
+
+function restoreSection() {
+  const section = localStorage.getItem("lastSection");
+  if (section) switchSection(section);
+}
+
+function restoreLastFile() {
+  const lastText = localStorage.getItem("lastText");
+  const lastPdfRaw = localStorage.getItem("lastPdfData");
+  if (lastPdfRaw) {
+    const uint8array = new Uint8Array(JSON.parse(lastPdfRaw));
+    renderPdf(uint8array);
+  } else if (lastText) {
+    sentences = lastText.split(/(?<=[.?!])\s+/);
+    displayText(sentences);
+  }
+}
+
+document.getElementById("file-input").addEventListener("change", loadFile);
+document.getElementById("play-btn").addEventListener("click", speakCurrent);
+document.getElementById("pause-btn").addEventListener("click", pauseSpeech);
+document.getElementById("resume-btn").addEventListener("click", resumeSpeech);
+document.getElementById("stop-btn").addEventListener("click", stopSpeech);
+document.getElementById("loop-btn").addEventListener("click", () => {
+  isLooping = !isLooping;
+  document.getElementById("loop-btn").textContent = isLooping ? "Loop: On" : "Loop: Off";
+});
+
+document.getElementById("save-listen").addEventListener("click", () => saveToLibrary("listen"));
+document.getElementById("save-capture").addEventListener("click", () => saveToLibrary("capture"));
