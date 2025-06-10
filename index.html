@@ -51,12 +51,12 @@
         <select id="voice-select" onchange="changeVoice('listen')"></select>
       </div>
       <div class="controls">
-        <button onclick="play()">▶️ Play</button>
-        <button onclick="pause()">⏸️ Pause</button>
-        <button onclick="stop()">⏹️ Stop</button>
-        <button onclick="toggleLoop()">🔁 Loop</button>
-        <button onclick="translateText()">🌐 Translate</button>
-        <button onclick="playPlaylist()">📂 Play Playlist</button>
+        <button class="control-btn" onclick="play()">▶️ Play</button>
+        <button class="control-btn" onclick="pause()">⏸️ Pause</button>
+        <button class="control-btn" onclick="stop()">⏹️ Stop</button>
+        <button class="control-btn" onclick="toggleLoop()">🔁 Loop</button>
+        <button class="control-btn" onclick="translateText()">🌐 Translate</button>
+        <button class="control-btn" onclick="playPlaylist()">📂 Play Playlist</button>
       </div>
       <div class="sliders">
         <button onclick="saveToLibrary('listen')">💾 Save to Library</button>
@@ -74,11 +74,11 @@
         <select id="capture-lang-out"><option value="en-US">Read Out: English</option></select>
       </div>
       <div class="controls">
-        <button onclick="startCapture()">🎧 Start Capture</button>
-        <button onclick="playCaptured()">▶️ Play</button>
-        <button onclick="stop()">⏹️ Stop</button>
-        <button onclick="toggleLoop()">🔁 Loop</button>
-        <button onclick="translateText()">🌐 Translate</button>
+        <button class="control-btn" onclick="startCapture()">🎧 Start Capture</button>
+        <button class="control-btn" onclick="playCaptured()">▶️ Play</button>
+        <button class="control-btn" onclick="stop()">⏹️ Stop</button>
+        <button class="control-btn" onclick="toggleLoop()">🔁 Loop</button>
+        <button class="control-btn" onclick="translateText()">🌐 Translate</button>
       </div>
       <div class="sliders">
         <button onclick="saveToLibrary('capture')">💾 Save to Library</button>
@@ -92,7 +92,8 @@
       <div class="library-split">
         <div class="listen-library">
           <h3>Playlist (max 10)</h3>
-          <div id="playlist" class="library-list"></div>
+          <div id="playlist" class="library-list" ondrop="dropToPlaylist(event)" ondragover="event.preventDefault()"></div>
+          <button onclick="loadSelectedToPlaylist()">➕ Load to Playlist</button>
           <h3>Saved Listen Files</h3>
           <div id="listen-library-list" class="library-list"></div>
         </div>
