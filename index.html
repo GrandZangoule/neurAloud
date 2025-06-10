@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NeurAloud</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="manifest" href="manifest.json"/>
 </head>
 <body>
   <header>
@@ -13,107 +13,120 @@
     <nav>
       <button onclick="navigate('home')">Home</button>
       <button onclick="navigate('library')">Library</button>
-      <button onclick="navigate('listen')"><b>Listen</b></button>
+      <button onclick="navigate('listen')">Listen</button>
       <button onclick="navigate('capture')">Capture</button>
       <button onclick="navigate('store')">Store</button>
-      <button onclick="navigate('profile')">⚙️</button>
+      <button onclick="navigate('profile')">⚙</button>
     </nav>
   </header>
 
   <main>
-    <!-- Home -->
-    <section id="home">
+    <section id="home" class="active-section">
       <div class="quad-container">
-        <div class="quad">🎧 <strong>Read Any File</strong><br/>PDF, DOCX, TXT, EPUB, and more. Highlight as you listen.</div>
-        <div class="quad">🌍 <strong>Multilingual</strong><br/>100+ voices, 40+ languages. AI voices from Google, IBM, Mozilla.</div>
-        <div class="quad">📚 <strong>Library & Playlist</strong><br/>Save, organize, and reorder up to 100 files. Queue 10 at a time.</div>
-        <div class="quad">🎙️ <strong>Capture Mode</strong><br/>Live mic input, translation, and text extraction. Save to library.</div>
-        <div class="quad-cross horizontal"></div>
+        <div class="quad top-left">
+          <h3>Listen</h3>
+          <p>Upload PDF, DOCX, TXT, and listen with AI voice. Multilingual, high-quality reading.</p>
+        </div>
+        <div class="quad top-right">
+          <h3>Capture</h3>
+          <p>Capture any sound or voice in any language. Converts to text, translates, and reads aloud.</p>
+        </div>
+        <div class="quad bottom-left">
+          <h3>Library + Playlist</h3>
+          <p>Auto-save up to 100 documents, drag to playlist (max 10), auto-playback, manage easily.</p>
+        </div>
+        <div class="quad bottom-right">
+          <h3>Features</h3>
+          <p>1 hour/day free. Google, IBM, ResponsiveVoice engines. 100+ voices, all major languages.</p>
+        </div>
         <div class="quad-cross vertical"></div>
+        <div class="quad-cross horizontal"></div>
       </div>
     </section>
 
-    <!-- Listen -->
     <section id="listen">
       <div class="controls">
-        <input type="file" id="fileInput" accept=".pdf,.txt,.docx" onchange="loadFile(event)" />
+        <input type="file" id="fileInput" onchange="loadFile(event)" />
         <select id="tts-engine" onchange="changeTTSEngine('listen')"></select>
         <select id="voice-select" onchange="changeVoice('listen')"></select>
-        <button onclick="play()">▶️</button>
-        <button onclick="pause()">⏸️</button>
-        <button onclick="stop()">⏹️</button>
-        <button onclick="toggleLoop()">🔁</button>
       </div>
-
+      <div class="controls">
+        <button onclick="play()">▶️ Play</button>
+        <button onclick="pause()">⏸️ Pause</button>
+        <button onclick="stop()">⏹️ Stop</button>
+        <button onclick="toggleLoop()">🔁 Loop</button>
+        <button onclick="translateText()">🌐 Translate</button>
+        <button onclick="playPlaylist()">📂 Play Playlist</button>
+      </div>
       <div class="sliders">
         <button onclick="saveToLibrary('listen')">💾 Save to Library</button>
-        <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.01" value="1" /></label>
-        <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.01" value="1" /></label>
+        <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.01" /><span id="rateVal">1</span></label>
+        <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.01" /><span id="pitchVal">1</span></label>
       </div>
-
       <div id="text-display" class="text-box"></div>
     </section>
 
-    <!-- Capture -->
     <section id="capture">
       <div class="controls">
         <select id="capture-tts-engine" onchange="changeTTSEngine('capture')"></select>
         <select id="capture-voice-select" onchange="changeVoice('capture')"></select>
-        <select id="capture-lang-in"><option value="en-US">🎤 English</option><option value="es-ES">🎤 Spanish</option></select>
-        <select id="capture-lang-out"><option value="en-US">🔊 English</option><option value="es-ES">🔊 Spanish</option></select>
-        <button onclick="startCapture()">🎙️ Start Capture</button>
-        <button onclick="playCaptured()">▶️ Play</button>
+        <select id="capture-lang-in"><option value="en-US">Speak In: English</option></select>
+        <select id="capture-lang-out"><option value="en-US">Read Out: English</option></select>
       </div>
-
+      <div class="controls">
+        <button onclick="startCapture()">🎧 Start Capture</button>
+        <button onclick="playCaptured()">▶️ Play</button>
+        <button onclick="stop()">⏹️ Stop</button>
+        <button onclick="toggleLoop()">🔁 Loop</button>
+        <button onclick="translateText()">🌐 Translate</button>
+      </div>
       <div class="sliders">
         <button onclick="saveToLibrary('capture')">💾 Save to Library</button>
-        <label>Rate: <input type="range" id="capture-rate" min="0.5" max="2" step="0.01" value="1" /></label>
-        <label>Pitch: <input type="range" id="capture-pitch" min="0" max="2" step="0.01" value="1" /></label>
+        <label>Rate: <input type="range" id="capture-rate" min="0.5" max="2" step="0.01" /><span id="captureRateVal">1</span></label>
+        <label>Pitch: <input type="range" id="capture-pitch" min="0" max="2" step="0.01" /><span id="capturePitchVal">1</span></label>
       </div>
-
       <div id="capture-display" class="text-box"></div>
     </section>
 
-    <!-- Library -->
     <section id="library">
       <div class="library-split">
         <div class="listen-library">
-          <h3>🎧 Listen Library</h3>
-          <div id="playlist" class="library-list"><h4>Playlist (Max 10)</h4></div>
+          <h3>Playlist (max 10)</h3>
+          <div id="playlist" class="library-list"></div>
+          <h3>Saved Listen Files</h3>
           <div id="listen-library-list" class="library-list"></div>
         </div>
         <div class="capture-library">
-          <h3>🎙️ Capture Library</h3>
+          <h3>Saved Captures</h3>
           <div id="capture-library-list" class="library-list"></div>
         </div>
       </div>
     </section>
 
-    <!-- Store -->
     <section id="store">
-      <p>🛒 Store content coming soon.</p>
+      <h2>Coming Soon</h2>
     </section>
 
-    <!-- Profile -->
     <section id="profile">
-      <h3>👤 Profile</h3>
-      <p>User details and settings here.</p>
+      <div>
+        <h3>User Profile</h3>
+        <p>Name: John Doe</p>
+        <p>Email: user@email.com</p>
+      </div>
       <hr class="profile-divider" />
-      <p>🎨 Theme, TTS options, and advanced preferences coming soon.</p>
+      <div>
+        <h3>Settings</h3>
+        <p>Dark Mode: [toggle]</p>
+        <p>Auto Resume: [toggle]</p>
+      </div>
     </section>
   </main>
 
   <footer>
-    <button onclick="translateText()">🌐 Translate</button>
+    <p>&copy; 2025 NeurAloud. All rights reserved.</p>
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
   <script src="script.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./service-worker.js').then(() => console.log("✅ Service Worker Registered"));
-    }
-  </script>
 </body>
 </html>
