@@ -420,13 +420,19 @@ function restoreLastFile() {
   alert('🔄 Attempting to restore last loaded file...');
   const type = localStorage.getItem("lastFileType");
   const name = localStorage.getItem("lastPDFFileName");
-    alert('📦 Found stored PDF. Loading...');
-  if (type === "pdf" && name) {
-    getPDFBufferFromDB(name).then(async (buffer) => {
-      if (!buffer) return;
-      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-      const container = document.getElementById("text-display");
-      container.innerHTML = "";
+    if (type === "pdf" && name) {
+  getPDFBufferFromDB(name).then(async (buffer) => {
+    if (!buffer || buffer.byteLength === 0) {
+      alert("❌ No valid PDF buffer to load.");
+      return;
+    }
+
+    const sizeKB = (buffer.byteLength / 1024).toFixed(2);
+    alert(`📘 PDF file found (${sizeKB} KB). Loading...`);
+
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    const container = document.getElementById("text-display");
+    container.innerHTML = "";
       for (let i = 1; i <= pdf.numPages; i++) {
         alert(`🖼️ Rendering stored PDF page ${i}...`);
         const page = await pdf.getPage(i);
