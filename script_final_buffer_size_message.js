@@ -1,3 +1,4 @@
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 let utterance;
 let currentSentenceIndex = 0;
 let sentences = [];
@@ -99,7 +100,6 @@ function loadFile(event) {
     reader.onload = async () => {
       const typedArray = new Uint8Array(reader.result);
       localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
       const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
       const container = document.getElementById("text-display");
       container.innerHTML = "";
@@ -137,47 +137,55 @@ function restoreLastFile() {
   if (type === "pdf" && name) {
     getPDFBufferFromDB(name).then(async (buffer) => {
       if (!buffer || buffer.byteLength === 0) {
-        alert('❌ No valid PDF buffer to load.');
+        alert("❌ No valid PDF buffer found in IndexedDB. Skipping restore.");
         return;
       }
 
+      console.log("📦 Loaded buffer from IndexedDB:", buffer);
       const sizeKB = (buffer.byteLength / 1024).toFixed(2);
-      alert(`📘 PDF file found (${sizeKB} KB). Preparing to load...`);
-
-      const loadPDF = async () => {
+      try {
         const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+        alert(`📘 PDF file found (${sizeKB} KB). Loading...`);
         const container = document.getElementById("text-display");
         container.innerHTML = "";
+        let pagesRendered = 0;
 
         for (let i = 1; i <= pdf.numPages; i++) {
-          alert(`🖼️ Rendering stored PDF page ${i}...`);
           const page = await pdf.getPage(i);
           const viewport = page.getViewport({ scale: 1.2 });
           const canvas = document.createElement("canvas");
+          canvas.style.display = "block";
+          canvas.style.margin = "20px auto";
+          canvas.style.boxShadow = "0 0 5px rgba(0,0,0,0.1)";
           const ctx = canvas.getContext("2d");
-          canvas.height = viewport.height;
           canvas.width = viewport.width;
+          canvas.height = viewport.height;
           await page.render({ canvasContext: ctx, viewport }).promise;
           container.appendChild(canvas);
+          pagesRendered++;
         }
-      };
 
-      // Only load if we're already on Listen tab, otherwise wait
-      const activeSection = document.querySelector("section.active-section")?.id;
-      if (activeSection === "listen") {
-        loadPDF();
-      } else {
-        // Delay execution until user navigates to "Listen"
-        const observer = new MutationObserver(() => {
-          const newActive = document.querySelector("section.active-section")?.id;
-          if (newActive === "listen") {
-            observer.disconnect();
-            loadPDF();
-          }
-        });
-        observer.observe(document.querySelector("main"), { attributes: true, subtree: true });
+        if (pagesRendered === 0) {
+          alert("⚠️ No pages rendered. Skipping restore.");
+          return;
+        }
+
+        const last = localStorage.getItem("lastText");
+        if (last) {
+          sentences = last.split(/(?<=[.?!])\s+/);
+          displayText(sentences);
+        }
+        alert("✅ PDF restored and displayed.");
+      } catch (err) {
+        alert("❌ Failed to load PDF from buffer: " + err.message);
+        const tx = db.transaction("files", "readwrite");
+        const store = tx.objectStore("files");
+        store.delete(name);
+        console.warn("🧹 Removed corrupted PDF buffer:", name);
       }
     });
+  } else {
+    alert("ℹ️ No PDF restore conditions met.");
   }
 }
 
