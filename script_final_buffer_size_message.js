@@ -86,7 +86,7 @@ function restoreLibraryItems(type) {
   });
 }
 
-async function loadFile(event) {
+function loadFile(event) {
   const file = event.target.files[0];
   if (!file) return;
   
