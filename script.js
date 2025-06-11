@@ -87,7 +87,7 @@ function restoreLibraryItems(type) {
 }
 
 function loadFile(event) {
-  alert('📁 Starting to load file...');
+  // alert('📁 Starting to load file...');
   const file = event.target.files[0];
   if (!file) return;
   localStorage.setItem("lastFileName", file.name);
@@ -95,7 +95,7 @@ function loadFile(event) {
   const ext = file.name.split(".").pop().toLowerCase();
 
   if (ext === "pdf") {
-    alert('📥 Reading PDF data...');
+    // alert('📥 Reading PDF data...');
     reader.onload = async () => {
       const typedArray = new Uint8Array(reader.result);
       localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
@@ -105,7 +105,7 @@ function loadFile(event) {
       let text = "";
 
       for (let i = 1; i <= pdf.numPages; i++) {
-        alert(`📄 Rendering page ${i}...`);
+        // alert(`📄 Rendering page ${i}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.2 });
         const canvas = document.createElement("canvas");
