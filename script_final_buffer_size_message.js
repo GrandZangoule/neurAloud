@@ -86,68 +86,45 @@ function restoreLibraryItems(type) {
   });
 }
 
-async function loadFile(event) {
+function loadFile(event) {
+  alert('📁 Starting to load file...');
   const file = event.target.files[0];
   if (!file) return;
-  
   localStorage.setItem("lastFileName", file.name);
-  
   const reader = new FileReader();
   const ext = file.name.split(".").pop().toLowerCase();
 
-  if (ext !== "pdf") {
-    alert("Only PDF files are supported!");
-    return;
-  }
-
-  reader.onload = async () => {
-    const typedArray = new Uint8Array(reader.result);
-    localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
-
-    // Clear previous canvas and text
-    const canvasContainer = document.getElementById("pdf-canvas");
-    canvasContainer.innerHTML = "";
-    document.getElementById("text-display").innerHTML = "";
-
-    try {
+  if (ext === "pdf") {
+    alert('📥 Reading PDF data...');
+    reader.onload = async () => {
+      const typedArray = new Uint8Array(reader.result);
+      localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
       const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
+      let text = "";
 
       for (let i = 1; i <= pdf.numPages; i++) {
+        alert(`📄 Rendering page ${i}...`);
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.5 });
-
+        const viewport = page.getViewport({ scale: 1.2 });
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
-        canvas.width = viewport.width;
         canvas.height = viewport.height;
-
+        canvas.width = viewport.width;
         await page.render({ canvasContext: ctx, viewport }).promise;
-        canvasContainer.appendChild(canvas);
-
-        // Extract text asynchronously
+        container.appendChild(canvas);
         const content = await page.getTextContent();
-        const text = content.items.map(item => item.str).join(" ") + "\n";
-
-        localStorage.setItem("lastText", text);
+        text += content.items.map(item => item.str).join(" ") + "\n";
       }
 
+      localStorage.setItem("lastText", text);
       localStorage.setItem("lastFileType", "pdf");
-      resumeReadingIfApplicable();
-
-    } catch (error) {
-      console.error("Error loading PDF:", error);
-    }
-  };
-
-  reader.readAsArrayBuffer(file);
-}
-
-function resumeReadingIfApplicable() {
-  const lastText = localStorage.getItem("lastText");
-  const lastPaused = localStorage.getItem("paused");
-
-  if (lastText && lastPaused !== "true") {
-    highlightAndRead(lastText, document.getElementById("pdf-canvas"), null);
+      sentences = text.split(/(?<=[.?!])\s+/);
+      displayText(sentences);
+    };
+    alert('✅ PDF reading initiated.');
+    reader.readAsArrayBuffer(file);
   }
 }
 
