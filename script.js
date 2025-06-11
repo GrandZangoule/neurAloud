@@ -140,7 +140,7 @@ function restoreLastFile() {
         return;
       }
 
-      alert('📦 Valid PDF buffer found. Loading...');
+      alert("📦 Found stored PDF. Loading...");
       try {
         const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
         const container = document.getElementById("text-display");
@@ -148,7 +148,6 @@ function restoreLastFile() {
         let pagesRendered = 0;
 
         for (let i = 1; i <= pdf.numPages; i++) {
-          alert(`🖼️ Rendering page ${i}...`);
           const page = await pdf.getPage(i);
           const viewport = page.getViewport({ scale: 1.2 });
           const canvas = document.createElement("canvas");
