@@ -434,7 +434,7 @@ function restoreLastFile() {
     const container = document.getElementById("text-display");
     container.innerHTML = "";
       for (let i = 1; i <= pdf.numPages; i++) {
-        alert(`🖼️ Rendering stored PDF page ${i}...`);
+        // lert(`🖼️ Rendering stored PDF page ${i}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.2 });
         const canvas = document.createElement("canvas");
