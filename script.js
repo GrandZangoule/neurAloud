@@ -141,11 +141,11 @@ function restoreLastFile() {
       }
 
       console.log("📦 Loaded buffer from IndexedDB:", buffer);
-
+      const sizeKB = (buffer.byteLength / 1024).toFixed(2);
       try {
         const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
-        alert("📦 Found stored PDF. Loading...");
+        alert(`📘 PDF file found (${sizeKB} KB). Loading...`);
 
         const container = document.getElementById("text-display");
         container.innerHTML = "";
@@ -179,7 +179,6 @@ function restoreLastFile() {
         alert("✅ PDF restored and displayed.");
       } catch (err) {
         alert("❌ Failed to load PDF from buffer: " + err.message);
-        // Clean up corrupt buffer entry
         const tx = db.transaction("files", "readwrite");
         const store = tx.objectStore("files");
         store.delete(name);
