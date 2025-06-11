@@ -144,9 +144,7 @@ function restoreLastFile() {
       const sizeKB = (buffer.byteLength / 1024).toFixed(2);
       try {
         const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-
         alert(`📘 PDF file found (${sizeKB} KB). Loading...`);
-
         const container = document.getElementById("text-display");
         container.innerHTML = "";
         let pagesRendered = 0;
