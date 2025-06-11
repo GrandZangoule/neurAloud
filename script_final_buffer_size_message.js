@@ -86,7 +86,7 @@ function restoreLibraryItems(type) {
   });
 }
 
-function loadFile(event) {
+async function loadFile(event) {
   const file = event.target.files[0];
   if (!file) return;
   
@@ -103,66 +103,43 @@ function loadFile(event) {
   reader.onload = async () => {
     const typedArray = new Uint8Array(reader.result);
     localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
-    
+
     // Clear previous canvas and text
-    document.getElementById("pdf-canvas").innerHTML = "";
+    const canvasContainer = document.getElementById("pdf-canvas");
+    canvasContainer.innerHTML = "";
     document.getElementById("text-display").innerHTML = "";
-    
-    // Load and render the PDF
-    const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
-    
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const viewport = page.getViewport({ scale: 1.5 });
-      
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      
-      await page.render({ canvasContext: ctx, viewport }).promise;
-      document.getElementById("pdf-canvas").appendChild(canvas);
 
-      // Extract text from the page
-      const content = await page.getTextContent();
-      const text = content.items.map(item => item.str).join(" ") + "\n";
-      
-      localStorage.setItem("lastText", text);
-      
-      // Store in IndexedDB
-      savePDFToLibrary(file.name, typedArray);
-      
-      // Highlight and read the text
-      highlightAndRead(text, canvas, page);
+    try {
+      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.5 });
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        canvasContainer.appendChild(canvas);
+
+        // Extract text asynchronously
+        const content = await page.getTextContent();
+        const text = content.items.map(item => item.str).join(" ") + "\n";
+
+        localStorage.setItem("lastText", text);
+      }
+
+      localStorage.setItem("lastFileType", "pdf");
+      resumeReadingIfApplicable();
+
+    } catch (error) {
+      console.error("Error loading PDF:", error);
     }
-
-    localStorage.setItem("lastFileType", "pdf");
-    resumeReadingIfApplicable();
   };
 
   reader.readAsArrayBuffer(file);
-}
-
-function highlightAndRead(text, canvas, page) {
-  sentences = text.split(/(?<=[.?!])\s+/);
-  
-  let sentenceIndex = 0;
-  
-  function highlightNextSentence() {
-    if (sentenceIndex >= sentences.length) return;
-    
-    const sentence = sentences[sentenceIndex];
-    
-    // Highlight logic here (overlay effect on canvas)
-    drawHighlightOnCanvas(canvas, sentenceIndex);
-    
-    readAloud(sentence, () => {
-      sentenceIndex++;
-      highlightNextSentence();
-    });
-  }
-  
-  highlightNextSentence();
 }
 
 function resumeReadingIfApplicable() {
