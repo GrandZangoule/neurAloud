@@ -1,4 +1,3 @@
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 let utterance;
 let currentSentenceIndex = 0;
 let sentences = [];
@@ -88,6 +87,10 @@ function restoreLibraryItems(type) {
 }
 
 function loadFile(event) {
+  const loadingIndicator = document.getElementById("loading-indicator");
+  loadingIndicator.style.display = "block";
+  loadingIndicator.innerText = "Your file is being loaded, please wait…";
+
   alert('📁 Starting to load file...');
   const file = event.target.files[0];
   if (!file) return;
