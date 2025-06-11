@@ -87,7 +87,7 @@ function restoreLibraryItems(type) {
 }
 
 function loadFile(event) {
-  // alert('📁 Starting to load file...');
+  alert('📁 Starting to load file...');
   const file = event.target.files[0];
   if (!file) return;
   localStorage.setItem("lastFileName", file.name);
@@ -129,7 +129,7 @@ function loadFile(event) {
 }
 
 function restoreLastFile() {
-  alert('🔄 Attempting to restore last loaded file...');
+  // alert('🔄 Attempting to restore last loaded file...');
   const type = localStorage.getItem("lastFileType");
   const name = localStorage.getItem("lastPDFFileName");
 
