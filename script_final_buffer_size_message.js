@@ -87,10 +87,6 @@ function restoreLibraryItems(type) {
 }
 
 function loadFile(event) {
-  const loadingIndicator = document.getElementById("loading-indicator");
-  loadingIndicator.style.display = "block";
-  loadingIndicator.innerText = "Your file is being loaded, please wait…";
-
   alert('📁 Starting to load file...');
   const file = event.target.files[0];
   if (!file) return;
