@@ -99,6 +99,7 @@ function loadFile(event) {
     reader.onload = async () => {
       const typedArray = new Uint8Array(reader.result);
       localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
       const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
       const container = document.getElementById("text-display");
       container.innerHTML = "";
@@ -136,6 +137,9 @@ function restoreLastFile() {
   if (type === "pdf" && name) {
     getPDFBufferFromDB(name).then(async (buffer) => {
       if (!buffer || buffer.byteLength === 0) {
+        alert('❌ No valid PDF buffer to load.');
+        return;
+      }
         alert("❌ No valid PDF buffer found in IndexedDB. Skipping restore.");
         return;
       }
