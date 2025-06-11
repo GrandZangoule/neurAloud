@@ -48,7 +48,8 @@
     <!-- LISTEN SECTION -->
     <section id="listen">
       <div class="controls">
-        <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.epub" onchange="loadFile(event)" />
+         <!-- <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.epub" onchange="loadFile(event)" /> -->
+        <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.epub" onchange="handleFileUpload(event)" />
         <select id="tts-engine" onchange="changeTTSEngine('listen')"></select>
         <select id="voice-select" onchange="changeVoice('listen')"></select>
       </div>
