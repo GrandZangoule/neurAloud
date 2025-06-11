@@ -140,9 +140,13 @@ function restoreLastFile() {
         return;
       }
 
-      alert("📦 Found stored PDF. Loading...");
+      console.log("📦 Loaded buffer from IndexedDB:", buffer);
+
       try {
         const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+        alert("📦 Found stored PDF. Loading...");
+
         const container = document.getElementById("text-display");
         container.innerHTML = "";
         let pagesRendered = 0;
@@ -174,7 +178,12 @@ function restoreLastFile() {
         }
         alert("✅ PDF restored and displayed.");
       } catch (err) {
-        alert("❌ Failed to render stored PDF: " + err.message);
+        alert("❌ Failed to load PDF from buffer: " + err.message);
+        // Clean up corrupt buffer entry
+        const tx = db.transaction("files", "readwrite");
+        const store = tx.objectStore("files");
+        store.delete(name);
+        console.warn("🧹 Removed corrupted PDF buffer:", name);
       }
     });
   } else {
