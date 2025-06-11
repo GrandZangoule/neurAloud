@@ -6,42 +6,6 @@ let capturedText = '';
 let db;
 
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-
-// Override restoreLastFile using IndexedDB
-function restoreLastFile() {
-  alert('🔄 Attempting to restore last loaded file...');
-  const type = localStorage.getItem("lastFileType");
-  const name = localStorage.getItem("lastPDFFileName");
-
-  if (type === "pdf" && name) {
-    getPDFBufferFromDB(name).then(async (buffer) => {
-      if (!buffer || buffer.byteLength === 0) {
-        alert("❌ No valid PDF buffer to load.");
-        return;
-      }
-
-      const sizeKB = (buffer.byteLength / 1024).toFixed(2);
-      alert(`📘 PDF file found (${sizeKB} KB). Loading...`);
-
-      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-      const container = document.getElementById("text-display");
-      container.innerHTML = "";
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        alert(`🖼️ Rendering stored PDF page ${i}...`);
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.2 });
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        container.appendChild(canvas);
-      }
-    });
-  }
-}
 window.addEventListener("DOMContentLoaded", async () => {
   try { await initDB(); } catch (e) { console.error("initDB failed:", e); }
   try { loadSettings(); } catch (e) { console.error("loadSettings failed:", e); }
@@ -164,6 +128,17 @@ function loadFile(event) {
   }
 }
 
+function restoreLastFile() {
+  alert('🔄 Attempting to restore last loaded file...');
+  const type = localStorage.getItem("lastFileType");
+  const name = localStorage.getItem("lastPDFFileName");
+
+  if (type === "pdf" && name) {
+    getPDFBufferFromDB(name).then(async (buffer) => {
+      if (!buffer || buffer.byteLength === 0) {
+        alert("❌ No valid PDF buffer found in IndexedDB. Skipping restore.");
+        return;
+      }
 
       console.log("📦 Loaded buffer from IndexedDB:", buffer);
       const sizeKB = (buffer.byteLength / 1024).toFixed(2);
@@ -441,6 +416,16 @@ function loadFile(event) {
 }
 
 // Override restoreLastFile using IndexedDB
+function restoreLastFile() {
+  alert('🔄 Attempting to restore last loaded file...');
+  const type = localStorage.getItem("lastFileType");
+  const name = localStorage.getItem("lastPDFFileName");
+    if (type === "pdf" && name) {
+  getPDFBufferFromDB(name).then(async (buffer) => {
+    if (!buffer || buffer.byteLength === 0) {
+      alert("❌ No valid PDF buffer to load.");
+      return;
+    }
 
     const sizeKB = (buffer.byteLength / 1024).toFixed(2);
     alert(`📘 PDF file found (${sizeKB} KB). Loading...`);
