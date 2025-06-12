@@ -527,3 +527,30 @@ async function restoreLastFile() {
     displayText(sentences);
   }
 }
+
+
+function setupConsoleLogRedirect() {
+  const logDiv = document.createElement("div");
+  logDiv.id = "console-log";
+  logDiv.style = "position:fixed;bottom:0;left:0;width:100%;max-height:150px;overflow-y:auto;background:#111;color:#0f0;font:12px monospace;padding:4px;z-index:9999;border-top:2px solid #444";
+  document.body.appendChild(logDiv);
+
+  function logToDiv(type, args) {
+    const msg = Array.from(args).map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(" ");
+    const entry = document.createElement("div");
+    entry.textContent = `[${type.toUpperCase()}] ${msg}`;
+    entry.style.color = type === 'error' ? '#f66' : type === 'warn' ? '#ff0' : '#0f0';
+    logDiv.appendChild(entry);
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+
+  ['log', 'error', 'warn'].forEach(type => {
+    const original = console[type];
+    console[type] = function(...args) {
+      original.apply(console, args);
+      logToDiv(type, args);
+    };
+  });
+}
+
+window.addEventListener("DOMContentLoaded", setupConsoleLogRedirect);
