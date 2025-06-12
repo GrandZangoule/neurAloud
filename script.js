@@ -87,7 +87,7 @@ function restoreLibraryItems(type) {
 }
 
 function loadFile(event) {
-  // alert('📁 Starting to load file...');
+  alert('📁 Starting to load file...');
   const file = event.target.files[0];
   if (!file) return;
   localStorage.setItem("lastFileName", file.name);
@@ -95,8 +95,9 @@ function loadFile(event) {
   const ext = file.name.split(".").pop().toLowerCase();
 
   if (ext === "pdf") {
-    // alert('📥 Reading PDF data...');
+    alert('📥 Reading PDF data...');
     reader.onload = async () => {
+      await initDB(); // ✅ Ensure DB is ready
       const typedArray = new Uint8Array(reader.result);
       localStorage.setItem("lastPDFData", JSON.stringify(Array.from(typedArray)));
       const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
@@ -105,7 +106,7 @@ function loadFile(event) {
       let text = "";
 
       for (let i = 1; i <= pdf.numPages; i++) {
-        // alert(`📄 Rendering page ${i}...`);
+        alert(`📄 Rendering page ${i}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.2 });
         const canvas = document.createElement("canvas");
@@ -128,17 +129,19 @@ function loadFile(event) {
   }
 }
 
-function restoreLastFile() {
-  // alert('🔄 Attempting to restore last loaded file...');
+async function restoreLastFile() {
+  await initDB(); // ✅ Ensure DB is initialized
+  alert('🔄 Attempting to restore last loaded file...');
   const type = localStorage.getItem("lastFileType");
   const name = localStorage.getItem("lastPDFFileName");
 
   if (type === "pdf" && name) {
     getPDFBufferFromDB(name).then(async (buffer) => {
       if (!buffer || buffer.byteLength === 0) {
-        alert("❌ No valid PDF buffer found in IndexedDB. Skipping restore.");
-        return;
-      }
+      console.warn('❌ No valid buffer found:', buffer);
+      alert('❌ No valid PDF buffer to load.');
+      return;
+    }
 
       console.log("📦 Loaded buffer from IndexedDB:", buffer);
       const sizeKB = (buffer.byteLength / 1024).toFixed(2);
@@ -382,8 +385,9 @@ function loadFile(event) {
   if (ext === "pdf") {
     alert('📥 Reading PDF data...');
     reader.onload = async () => {
+      await initDB(); // ✅ Ensure DB is ready
       const typedArray = new Uint8Array(reader.result);
-      // alert('💾 Saving PDF to IndexedDB...');
+      alert('💾 Saving PDF to IndexedDB...');
       await savePDFToDB(file.name, typedArray);
       localStorage.setItem("lastFileType", "pdf");
       localStorage.setItem("lastPDFFileName", file.name);
@@ -393,7 +397,7 @@ function loadFile(event) {
       let text = "";
 
       for (let i = 1; i <= pdf.numPages; i++) {
-        // alert(`📄 Rendering page ${i}...`);
+        alert(`📄 Rendering page ${i}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.2 });
         const canvas = document.createElement("canvas");
@@ -416,14 +420,16 @@ function loadFile(event) {
 }
 
 // Override restoreLastFile using IndexedDB
-function restoreLastFile() {
+async function restoreLastFile() {
+  await initDB(); // ✅ Ensure DB is initialized
   alert('🔄 Attempting to restore last loaded file...');
   const type = localStorage.getItem("lastFileType");
   const name = localStorage.getItem("lastPDFFileName");
     if (type === "pdf" && name) {
   getPDFBufferFromDB(name).then(async (buffer) => {
     if (!buffer || buffer.byteLength === 0) {
-      alert("❌ No valid PDF buffer to load.");
+      console.warn('❌ No valid buffer found:', buffer);
+      alert('❌ No valid PDF buffer to load.');
       return;
     }
 
@@ -434,7 +440,7 @@ function restoreLastFile() {
     const container = document.getElementById("text-display");
     container.innerHTML = "";
       for (let i = 1; i <= pdf.numPages; i++) {
-        // lert(`🖼️ Rendering stored PDF page ${i}...`);
+        alert(`🖼️ Rendering stored PDF page ${i}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.2 });
         const canvas = document.createElement("canvas");
