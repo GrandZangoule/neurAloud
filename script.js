@@ -554,3 +554,46 @@ function setupConsoleLogRedirect() {
 }
 
 window.addEventListener("DOMContentLoaded", setupConsoleLogRedirect);
+
+
+
+function setupConsoleLogRedirect() {
+  const logContainer = document.createElement("div");
+  logContainer.id = "console-log-container";
+  logContainer.style = "position:fixed;bottom:0;left:0;width:100%;z-index:9999;font:12px monospace;pointer-events:none";
+
+  const toggleBtn = document.createElement("button");
+  toggleBtn.textContent = "🪵 Hide Log";
+  toggleBtn.style = "pointer-events:auto;position:absolute;top:-24px;right:8px;font-size:11px;padding:2px 6px;background:#222;color:#fff;border:1px solid #555;border-radius:4px;cursor:pointer;z-index:10000";
+  toggleBtn.onclick = () => {
+    logDiv.style.display = logDiv.style.display === "none" ? "block" : "none";
+    toggleBtn.textContent = logDiv.style.display === "none" ? "🪵 Show Log" : "🪵 Hide Log";
+  };
+
+  const logDiv = document.createElement("div");
+  logDiv.id = "console-log";
+  logDiv.style = "pointer-events:auto;background:#111;color:#0f0;padding:4px;max-height:150px;overflow-y:auto;border-top:2px solid #444";
+
+  logContainer.appendChild(toggleBtn);
+  logContainer.appendChild(logDiv);
+  document.body.appendChild(logContainer);
+
+  function logToDiv(type, args) {
+    const msg = Array.from(args).map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(" ");
+    const entry = document.createElement("div");
+    entry.textContent = `[${type.toUpperCase()}] ${msg}`;
+    entry.style.color = type === 'error' ? '#f66' : type === 'warn' ? '#ff0' : '#0f0';
+    logDiv.appendChild(entry);
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+
+  ['log', 'error', 'warn'].forEach(type => {
+    const original = console[type];
+    console[type] = function(...args) {
+      original.apply(console, args);
+      logToDiv(type, args);
+    };
+  });
+}
+
+window.addEventListener("DOMContentLoaded", setupConsoleLogRedirect);
