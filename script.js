@@ -130,18 +130,51 @@ function loadFile(event) {
 }
 
 async function restoreLastFile() {
-  await initDB(); // ✅ Ensure DB is initialized
-  alert('🔄 Attempting to restore last loaded file...');
+  await initDB(); // ✅ Ensure DB initialized
   const type = localStorage.getItem("lastFileType");
   const name = localStorage.getItem("lastPDFFileName");
 
   if (type === "pdf" && name) {
-    getPDFBufferFromDB(name).then(async (buffer) => {
+    try {
+      const buffer = await getPDFBufferFromDB(name);
       if (!buffer || buffer.byteLength === 0) {
-      console.warn('❌ No valid buffer found:', buffer);
-      alert('❌ No valid PDF buffer to load.');
-      return;
+        console.error("❌ No valid PDF buffer to load. Buffer:", buffer);
+        alert("❌ No valid PDF buffer to load.");
+        return;
+      }
+
+      const sizeKB = (buffer.byteLength / 1024).toFixed(2);
+      alert(`📘 PDF file found (${sizeKB} KB). Loading...`);
+
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        alert(`🖼️ Rendering stored PDF page ${i}...`);
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        container.appendChild(canvas);
+      }
+
+      const last = localStorage.getItem("lastText");
+      if (last) {
+        sentences = last.split(/(?<=[.?!])\s+/);
+        displayText(sentences);
+        alert("✅ Text loaded and displayed.");
+      }
+    } catch (err) {
+      console.error("❌ Error restoring PDF:", err);
+      alert("❌ Failed to restore PDF: " + err.message);
     }
+  } else {
+    console.warn("ℹ️ No PDF restore conditions met.");
+  }
+}
 
       console.log("📦 Loaded buffer from IndexedDB:", buffer);
       const sizeKB = (buffer.byteLength / 1024).toFixed(2);
@@ -421,17 +454,51 @@ function loadFile(event) {
 
 // Override restoreLastFile using IndexedDB
 async function restoreLastFile() {
-  await initDB(); // ✅ Ensure DB is initialized
-  alert('🔄 Attempting to restore last loaded file...');
+  await initDB(); // ✅ Ensure DB initialized
   const type = localStorage.getItem("lastFileType");
   const name = localStorage.getItem("lastPDFFileName");
-    if (type === "pdf" && name) {
-  getPDFBufferFromDB(name).then(async (buffer) => {
-    if (!buffer || buffer.byteLength === 0) {
-      console.warn('❌ No valid buffer found:', buffer);
-      alert('❌ No valid PDF buffer to load.');
-      return;
+
+  if (type === "pdf" && name) {
+    try {
+      const buffer = await getPDFBufferFromDB(name);
+      if (!buffer || buffer.byteLength === 0) {
+        console.error("❌ No valid PDF buffer to load. Buffer:", buffer);
+        alert("❌ No valid PDF buffer to load.");
+        return;
+      }
+
+      const sizeKB = (buffer.byteLength / 1024).toFixed(2);
+      alert(`📘 PDF file found (${sizeKB} KB). Loading...`);
+
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const container = document.getElementById("text-display");
+      container.innerHTML = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        alert(`🖼️ Rendering stored PDF page ${i}...`);
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        container.appendChild(canvas);
+      }
+
+      const last = localStorage.getItem("lastText");
+      if (last) {
+        sentences = last.split(/(?<=[.?!])\s+/);
+        displayText(sentences);
+        alert("✅ Text loaded and displayed.");
+      }
+    } catch (err) {
+      console.error("❌ Error restoring PDF:", err);
+      alert("❌ Failed to restore PDF: " + err.message);
     }
+  } else {
+    console.warn("ℹ️ No PDF restore conditions met.");
+  }
+}
 
     const sizeKB = (buffer.byteLength / 1024).toFixed(2);
     alert(`📘 PDF file found (${sizeKB} KB). Loading...`);
