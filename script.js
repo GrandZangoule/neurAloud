@@ -331,8 +331,13 @@ function restoreSection() {
 
 function navigate(tab) {
   localStorage.setItem("lastSection", tab);
-  document.querySelectorAll("main section").forEach(s => s.style.display = "none");
-  document.getElementById(tab).style.display = "block";
+  document.querySelectorAll("main section").forEach(s => s.classList.remove("active-section"));
+  const target = document.getElementById(tab);
+  if (target) {
+    target.classList.add("active-section");
+  } else {
+    console.error("❌ No section found for tab:", tab);
+  }
 }
 
 function loadTTSEngines(section) {
