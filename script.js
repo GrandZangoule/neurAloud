@@ -907,22 +907,33 @@ function initSidePanel() {
   const addToQueueBtn = document.getElementById("add-to-queue");
   const queueList = document.getElementById("playback-queue");
   const clearQueueBtn = document.getElementById("clear-queue");
+
   let utterance, isPaused = false;
   let sentenceList = [], sentenceIndex = 0;
   let currentContent = "";
   let queue = [];
+
   toggleButton.addEventListener("click", () => {
     panel.classList.add("open");
     backdrop.classList.add("open");
+  });
+
   closeButton.addEventListener("click", () => {
     panel.classList.remove("open");
     backdrop.classList.remove("open");
+  });
+
   backdrop.addEventListener("click", () => {
     panel.classList.remove("open");
     backdrop.classList.remove("open");
+  });
+
   readButton.addEventListener("click", async () => {
     const url = urlInput.value.trim();
-    if (!url) return contentDiv.textContent = "⚠️ Please enter a valid URL.";
+    if (!url) {
+      contentDiv.textContent = "⚠️ Please enter a valid URL.";
+      return;
+    }
     contentDiv.textContent = "🔄 Loading...";
     try {
       const res = await fetch(url);
@@ -935,20 +946,30 @@ function initSidePanel() {
       splitSentences(text);
     } catch (e) {
       contentDiv.textContent = "❌ Error loading or parsing URL.";
+    }
+  });
+
   function splitSentences(text) {
     sentenceList = text.match(/[^.!?]+[.!?]+/g) || [];
     sentenceIndex = 0;
+  }
+
   function scoreSentence(sentence) {
     const keywords = ["important", "must", "need", "critical"];
     let score = sentence.length / 120;
-    keywords.forEach(k => { if (sentence.includes(k)) score += 0.2; });
+    keywords.forEach(k => {
+      if (sentence.includes(k)) score += 0.2;
+    });
     if (/[!?\-:]/.test(sentence)) score += 0.2;
     return Math.min(score, 1.0);
+  }
+
   function playSentences() {
     if (!sentenceList.length) return;
     if (sentenceIndex >= sentenceList.length) {
       if (loopToggle.checked) sentenceIndex = 0;
       else return;
+    }
     const sentence = sentenceList[sentenceIndex];
     const score = scoreSentence(sentence);
     const threshold = parseFloat(thresholdSlider.value);
@@ -956,6 +977,9 @@ function initSidePanel() {
       console.log("⏭️ Skipped:", sentence, "Score:", score.toFixed(2));
       sentenceIndex++;
       playSentences();
+      return;
+    }
+
     const voiceName = voiceSelect.value;
     utterance = new SpeechSynthesisUtterance(sentence);
     utterance.voice = speechSynthesis.getVoices().find(v => v.name === voiceName);
@@ -964,8 +988,11 @@ function initSidePanel() {
     utterance.onend = () => {
       sentenceIndex++;
       playSentences();
+    };
     highlightSentence(sentence);
     speechSynthesis.speak(utterance);
+  }
+
   function highlightSentence(sentence) {
     const content = contentDiv.textContent;
     const start = content.indexOf(sentence);
@@ -975,59 +1002,92 @@ function initSidePanel() {
       content.substring(0, start) +
       `<mark>${sentence}</mark>` +
       content.substring(end);
+  }
+
   playBtn.addEventListener("click", () => {
     if (isPaused && utterance) {
       speechSynthesis.resume();
       isPaused = false;
+    } else {
       splitSentences(currentContent);
       playSentences();
+    }
+  });
+
   pauseBtn.addEventListener("click", () => {
     speechSynthesis.pause();
     isPaused = true;
+  });
+
   stopBtn.addEventListener("click", () => {
+    speechSynthesis.cancel();
     sentenceIndex = 0;
     isPaused = false;
+  });
+
   repeatBtn.addEventListener("click", () => {
     sentenceIndex = Math.max(0, sentenceIndex - 1);
     isPaused = false;
     playSentences();
+  });
+
   loopToggle.addEventListener("change", () => {
     localStorage.setItem("loopEnabled", loopToggle.checked);
-  // Voice options
+  });
+
   function populateVoices() {
     const voices = speechSynthesis.getVoices();
     voiceSelect.innerHTML = voices.map(v => `<option value="${v.name}">${v.name}</option>`).join("");
     const savedVoice = localStorage.getItem("voiceSelect");
     if (savedVoice) voiceSelect.value = savedVoice;
+  }
+
   speechSynthesis.onvoiceschanged = populateVoices;
   populateVoices();
+
   voiceSelect.addEventListener("change", () => {
     localStorage.setItem("voiceSelect", voiceSelect.value);
+  });
+
   rateSlider.addEventListener("input", () => {
     rateVal.textContent = parseFloat(rateSlider.value).toFixed(2);
     localStorage.setItem("rate", rateSlider.value);
+  });
+
   pitchSlider.addEventListener("input", () => {
     pitchVal.textContent = parseFloat(pitchSlider.value).toFixed(2);
     localStorage.setItem("pitch", pitchSlider.value);
+  });
+
   smartSkipToggle.addEventListener("change", () => {
     localStorage.setItem("smartSkip", smartSkipToggle.checked);
+  });
+
   thresholdSlider.addEventListener("input", () => {
     thresholdVal.textContent = parseFloat(thresholdSlider.value).toFixed(2);
     localStorage.setItem("threshold", thresholdSlider.value);
-  // Load persisted settings
+  });
+
   function restoreSettings() {
     if (localStorage.getItem("loopEnabled") === "true") loopToggle.checked = true;
     if (localStorage.getItem("smartSkip") === "true") smartSkipToggle.checked = true;
     if (localStorage.getItem("threshold")) {
       thresholdSlider.value = localStorage.getItem("threshold");
       thresholdVal.textContent = parseFloat(thresholdSlider.value).toFixed(2);
+    }
     if (localStorage.getItem("rate")) {
       rateSlider.value = localStorage.getItem("rate");
       rateVal.textContent = parseFloat(rateSlider.value).toFixed(2);
+    }
     if (localStorage.getItem("pitch")) {
       pitchSlider.value = localStorage.getItem("pitch");
       pitchVal.textContent = parseFloat(pitchSlider.value).toFixed(2);
+    }
+  }
+
   restoreSettings();
+}
+
   // Drag and Drop for Queue
   queueList.addEventListener("dragstart", (e) => {
     draggedItem = e.target;
@@ -1065,6 +1125,7 @@ function initSidePanel() {
   // Export Options
   document.getElementById("export-txt").addEventListener("click", exportQueueAsText);
   document.getElementById("export-json").addEventListener("click", exportQueueAsJSON);
+
   function exportQueueAsText() {
     const items = Array.from(document.querySelectorAll("#playback-queue li"))
                        .map(el => el.textContent.trim());
@@ -1073,6 +1134,8 @@ function initSidePanel() {
     a.href = URL.createObjectURL(blob);
     a.download = "queue.txt";
     a.click();
+  }
+
   function exportQueueAsJSON() {
     const items = Array.from(document.querySelectorAll("#playback-queue li"))
                        .map(el => ({ text: el.textContent.trim() }));
@@ -1081,10 +1144,15 @@ function initSidePanel() {
     a.href = URL.createObjectURL(blob);
     a.download = "queue.json";
     a.click();
+  }
+
   // Queue Preview
   document.querySelectorAll("#playback-queue li").forEach(li => {
     li.addEventListener("click", () => {
       alert(`Preview: ${li.textContent.trim()}`);
+    });
+  });
+
   // Add to Queue
   addToQueueBtn.addEventListener("click", () => {
     const title = prompt("🎵 Enter queue item title:");
@@ -1094,115 +1162,128 @@ function initSidePanel() {
       li.setAttribute("draggable", "true");
       queueList.appendChild(li);
       li.addEventListener("click", () => alert(`Preview: ${li.textContent.trim()}`));
+    }
+  });
+
   // Clear Queue
   clearQueueBtn.addEventListener("click", () => {
     if (confirm("❌ Clear all items from the queue?")) {
       queueList.innerHTML = "";
-// Optional: Initialize Side Panel on Page Load
-window.addEventListener("load", () => {
-  if (localStorage.getItem("sidePanelOpen") === "true") {
-    document.getElementById("side-panel").classList.add("open");
-    document.getElementById("side-panel-backdrop").classList.add("open");
-// Optional: Save panel state
-document.getElementById("side-panel-toggle").addEventListener("click", () => {
-  localStorage.setItem("sidePanelOpen", "true");
-document.getElementById("side-panel-close").addEventListener("click", () => {
-  localStorage.setItem("sidePanelOpen", "false");
-document.getElementById("side-panel-backdrop").addEventListener("click", () => {
-  localStorage.setItem("sidePanelOpen", "false");
-
-// === Module 7: Playback Queue Enhancements ===
-
-// Save current queue to localStorage
-function saveQueueToLocal() {
-  const queueItems = Array.from(document.querySelectorAll("#playback-queue li")).map(li => li.textContent.trim());
-  localStorage.setItem("playbackQueue", JSON.stringify(queueItems));
-}
-
-// Load and restore queue from localStorage
-function loadQueueFromLocal() {
-  const saved = JSON.parse(localStorage.getItem("playbackQueue") || "[]");
-  const ul = document.getElementById("playback-queue");
-  ul.innerHTML = "";
-  saved.forEach(text => {
-    const li = document.createElement("li");
-    li.textContent = text;
-    li.setAttribute("draggable", "true");
-    ul.appendChild(li);
+    }
   });
-  addQueuePreviewHandlers();
-}
 
-// Add current input to queue and persist
-function addToQueueAndSave(text) {
-  const ul = document.getElementById("playback-queue");
-  const li = document.createElement("li");
-  li.textContent = text.trim();
-  li.setAttribute("draggable", "true");
-  ul.appendChild(li);
-  addQueuePreviewHandlers();
-  saveQueueToLocal();
-}
+  // Optional: Initialize Side Panel on Page Load
+  window.addEventListener("load", () => {
+    if (localStorage.getItem("sidePanelOpen") === "true") {
+      document.getElementById("side-panel").classList.add("open");
+      document.getElementById("side-panel-backdrop").classList.add("open");
+    }
+  });
 
-// Playback entire queue in order
-function playQueueSequentially() {
-  const queueItems = Array.from(document.querySelectorAll("#playback-queue li"));
-  if (queueItems.length === 0) return;
+  // Optional: Save panel state
+  document.getElementById("side-panel-toggle").addEventListener("click", () => {
+    localStorage.setItem("sidePanelOpen", "true");
+  });
 
-  let index = 0;
-  function playNext() {
-    if (index >= queueItems.length) return;
-    const text = queueItems[index].textContent.trim();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.onend = () => {
-      index++;
-      playNext();
-    };
-    speechSynthesis.speak(utter);
+  document.getElementById("side-panel-close").addEventListener("click", () => {
+    localStorage.setItem("sidePanelOpen", "false");
+  });
+
+  document.getElementById("side-panel-backdrop").addEventListener("click", () => {
+    localStorage.setItem("sidePanelOpen", "false");
+  });
+
+  // === Module 7: Playback Queue Enhancements ===
+
+  // Save current queue to localStorage
+  function saveQueueToLocal() {
+    const queueItems = Array.from(document.querySelectorAll("#playback-queue li")).map(li => li.textContent.trim());
+    localStorage.setItem("playbackQueue", JSON.stringify(queueItems));
   }
 
-  playNext();
-}
+  // Load and restore queue from localStorage
+  function loadQueueFromLocal() {
+    const saved = JSON.parse(localStorage.getItem("playbackQueue") || "[]");
+    const ul = document.getElementById("playback-queue");
+    ul.innerHTML = "";
+    saved.forEach(text => {
+      const li = document.createElement("li");
+      li.textContent = text;
+      li.setAttribute("draggable", "true");
+      ul.appendChild(li);
+    });
+    addQueuePreviewHandlers();
+  }
 
-// Modal Preview Logic
-function setupPreviewModal() {
-  const modal = document.getElementById("preview-modal");
-  const modalText = document.getElementById("modal-text");
-  const closeBtn = document.getElementById("modal-close");
+  // Add current input to queue and persist
+  function addToQueueAndSave(text) {
+    const ul = document.getElementById("playback-queue");
+    const li = document.createElement("li");
+    li.textContent = text.trim();
+    li.setAttribute("draggable", "true");
+    ul.appendChild(li);
+    addQueuePreviewHandlers();
+    saveQueueToLocal();
+  }
 
-  closeBtn.addEventListener("click", () => {
-    modal.style.display = "none";
-  });
+  // Playback entire queue in order
+  function playQueueSequentially() {
+    const queueItems = Array.from(document.querySelectorAll("#playback-queue li"));
+    if (queueItems.length === 0) return;
 
-  document.querySelectorAll("#playback-queue li").forEach(li => {
-    li.addEventListener("click", () => {
-      modalText.textContent = li.textContent.trim();
-      modal.style.display = "block";
+    let index = 0;
+    function playNext() {
+      if (index >= queueItems.length) return;
+      const text = queueItems[index].textContent.trim();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.onend = () => {
+        index++;
+        playNext();
+      };
+      speechSynthesis.speak(utter);
+    }
+
+    playNext();
+  }
+
+  // Modal Preview Logic
+  function setupPreviewModal() {
+    const modal = document.getElementById("preview-modal");
+    const modalText = document.getElementById("modal-text");
+    const closeBtn = document.getElementById("modal-close");
+
+    closeBtn.addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+
+    document.querySelectorAll("#playback-queue li").forEach(li => {
+      li.addEventListener("click", () => {
+        modalText.textContent = li.textContent.trim();
+        modal.style.display = "block";
+      });
+    });
+  }
+
+  // Initialize all Module 7 logic
+  function initModule7QueuePlayback() {
+    document.getElementById("play-all").addEventListener("click", playQueueSequentially);
+    document.getElementById("export-txt").addEventListener("click", exportQueueAsText);
+    document.getElementById("export-json").addEventListener("click", exportQueueAsJSON);
+    loadQueueFromLocal();
+    setupPreviewModal();
+  }
+
+  // === Section Navigation Persistence ===
+  document.addEventListener("DOMContentLoaded", () => {
+    const lastSection = localStorage.getItem("lastSection") || "home";
+    navigate(lastSection);
+
+    document.querySelectorAll("nav button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const match = btn.getAttribute("onclick")?.match(/navigate\('(.+?)'\)/);
+        if (match) {
+          localStorage.setItem("lastSection", match[1]);
+        }
+      });
     });
   });
-}
-
-// Initialize all Module 7 logic
-function initModule7QueuePlayback() {
-  document.getElementById("play-all").addEventListener("click", playQueueSequentially);
-  document.getElementById("export-txt").addEventListener("click", exportQueueAsText);
-  document.getElementById("export-json").addEventListener("click", exportQueueAsJSON);
-  loadQueueFromLocal();
-  setupPreviewModal();
-}
-
-
-// === Section Navigation Persistence ===
-document.addEventListener("DOMContentLoaded", () => {
-  const lastSection = localStorage.getItem("lastSection") || "home";
-  navigate(lastSection);
-
-  document.querySelectorAll("nav button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const match = btn.getAttribute("onclick")?.match(/navigate\('(.+?)'\)/);
-      if (match) {
-        localStorage.setItem("lastSection", match[1]);
-      }
-    });
-  });
-});
