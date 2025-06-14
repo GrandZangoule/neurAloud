@@ -168,6 +168,21 @@ body {
   cursor: pointer;
 }
 
+.logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.app-logo {
+  max-height: 64px; /* adjust if needed */
+  margin: 0;
+  padding: 0;
+  display: inline-block;
+}
+
 /* ✅ Queue Dock Styles */
 #queue-dock {
   position: fixed;
