@@ -28,9 +28,14 @@
 <main>
 <!-- Home -->
 <section class="active-section" id="home">
-
-
-
+<h1>Welcome to NeurAloud</h1>
+<p>💡💪📚🎧 Empowering minds through books and sound.</p>
+<div id="rewards-summary">
+<p>🎯 Streak: <span id="streakDays">0</span> days</p>
+<p>🕒 Bonus Time: <span id="bonusTime">0</span> mins</p>
+<p>📊 Time Used Today: <span id="timeUsedToday">0</span> mins</p>
+<p>🧠 Estimated Read Time: <span id="estimatedTime">0</span> mins</p>
+</div>
 </section>
 <!-- Listen -->
 <section class="" id="listen">
@@ -134,25 +139,63 @@
 </section>
 </main>
 <footer>
-
+<nav class="bottom-nav">
+<button onclick="navigate('home')" title="Click to open Home">🏠</button>
+<button onclick="navigate('listen')" title="Click to open Listen">🎧</button>
+<button onclick="navigate('capture')" title="Click to open Store">🛒</button>
+<button onclick="navigate('settings')" title="Click to Settings">⚙</button>
+</nav>
 </footer>
-
+<script src="script.js"></script>
 <!-- 🔥 Enhancements begin -->
 <!-- 🌙 Theme Toggle -->
-
+<div class="setting-item">
+<label for="theme-toggle">🌗 Theme:</label>
+<select id="theme-toggle">
+<option value="auto">Auto</option>
+<option value="light">Light</option>
+<option value="dark">Dark</option>
+</select>
+</div>
 <!-- ⏱️ Reading Timer Display -->
-
+<div id="reading-timer">
+<span id="time-elapsed">Elapsed: 00:00</span>
+<span id="estimated-time">Estimated: --:--</span>
+</div>
 <!-- 🧩 Bottom Navigation -->
-
+<nav class="bottom-nav">
+<button onclick="navigate('home')" title="Click to open">Home</button>
+<button onclick="navigate('library')" title="Click to open">Library</button>
+<button onclick="navigate('listen')" title="Click to open">Listen</button>
+<button onclick="navigate('capture')" title="Click to open">Capture</button>
+<button onclick="navigate('profile')" title="Click to open">⚙</button>
+</nav>
 <!-- 🌐 Language/Voice Selectors -->
-
+<div class="tts-controls">
+<label for="tts-engine">Engine:</label>
+<select id="tts-engine"></select>
+<label for="voice-select">Voice:</label>
+<select id="voice-select"></select>
+<label for="language-select">Language:</label>
+<select id="language-select"></select>
+</div>
 <!-- 🔄 Loop, Play, Stop Controls -->
-
+<div class="audio-controls">
+<button id="play-btn" title="Click to open">▶️ Play</button>
+<button id="pause-btn" title="Click to open">⏸️ Pause</button>
+<button id="stop-btn" title="Click to open">⏹️ Stop</button>
+<button id="loop-btn" title="Click to open">🔁 Loop</button>
+</div>
 <!-- 🧠 Sidebar Toggle Placeholder -->
-
+<div hidden="" id="sidebar-control">
+<p>🔎 AI Assistant Panel</p>
+</div>
 <!-- 🔥 Enhancements end -->
 <!-- ✅ Modal Preview -->
-
+<div id="preview-modal" style="display:none; position:fixed; top:20%; left:20%; width:60%; background:#fff; padding:20px; border:2px solid #000; z-index:9999;">
+<span id="modal-close" style="cursor:pointer; float:right; font-size:18px;">✖</span>
+<pre id="modal-text" style="white-space:pre-wrap;"></pre>
+</div>
 </body>
 </html>
 <!-- Footer Tagline -->
