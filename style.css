@@ -187,10 +187,11 @@ header nav {
 }
 
 .app-logo {
-  max-height: 64px; /* adjust if needed */
+  max-height: 200px;  /* or try 300px for more prominence */
+  width: auto;        /* maintain aspect ratio */
   margin: 0;
   padding: 0;
-  display: inline-block;
+  display: block;
 }
 
 /* ✅ Queue Dock Styles */
