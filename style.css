@@ -187,7 +187,7 @@ header nav {
 }
 
 .app-logo {
-  max-height: 200px;  /* or try 300px for more prominence */
+  max-height: 100px;  /* or try 300px for more prominence */
   width: auto;        /* maintain aspect ratio */
   margin: 0;
   padding: 0;
