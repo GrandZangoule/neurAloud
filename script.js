@@ -1,4 +1,3 @@
-
 // === Navigation Fix ===
 function navigate(id) {
   console.log("Navigating to:", id);  // Add this
