@@ -168,6 +168,11 @@ body {
   cursor: pointer;
 }
 
+header {
+  padding: 0;
+  margin: 0;
+}
+
 header nav {
   margin-top: 0;
   padding-top: 0;
