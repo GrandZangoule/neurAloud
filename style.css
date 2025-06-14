@@ -168,32 +168,6 @@ body {
   cursor: pointer;
 }
 
-header {
-  padding: 0;
-  margin: 0;
-}
-
-header nav {
-  margin-top: 0;
-  padding-top: 0;
-}
-
-.logo-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding-bottom: 0;
-  margin-bottom: 0;
-}
-
-.app-logo {
-  max-height: 100px;  /* or try 300px for more prominence */
-  width: auto;        /* maintain aspect ratio */
-  margin: 0;
-  padding: 0;
-  display: block;
-}
-
 /* ✅ Queue Dock Styles */
 #queue-dock {
   position: fixed;
