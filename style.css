@@ -6,6 +6,15 @@
   box-sizing: border-box;
 }
 
+/* 🧩 Add navigation visibility rules right after reset */
+section {
+  display: none;
+}
+
+section.active-section {
+  display: block;
+}
+
 body {
   font-family: 'Segoe UI', sans-serif;
   background-color: #f0f2f5;
