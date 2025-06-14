@@ -168,6 +168,11 @@ body {
   cursor: pointer;
 }
 
+header nav {
+  margin-top: 0;
+  padding-top: 0;
+}
+
 .logo-container {
   display: flex;
   justify-content: center;
