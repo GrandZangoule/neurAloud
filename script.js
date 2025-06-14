@@ -1032,14 +1032,23 @@ function initSidePanel() {
   queueList.addEventListener("dragstart", (e) => {
     draggedItem = e.target;
     e.target.classList.add("dragging");
+  });
+
   queueList.addEventListener("dragend", (e) => {
     e.target.classList.remove("dragging");
+  });
+
   queueList.addEventListener("dragover", (e) => {
+    e.preventDefault();
     const afterElement = getDragAfterElement(queueList, e.clientY);
     const dragging = document.querySelector(".dragging");
     if (afterElement == null) {
       queueList.appendChild(dragging);
+    } else {
       queueList.insertBefore(dragging, afterElement);
+    }
+  });
+
   function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll("li:not(.dragging)")];
     return draggableElements.reduce((closest, child) => {
@@ -1049,7 +1058,10 @@ function initSidePanel() {
         return { offset: offset, element: child };
       } else {
         return closest;
+      }
     }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
   // Export Options
   document.getElementById("export-txt").addEventListener("click", exportQueueAsText);
   document.getElementById("export-json").addEventListener("click", exportQueueAsJSON);
