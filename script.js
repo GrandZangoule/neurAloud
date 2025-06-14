@@ -1,6 +1,7 @@
 
 // === Navigation Fix ===
 function navigate(id) {
+  console.log("Navigating to:", id);  // Add this
   document.querySelectorAll("main section").forEach(section =>
     section.classList.remove("active-section")
   );
