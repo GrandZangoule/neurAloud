@@ -1178,3 +1178,19 @@ function initModule7QueuePlayback() {
   loadQueueFromLocal();
   setupPreviewModal();
 }
+
+
+// === Section Navigation Persistence ===
+document.addEventListener("DOMContentLoaded", () => {
+  const lastSection = localStorage.getItem("lastSection") || "home";
+  navigate(lastSection);
+
+  document.querySelectorAll("nav button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const match = btn.getAttribute("onclick")?.match(/navigate\('(.+?)'\)/);
+      if (match) {
+        localStorage.setItem("lastSection", match[1]);
+      }
+    });
+  });
+});
