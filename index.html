@@ -5,30 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NeurAloud</title>
   <link rel="stylesheet" href="style.css"/>
+  <meta name="description" content="💪📚🎧 = Empowering minds through books and sound"/>
   <link rel="manifest" href="manifest.json"/>
 </head>
 <body>
   <header>
-    <span class="logo-title">NeurAloud</span>
+    <div class="logo-container">
+      <img src="NeurAloudlogo.png" alt="NeurAloud Logo" class="app-logo" />
+      <!--<span class="logo-title">NeurAloud</span> -->
+    </div>
     <nav>
-      <button onclick="navigate('home')">Home</button>
-      <button onclick="navigate('library')">Library</button>
-      <button onclick="navigate('listen')">Listen</button>
-      <button onclick="navigate('capture')">Capture</button>
-      <button onclick="navigate('store')">Store</button>
-      <button onclick="navigate('settings')">⚙</button>
+      <button onclick="navigate('home')" title="Click to open Home Page">🏠</button>
+      <button onclick="navigate('listen')" title="Click to open Listen Page">Listen</button>
+      <button onclick="navigate('capture')" title="Click to open Captur Page">Capture</button>
+      <button onclick="navigate('library')" title="Click to open Library">Library</button>
+      <button onclick="navigate('store')" title="Click to open Store">Store</button>
+      <button onclick="navigate('settings')" title="Click to open Settings">⚙</button>
     </nav>
   </header>
 
   <main>
+    <!-- Home -->
     <section id="home" class="active-section">
+      <h1>Welcome to NeurAloud</h1>
+      <p>💡💪📚🎧 Empowering minds through books and sound.</p>
       <div class="quad-container">
-        <div class="quad top-left">
-          <h3>Listen</h3>
-          <p>Upload PDF, DOCX, TXT, and listen with AI voice. Multilingual, high-quality reading.</p>
+        <div id="rewards-summary">
+          <p>🎯 Streak: <span id="streakDays">0</span> days</p>
+          <p>🕒 Bonus Time: <span id="bonusTime">0</span> mins</p>
+          <p>📊 Time Used Today: <span id="timeUsedToday">0</span> mins</p>
+          <p>🧠 Estimated Read Time: <span id="estimatedTime">0</span> mins</p>
         </div>
         <div class="quad top-right">
-          <h3>Capture</h3>
+          <h3>Listen + Capture</h3>
+          <p>Upload PDF, DOCX, TXT, and listen with AI voice. Multilingual, high-quality reading.</p>
           <p>Capture any sound or voice in any language. Converts to text, translates, and reads aloud.</p>
         </div>
         <div class="quad bottom-left">
@@ -44,89 +54,203 @@
       </div>
     </section>
 
+    <!-- Listen -->
     <section id="listen">
       <div class="controls">
         <input type="file" id="fileInput" onchange="loadFile(event)" />
-        <select id="tts-engine" onchange="changeTTSEngine('listen')"></select>
-        <select id="voice-select" onchange="changeVoice('listen')"></select>
+        <select id="tts-engine-listen" onchange="changeTTSEngine('listen')"></select>
+        <select id="voice-select-listen" onchange="changeVoice('listen')"></select>
       </div>
       <div class="controls">
-        <button onclick="play()">▶️ Play</button>
-        <button onclick="pause()">⏸️ Pause</button>
-        <button onclick="stop()">⏹️ Stop</button>
-        <button onclick="toggleLoop()">🔁 Loop</button>
+        <button onclick="playText()" title="Click to play">▶</button>
+        <button onclick="pauseText()" title="Click to pause">⏸</button>
+        <button onclick="stopText()" title="Click to stop">⏹</button>
+        <button onclick="toggleLoop()" title="Click to loop">🔁</button>
+        <button onclick="saveToLibrary()" title="Click to Save to Library">💾 Save to Library</button>
+        <button onclick="saveToPlaylist()" title="Click to Save to Playlist">➕ Save to Playlist</button>
         <button onclick="translateText()">🌐 Translate</button>
         <button onclick="playPlaylist()">📂 Play Playlist</button>
       </div>
       <div class="sliders">
         <button onclick="saveToLibrary('listen')">💾 Save to Library</button>
-        <label>Rate: <input type="range" id="rate" min="0.5" max="2" step="0.01" oninput="document.getElementById('rateVal').innerText = this.value"/><span id="rateVal">1</span></label>
-        <label>Pitch: <input type="range" id="pitch" min="0" max="2" step="0.01" oninput="document.getElementById('pitchVal').innerText = this.value"/><span id="pitchVal">1</span></label>
+        <label>Rate: <input type="range" id="rate-listen" min="0.25" max="2" step="0.01" oninput="document.getElementById('rateVal').innerText = this.value"/><span id="rate-value-listen">1.00</span></label>
+        <label>Pitch: <input type="range" id="pitch-listen" min="0" max="2" step="0.01" oninput="document.getElementById('pitchVal').innerText = this.value"/><span id="pitch-value-listen">1.00</span></label>
       </div>
-      <div id="text-display" class="text-box"></div>
+      <div id="text-display" class="text-display-area"></div>
     </section>
 
+    <!-- Capture -->
     <section id="capture">
       <div class="controls">
-        <select id="capture-tts-engine" onchange="changeTTSEngine('capture')"></select>
+        <select id="tts-engine-capture" onchange="changeTTSEngine('capture')"></select>
         <select id="capture-voice-select" onchange="changeVoice('capture')"></select>
-        <select id="capture-lang-in"><option value="en-US">Speak In: English</option></select>
-        <select id="capture-lang-out"><option value="en-US">Read Out: English</option></select>
+        <select id="capture-lang-write"><option value="en-US">Speak In: English</option></select>
+        <select id="capture-lang-read"><option value="en-US">Read Out: English</option></select>
       </div>
       <div class="controls">
-        <button onclick="startCapture()">🎧 Start Capture</button>
-        <button onclick="playCaptured()">▶️ Play</button>
-        <button onclick="stop()">⏹️ Stop</button>
-        <button onclick="toggleLoop()">🔁 Loop</button>
-        <button onclick="translateText()">🌐 Translate</button>
+        <button onclick="startCapture()" title="Click to start">🎧 Start</button>
+        <button onclick="stopCapture()" title="Click to stop">🛑 Stop</button>
+        <button onclick="saveCapture()" title="Click to save">💾 Save</button>
+        <button onclick="playCaptured()" title="Click to play">▶️ Play</button>
+        <button onclick="toggleLoop()" title="Click to loop play">🔁 Loop</button>
+        <button onclick="translateText()" title="Click to translate">🌐 Translate</button>
       </div>
       <div class="sliders">
-        <button onclick="saveToLibrary('capture')">💾 Save to Library</button>
-        <label>Rate: <input type="range" id="capture-rate" min="0.5" max="2" step="0.01" oninput="document.getElementById('captureRateVal').innerText = this.value"/><span id="captureRateVal">1</span></label>
-        <label>Pitch: <input type="range" id="capture-pitch" min="0" max="2" step="0.01" oninput="document.getElementById('capturePitchVal').innerText = this.value"/><span id="capturePitchVal">1</span></label>
+        <label>Rate: <input type="range" id="rate-capture" min="0.5" max="2" step="0.01" oninput="document.getElementById('captureRateVal').innerText = this.value"/><span id="rate-value-capture">1</span></label>
+        <label>Pitch: <input type="range" id="pitch-capture" min="0" max="2" step="0.01" oninput="document.getElementById('capturePitchVal').innerText = this.value"/><span id="pitch-value-capture">1</span></label>
+        <label>Delay: <input type="range" id="capture-delay" min="3" max="60" step="1"><span id="capture-delay-value">10</span> sec</label>
       </div>
-      <div id="capture-display" class="text-box"></div>
+      <div id="capture-display" contenteditable="true" class="capture-output"></div>
     </section>
 
+    <!-- Library -->  
     <section id="library">
       <div class="library-split">
-        <div class="listen-library">
+        <div class="📁 listen-library">
           <h3>Playlist (max 10)</h3>
+          <ul id="playlist-items"></ul>
+          <button onclick="playPlaylist()" title="Click to play Playlist">▶ Play Playlist</button>
           <div id="playlist" class="library-list"></div>
           <h3>Saved Listen Files</h3>
           <div id="listen-library-list" class="library-list"></div>
         </div>
-        <div class="capture-library">
+        <div class="🎙️ capture-library">
           <h3>Saved Captures</h3>
           <div id="capture-library-list" class="library-list"></div>
         </div>
+        <!-- ✅ Playback Queue -->
+        <div class="queue-section">
+          <h3>🧾 Playback Queue</h3>
+          <ul id="playback-queue"></ul>
+          <button id="play-all">▶ Play All</button>
+          <button id="export-txt">📄 Export as Text</button>
+          <button id="export-json">🧾 Export as JSON</button>
+        </div>
+      </div>
+
+      <!-- ✅ Upload Files Button -->
+      <div class="upload-controls">
+        <label for="uploadFilesInput" class="upload-btn">📤 Upload Files</label>
+        <input type="file" id="uploadFilesInput" multiple accept=".pdf,.txt,.docx,.epub,.pptx,.doc,.xlsx,.xlsm,.xls,.xltx,.xltm" style="display:none;" />
+      <!-- <input type="file" id="uploadFilesInput" multiple style="display:none;" /> -->
+      </div>
+
+      <!-- ✅ Download Selected Button for Capture -->
+      <div class="capture-download-controls">
+          <button id="downloadSelectedBtn" title="Click to open">⬇ Download Selected</button>
       </div>
     </section>
 
+    <!-- Store -->
     <section id="store">
-      <h2>Coming Soon</h2>
+      <h2>🛍 Upgrade</h2>
+      <button onclick="subscribeMonthly()" title="Click to open">💳 $2.99 / Month</button>
+      <button onclick="subscribeAnnual()" title="Click to open">💳 $19.99 / Year</button>
     </section>
 
+    <!-- Settings -->
     <section id="settings">
-      <div>
-        <h3>User Profile</h3>
-        <p>Name: John Doe</p>
-        <p>Email: user@email.com</p>
-      </div>
-      <hr class="settings-divider" />
-      <div>
-        <h3>Settings</h3>
-        <p>Dark Mode: [toggle]</p>
-        <p>Auto Resume: [toggle]</p>
-      </div>
+      <h2>⚙ Settings</h2>
+      <label><input type="checkbox" id="enable-haptics"> Haptic Feedback</label>
+      <label><input type="checkbox" id="enable-gestures"> Enable Swipe</label>
+      <label><input type="checkbox" id="enable-wakelock"> Keep Playing When Screen Locks</label>
+      <label><input type="checkbox" id="developerMode"> Developer Mode</label>
+      <label><input type="checkbox" id="adsToggle"> Show Ads</label>
+      <label>Reminder:
+        <select id="reminder-time">
+          <option value="0">None</option>
+          <option value="12">12 hrs</option>
+          <option value="24">24 hrs</option>
+          <option value="36">36 hrs</option>
+          <option value="48">48 hrs</option>
+        </select>
+      </label>
+      <label>Sleep Timer:
+        <select id="sleepTimer">
+          <option value="0">Off</option>
+          <option value="30">30 min</option>
+          <option value="60">1 hr</option>
+          <option value="120">2 hr</option>
+          <option value="180">3 hr</option>
+        </select>
+      </label>
     </section>
   </main>
 
   <footer>
-    <p>&copy; 2025 NeurAloud. All rights reserved.</p>
+    <nav class="bottom-nav">
+      <button onclick="navigate('home')" title="Click to open Home">🏠</button>
+      <button onclick="navigate('listen')" title="Click to open Listen">🎧</button>
+      <button onclick="navigate('capture')" title="Click to open Store">🛒</button>
+      <button onclick="navigate('settings')" title="Click to Settings">⚙</button>
+    </nav>
   </footer>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="script.js"></script>
+
+<!-- 🔥 Enhancements begin -->
+
+<!-- 🌙 Theme Toggle -->
+<div class="setting-item">
+  <label for="theme-toggle">🌗 Theme:</label>
+  <select id="theme-toggle">
+    <option value="auto">Auto</option>
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+  </select>
+</div>
+
+<!-- ⏱️ Reading Timer Display -->
+<div id="reading-timer">
+  <span id="time-elapsed">Elapsed: 00:00</span>
+  <span id="estimated-time">Estimated: --:--</span>
+</div>
+
+<!-- 🧩 Bottom Navigation -->
+<nav class="bottom-nav">
+  <button onclick="navigate('home')" title="Click to open">Home</button>
+  <button onclick="navigate('library')" title="Click to open">Library</button>
+  <button onclick="navigate('listen')" title="Click to open">Listen</button>
+  <button onclick="navigate('capture')" title="Click to open">Capture</button>
+  <button onclick="navigate('profile')" title="Click to open">⚙</button>
+</nav>
+
+<!-- 🌐 Language/Voice Selectors -->
+<div class="tts-controls">
+  <label for="tts-engine">Engine:</label>
+  <select id="tts-engine"></select>
+
+  <label for="voice-select">Voice:</label>
+  <select id="voice-select"></select>
+
+  <label for="language-select">Language:</label>
+  <select id="language-select"></select>
+</div>
+
+<!-- 🔄 Loop, Play, Stop Controls -->
+<div class="audio-controls">
+  <button id="play-btn" title="Click to open">▶️ Play</button>
+  <button id="pause-btn" title="Click to open">⏸️ Pause</button>
+  <button id="stop-btn" title="Click to open">⏹️ Stop</button>
+  <button id="loop-btn" title="Click to open">🔁 Loop</button>
+</div>
+
+<!-- 🧠 Sidebar Toggle Placeholder -->
+<div id="sidebar-control" hidden>
+  <p>🔎 AI Assistant Panel</p>
+</div>
+
+<!-- 🔥 Enhancements end -->
+
+
+<!-- ✅ Modal Preview -->
+<div id="preview-modal" style="display:none; position:fixed; top:20%; left:20%; width:60%; background:#fff; padding:20px; border:2px solid #000; z-index:9999;">
+  <span id="modal-close" style="cursor:pointer; float:right; font-size:18px;">✖</span>
+  <pre id="modal-text" style="white-space:pre-wrap;"></pre>
+</div>
+
 </body>
 </html>
+
+<!-- Footer Tagline -->
+<footer style='text-align:center; margin-top: 30px;'>💪📚🎧 = Empowering minds through books and sound</footer>
