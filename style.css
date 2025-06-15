@@ -475,6 +475,23 @@ footer {
   }
 }
 
+/* Default Light Mode */
+.theme-background {
+  background-color: #f5f5f5; /* whitesmoke */
+  color: #111;
+  min-height: 200px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-top: 10px;
+  overflow-y: auto;
+}
+
+/* Dark Mode */
+body.dark-mode .theme-background {
+  background-color: #1e1e1e;
+  color: #f5f5f5;
+  border: 1px solid #555;
+}
 
 /* === Footer Styling with Theme Support === */
 footer {
