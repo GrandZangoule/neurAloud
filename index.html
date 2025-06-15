@@ -248,6 +248,12 @@
   <pre id="modal-text" style="white-space:pre-wrap;"></pre>
 </div>
 
+<script>
+  if ("serviceWorker" in navigator)
+    navigator.serviceWorker.register("service-worker.js")
+      .then(r => console.log("✅ Service Worker registered"))
+      .catch(console.error);
+</script>
 </body>
 </html>
 
