@@ -150,22 +150,54 @@
 
     <!-- Listen Section -->
     <section id="listen" class="section">
-      <h2>🎧 Listen</h2>
-      <input type="file" id="fileInput" accept=".pdf,.txt,.doc,.docx,.epub" />
-      <div id="text-display"></div>
-      <div class="controls">
-        <select id="tts-engine"></select>
-        <select id="voice-select"></select>
-        <button id="play-btn">▶️</button>
-        <button id="pause-btn">⏸️</button>
-        <button id="stop-btn">⏹️</button>
-        <button id="loop-btn">🔁</button>
-        <button id="save-btn">💾</button>
-        <label>Rate: <input type="range" id="rate-slider" min="0.1" max="3" step="0.1"/><span id="rate-val">1.0</span></label>
-        <label>Pitch: <input type="range" id="pitch-slider" min="0" max="2" step="0.1"/><span id="pitch-val">1.0</span></label>
-      </div>
-    </section>
+            <h2>📖 Listen</h2>
 
+            <!-- 📤 Upload File -->
+            <div class="listen-upload">
+                  <input type="file" id="file-input" accept=".pdf,.txt,.doc,.docx,.epub,.pptx" hidden />
+                  <button id="upload-button">📁 Choose File</button>
+                  <span id="file-name-display">No file selected</span>
+            </div>
+
+            <!-- 🎧 Playback Controls -->
+            <div class="tts-controls">
+                  <div class="dropdowns-row">
+                        <label for="engine-select">🧠 TTS Engine:</label>
+                        <select id="engine-select"></select>
+
+                        <label for="voice-select">🎤 Voice:</label>
+                        <select id="voice-select"></select>
+                  </div>
+
+                  <div class="buttons-row">
+                        <button id="play-tts">▶️ Play</button>
+                        <button id="pause-tts">⏸️ Pause</button>
+                        <button id="stop-tts">⏹️ Stop</button>
+                        <button id="loop-toggle">🔁 Loop</button>
+                  </div>
+
+                  <div class="sliders-row">
+                        <label for="rate">Rate:</label>
+                        <input type="range" id="rate" min="0.5" max="2.0" step="0.1" />
+                        <span id="rate-val">1.0</span>
+
+                        <label for="pitch">Pitch:</label>
+                        <input type="range" id="pitch" min="0.5" max="2.0" step="0.1" />
+                        <span id="pitch-val">1.0</span>
+                  </div>
+            </div>
+
+            <!-- 📃 File Content + Sentence Highlighting -->
+            <div id="text-display" class="listen-text-display">
+                  <p>Load a document to begin listening.</p>
+            </div>
+
+            <!-- 📥 Save + Add to Playlist -->
+            <div class="listen-actions">
+                  <button id="save-to-library">💾 Save to Library</button>
+                  <button id="add-to-queue">➕ Add to Playlist</button>
+            </div>
+    </section>
     <!-- Capture Section -->
     <section id="capture" class="section">
             <h2>🎙️ Capture</h2>
