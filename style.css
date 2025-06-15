@@ -474,3 +474,59 @@ footer {
     width: 100%;
   }
 }
+
+
+/* === Footer Styling with Theme Support === */
+footer {
+  text-align: center;
+  background: var(--footer-bg, #f0f0f0);
+  color: var(--footer-text, #333);
+  padding: 1rem;
+  margin-top: 2rem;
+  font-size: 0.9rem;
+}
+
+/* === Light/Dark/Other Mode Variables === */
+body.light-mode {
+  --footer-bg: #f0f0f0;
+  --footer-text: #333;
+}
+
+body.dark-mode {
+  --footer-bg: #1c1c1c;
+  --footer-text: #f0f0f0;
+}
+
+body.blue-mode {
+  --footer-bg: #002b5c;
+  --footer-text: #d0e2ff;
+}
+
+body.royal-mode {
+  --footer-bg: #3c1361;
+  --footer-text: #f5e1ff;
+}
+
+body.gray-mode {
+  --footer-bg: #444;
+  --footer-text: #e0e0e0;
+}
+
+/* === Bottom Navigation Hidden on Desktop === */
+#bottom-navigation {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  #bottom-navigation {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: var(--footer-bg);
+    border-top: 1px solid var(--footer-text);
+    justify-content: space-around;
+    padding: 10px 0;
+    z-index: 1000;
+  }
+}
