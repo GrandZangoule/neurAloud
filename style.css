@@ -476,8 +476,9 @@ footer {
 }
 
 /* Default Light Mode */
+/*This is for the background colots of the Listen and Capture modes*/
 .theme-background {
-  background-color: #f5f5f5; /* whitesmoke */
+  background-color: #d6f0f5;
   color: #111;
   min-height: 200px;
   border: 1px solid #ccc;
