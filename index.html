@@ -27,10 +27,76 @@
     <!-- Home Section -->
     <section id="home" class="active-section">
       <div class="quad-container">
-        <div class="quad-card">📂 Upload</div>
-        <div class="quad-card">📖 Continue</div>
-        <div class="quad-card">📚 Library</div>
-        <div class="quad-card">🛍️ Store</div>
+            <div class="quad-card">
+                  <h3>📚 Upload a Document</h3>
+                  <p>Bring your own files (PDF, EPUB, DOCX, etc.)</p>
+                  <button onclick="navigate('upload')">Upload Now</button>
+            </div>
+            <div class="quad-card">
+                  <h3>🔊 Listen Instantly</h3>
+                  <p>Start reading any document with your favorite voice</p>
+                  <button onclick="navigate('listen')">Start Listening</button>
+            </div>
+            <div class="quad-card">
+                  <h3>🌍 Live Capture</h3>
+                  <p>Listen to websites, articles, or your environment</p>
+                  <button onclick="navigate('capture')">Capture Audio</button>
+            </div>
+            <div class="quad-card">
+                  <h3>🛍️ Explore Store</h3>
+                  <p>Find premium voices, avatars & add-ons</p>
+                  <button onclick="navigate('store')">Visit Store</button>
+            </div>
+      </div>
+
+      <div class="rewards-summary">
+            <h3>🏆 Your Rewards</h3>
+            <ul>
+                  <li>🔥 Streak: <span id="streak-count">5 days</span></li>
+                  <li>🎯 Listening Time: <span id="total-minutes">320 minutes</span></li>
+                  <li>💎 Badges: <span id="badge-count">3</span></li>
+            </ul>
+      </div>
+
+      <div class="continue-listening">
+            <h3>⏯️ Continue Listening</h3>
+            <div class="horizontal-scroll" id="continue-slider">
+                  <div class="doc-card">
+                        <p>📄 Book1.pdf</p>
+                        <button onclick="loadFromLibrary('Book1.pdf')">Resume</button>
+                  </div>
+                  <div class="doc-card">
+                        <p>📄 Research.epub</p>
+                        <button onclick="loadFromLibrary('Research.epub')">Resume</button>
+                  </div>
+            </div>
+      </div>
+
+      <div class="recently-played">
+            <h3>🎧 Recently Played</h3>
+            <ul id="recent-files">
+                  <li>Book1.pdf - 3m ago</li>
+                  <li>Article2.txt - 12m ago</li>
+                  <li>Speech.mp3 - 2h ago</li>
+            </ul>
+      </div>
+
+      <div class="recommended-section">
+            <h3>🌟 Recommended for You</h3>
+            <ul id="recommend-list">
+                  <li>🧠 "7 Habits of Highly Effective People"</li>
+                  <li>📘 "Deep Work" by Cal Newport</li>
+                  <li>🎙️ "Neural Narratives" - Podcast Series</li>
+            </ul>
+      </div>
+
+      <div class="achievement-section">
+            <h3>🏅 Achievements</h3>
+            <ul id="achievement-list">
+                  <li>📅 7-Day Streak Badge</li>
+                  <li>🗣️ 1000 Minutes Listened</li>
+                  <li>📚 10 Books Completed</li>
+            </ul>
       </div>
     </section>
 
@@ -97,14 +163,79 @@
     </section>
 
     <!-- Profile / Settings Section -->
-    <section id="profile" class="section">
-      <h2>⚙ Profile & Settings</h2>
-      <div class="settings-block">
-        <label><input type="checkbox" id="auto-resume"> Auto Resume</label>
-        <label><input type="checkbox" id="dark-mode-toggle"> Dark Mode</label>
-        <button id="clear-library">🧹 Clear Library</button>
-      </div>
-    </section>
+      <section id="profile" class="section">
+            <h2>⚙️ Settings</h2>
+
+            <!-- 🎨 Theme Selector -->
+            <div class="settings-group">
+                  <label for="theme-select">🎨 Theme:</label>
+                  <select id="theme-select">
+                        <option value="light">Light Mode</option>
+                        <option value="dark">Dark Mode</option>
+                        <option value="blue">Blue Mode</option>
+                        <option value="royal">Royal Mode</option>
+                        <option value="gray">Gray Mode</option>
+                  </select>
+            </div>
+
+            <!-- 🗣️ Voice Avatar Selection -->
+            <div class="settings-group">
+                  <label for="voice-avatar">🗣️ Voice Avatar:</label>
+                  <select id="voice-avatar">
+                        <option value="default">Default</option>
+                        <option value="warm-male">Warm Male</option>
+                        <option value="bright-female">Bright Female</option>
+                        <option value="robotic-ai">Robotic AI</option>
+                        <option value="calm-deep">Calm Deep</option>
+                  </select>
+            </div>
+
+            <!-- 🔊 Pitch & Rate Sliders -->
+            <div class="settings-group">
+                  <label for="pitch-slider">🎚️ Pitch:</label>
+                  <input type="range" id="pitch-slider" min="0.5" max="2" step="0.01">
+                  <span id="pitch-value">1.00</span>
+            </div>
+            <div class="settings-group">
+                  <label for="rate-slider">⚡ Speed:</label>
+                  <input type="range" id="rate-slider" min="0.5" max="2" step="0.01">
+                  <span id="rate-value">1.00</span>
+            </div>
+
+            <!-- 📈 Listening Stats -->
+            <div class="settings-group">
+                  <h3>📈 Listening Stats</h3>
+                  <p>Total Listening Time: <span id="total-listening">0h 0m</span></p>
+                  <p>Chapters Completed: <span id="chapters-completed">0</span></p>
+                  <p>Favorites: <span id="favorites-count">0</span></p>
+            </div>
+
+            <!-- 🎁 Reward Progress -->
+            <div class="settings-group">
+                  <h3>🎁 Reward Settings</h3>
+                  <label>
+                        <input type="checkbox" id="auto-reward-toggle" />
+                        Enable Streak Rewards
+                  </label>
+                  <p>Next Reward at: <span id="next-reward">10 chapters</span></p>
+            </div>
+
+            <!-- 🧩 Add-On Features -->
+            <div class="settings-group">
+                  <h3>🧩 Add-On Features</h3>
+                  <label><input type="checkbox" checked /> Translation</label>
+                  <label><input type="checkbox" checked /> Capture Mode</label>
+                  <label><input type="checkbox" /> AI Explanation</label>
+                  <label><input type="checkbox" /> Image Description</label>
+            </div>
+
+            <!-- 💳 Billing Section -->
+            <div class="settings-group">
+                  <h3>💳 Billing & Account</h3>
+                  <button id="manage-subscription">Manage Subscription</button>
+                  <button id="sign-out">Sign Out</button>
+            </div>
+      </section>
   </main>
 
   <!-- Modal -->
