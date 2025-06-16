@@ -672,7 +672,7 @@ body.gray-mode {
 
 
 /* ========================
-   📋 Context Menu Styling
+   📋 Context Menu Styling (Animated & Mobile-Responsive)
    ======================== */
 .context-menu {
   display: none;
@@ -681,11 +681,21 @@ body.gray-mode {
   background-color: var(--menu-bg, #ffffff);
   color: var(--menu-text, #000000);
   border: 2px solid var(--menu-border, #ccc);
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
-  width: 180px;
-  font-size: 0.9rem;
+  width: 200px;
+  font-size: 0.95rem;
   overflow: hidden;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  backdrop-filter: blur(4px);
+}
+
+.context-menu.show {
+  display: block;
+  opacity: 1;
+  transform: scale(1);
 }
 
 .context-menu ul {
@@ -695,10 +705,10 @@ body.gray-mode {
 }
 
 .context-menu li {
-  padding: 12px 16px;
+  padding: 14px 18px;
   cursor: pointer;
   border-bottom: 1px solid var(--menu-divider, #eee);
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease;
 }
 
 .context-menu li:last-child {
@@ -716,17 +726,17 @@ body.gray-mode {
   right: 2rem;
   background: var(--background, #f9f9f9);
   color: var(--font-color, #000);
-  padding: 0.5rem 1rem;
-  border-radius: 10px;
+  padding: 0.6rem 1.1rem;
+  border-radius: 12px;
   border: 1px solid #ccc;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
   z-index: 900;
   font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.3s, color 0.3s;
 }
 
-/* ========================
-   🌗 Theme Variable Support
-   ======================== */
+/* 🌗 Theme Support */
 :root {
   --menu-bg: #ffffff;
   --menu-text: #000000;
@@ -735,15 +745,15 @@ body.gray-mode {
   --hover-bg: #f5f5f5;
 }
 
-.dark-mode {
+body.dark-mode {
   --menu-bg: #1e1e1e;
   --menu-text: #ffffff;
   --menu-border: #444;
   --menu-divider: #333;
-  --hover-bg: #333333;
+  --hover-bg: #2a2a2a;
 }
 
-.green-mode {
+body.green-mode {
   --menu-bg: #e8f5e9;
   --menu-text: #1b5e20;
   --menu-border: #c8e6c9;
@@ -751,6 +761,30 @@ body.gray-mode {
   --hover-bg: #dcedc8;
 }
 
+/* 📱 Mobile Responsiveness */
+@media (max-width: 600px) {
+  .context-menu {
+    width: 90vw;
+    left: 5vw !important;
+    right: 5vw;
+    bottom: 2rem;
+    top: auto !important;
+    transform-origin: bottom center;
+    font-size: 1.05rem;
+  }
+
+  .context-menu li {
+    padding: 16px 20px;
+  }
+
+  .context-toggle {
+    bottom: 5.5rem;
+    right: 1rem;
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+    border-radius: 14px;
+  }
+}
 
 /* === Bottom Navigation Hidden on Desktop === */
 #bottom-navigation {
@@ -762,11 +796,30 @@ body.gray-mode {
     display: flex;
     position: fixed;
     bottom: 0;
-    width: 100%;
-    background: var(--footer-bg);
-    border-top: 1px solid var(--footer-text);
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--footer-bg, #f0f0f0);
+    border-top: 1px solid var(--footer-text, #333);
     justify-content: space-around;
-    padding: 10px 0;
+    align-items: center;
+    padding: 0 10px;
     z-index: 1000;
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  #bottom-navigation button {
+    flex: 1;
+    font-size: 0.95rem;
+    padding: 8px 6px;
+    margin: 0 4px;
+    border-radius: 8px;
+    border: none;
+    background-color: var(--footer-bg);
+    color: var(--footer-text);
+  }
+
+  #bottom-navigation button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
   }
 }
