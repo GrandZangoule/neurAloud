@@ -736,28 +736,23 @@ function handleContextMenu(event, itemId, type) {
   const menu = document.getElementById("context-menu");
   const menuItems = menu.querySelectorAll("li");
 
-  // Position and show menu
   menu.style.top = `${event.clientY}px`;
   menu.style.left = `${event.clientX}px`;
   menu.classList.add("show");
 
-  // Reset existing animation delays
   menuItems.forEach((li, i) => {
     li.style.animation = `fadeIn 0.3s ease ${i * 60}ms forwards`;
-    li.tabIndex = 0; // make focusable
+    li.tabIndex = 0;
   });
 
-  // Auto-focus first item
   setTimeout(() => menuItems[0]?.focus(), 50);
 
-  // Action bindings
   menu.querySelector("#menu-play").onclick = () => playItem(itemId);
   menu.querySelector("#menu-add").onclick = () => addToPlaylist(itemId);
   menu.querySelector("#menu-download").onclick = () => downloadItem(itemId, type);
   menu.querySelector("#menu-fav").onclick = () => toggleFavorite(itemId);
   menu.querySelector("#menu-delete").onclick = () => deleteItem(itemId, type);
 
-  // Keyboard navigation
   menu.onkeydown = (e) => {
     const focused = document.activeElement;
     const items = [...menuItems];
@@ -765,18 +760,15 @@ function handleContextMenu(event, itemId, type) {
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      const next = items[(currentIndex + 1) % items.length];
-      next.focus();
+      items[(currentIndex + 1) % items.length]?.focus();
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      const prev = items[(currentIndex - 1 + items.length) % items.length];
-      prev.focus();
+      items[(currentIndex - 1 + items.length) % items.length]?.focus();
     } else if (e.key === "Escape") {
       hideContextMenu();
     }
   };
 
-  // Enter/Space fallback
   menuItems.forEach(li => {
     li.onkeydown = (e) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -792,11 +784,6 @@ function hideContextMenu() {
   menu.classList.remove("show");
   menu.style.top = "-9999px";
   menu.style.left = "-9999px";
-}
-
-
-function hideContextMenu() {
-  document.getElementById("context-menu").classList.remove("show");
 }
 document.addEventListener("click", hideContextMenu);
 
@@ -906,10 +893,8 @@ function playItem(itemId, onComplete = null) {
     return;
   }
 
-  // 💾 Save last played item
   localStorage.setItem("lastPlayedId", itemId);
 
-  // 🔄 UI Navigation and Text Setup
   if (type === "capture") {
     const overwrite = document.getElementById("overwrite-capture-toggle")?.checked;
     const display = document.getElementById("capture-display");
@@ -927,11 +912,9 @@ function playItem(itemId, onComplete = null) {
     display.innerHTML = `<span class="sentence">${text}</span>`;
   }
 
-  // 🔵 Mark as playing
   document.querySelectorAll(".library-item").forEach(el => el.classList.remove("playing", "finished"));
   item.classList.add("playing");
 
-  // 🔊 Speak
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.rate = parseFloat(localStorage.getItem("rate") || 1);
   utterance.pitch = parseFloat(localStorage.getItem("pitch") || 1);
@@ -948,7 +931,7 @@ function playItem(itemId, onComplete = null) {
     item.classList.remove("playing");
   };
 
-  speechSynthesis.cancel(); // Stop any existing speech
+  speechSynthesis.cancel();
   speechSynthesis.speak(utterance);
 }
 
@@ -960,12 +943,6 @@ window.addEventListener("DOMContentLoaded", () => {
   loadAutoResumeSetting();
 });
 
-
-// Initialize for both listen and capture items
-function initializeContextMenus() {
-  attachContextHandlers(".listen-item", "listen");
-  attachContextHandlers(".capture-item", "capture");
-}
 
 // Run after DOM is ready
 //no longer needed      document.addEventListener("DOMContentLoaded", initializeContextMenus);
