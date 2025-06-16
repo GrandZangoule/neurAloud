@@ -442,11 +442,16 @@ document.addEventListener("DOMContentLoaded", () => {
   fileInputs.forEach(input => {
     if (input) {
       input.setAttribute("accept", acceptedTypes);
-      input.setAttribute("multiple", "multiple");  // Optional: force multi-selection where applicable
+      input.setAttribute("multiple", "multiple");
     }
   });
-});
 
+  // ✅ Wire up Save to Library button AFTER DOM loads
+  const saveBtn = document.getElementById("save-to-library-btn");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", saveFileToLibrary);
+  }
+});
 
 // 2️⃣ BULK DELETE FROM LISTEN LIBRARY
 function initializeBulkDeleteFeature() {
