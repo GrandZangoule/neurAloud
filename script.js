@@ -262,22 +262,23 @@ function isValidFile(file) {
   return allowedExtensions.includes(fileExtension);
 }
 
-const uploadFilesInput = document.getElementById("upload-files-btn");
+document.addEventListener("DOMContentLoaded", () => {
+  const uploadFilesInput = document.getElementById("upload-files-btn");
+  if (uploadFilesInput) {
+    uploadFilesInput.addEventListener("change", (event) => {
+      const files = Array.from(event.target.files);
+      const validFiles = files.filter(isValidFile);
 
-if (uploadFilesInput) {
-  uploadFilesInput.addEventListener("change", (event) => {
-    const files = Array.from(event.target.files);
-    const validFiles = files.filter(isValidFile);
+      if (validFiles.length !== files.length) {
+        alert("Some files were skipped due to unsupported types.");
+      }
 
-    if (validFiles.length !== files.length) {
-      alert("Some files were skipped due to unsupported types.");
-    }
-
-    validFiles.forEach(file => {
-      saveFileToLibrary(file); // Assuming function defined earlier
+      validFiles.forEach(file => {
+        saveFileToLibrary(file);
+      });
     });
-  });
-}
+  }
+});
 
 // MODULE 4A: Bulk Delete and Tooltips
 function addCheckboxesToLibraryItems() {
