@@ -533,11 +533,48 @@ body.green-mode .theme-background {
 /* === Footer Styling with Theme Support === */
 footer {
   text-align: center;
-  background: var(--footer-bg, #f0f0f0);
-  color: var(--footer-text, #333);
   padding: 1rem;
   margin-top: 2rem;
   font-size: 0.9rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Light Mode */
+body.light-mode footer {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+/* Dark Mode */
+body.dark-mode footer {
+  background-color: #111;
+  color: #ccc;
+  border-top: 1px solid #444;
+}
+
+/* Blue Mode */
+body.blue-mode footer {
+  background-color: #e6f0ff;
+  color: #003366;
+}
+
+/* Royal Mode */
+body.royal-mode footer {
+  background-color: #f3f0ff;
+  color: #2a125e;
+}
+
+/* Gray Mode */
+body.gray-mode footer {
+  background-color: #dcdcdc;
+  color: #222;
+}
+
+/* Green Mode */
+body.green-mode footer {
+  background-color: #e9f7ef;
+  color: #145a32;
 }
 
 /* === Light/Dark/Other Mode Variables === */
