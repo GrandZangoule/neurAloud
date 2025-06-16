@@ -283,7 +283,9 @@ function applyTooltips() {
 
 document.addEventListener("DOMContentLoaded", applyTooltips);
 
+// ===============================
 // ✅ MODULE 4B: Enhanced 'Choose File' Handling with IndexedDB
+// ===============================
 
 // 1️⃣ Utility to save a file into IndexedDB
 async function saveToIndexedDB(file, category = "session") {
@@ -361,6 +363,61 @@ function showExtractedText(text) {
 document.addEventListener("DOMContentLoaded", () => {
   if (db) restoreLastFileFromIndexedDB();
 });
+
+// ===============================
+// MODULE 4C – Save to Listen Library with 100 Limit
+// ===============================
+
+async function saveFileToLibrary() {
+  if (!extractedText || !lastFileName) {
+    alert("No loaded file to save.");
+    return;
+  }
+
+  const tx = db.transaction("files", "readwrite");
+  const store = tx.objectStore("files");
+
+  // Get all current Listen items
+  const getAllReq = store.getAll();
+  getAllReq.onsuccess = () => {
+    let listenItems = getAllReq.result.filter(f => f.category === "listen");
+
+    // Check limit
+    if (listenItems.length >= 100) {
+      alert("📦 Library full! Remove items to save new ones.");
+      return;
+    }
+
+    // Shift all existing listen files down by 1 (reversed to avoid overwrite)
+    const updates = [];
+    for (let i = listenItems.length - 1; i >= 0; i--) {
+      const item = listenItems[i];
+      updates.push(new Promise((res) => {
+        const putReq = store.put({ ...item, priority: (item.priority || i) + 1 });
+        putReq.onsuccess = () => res();
+      }));
+    }
+
+    Promise.all(updates).then(() => {
+      // Save current file as top priority (priority = 0)
+      const newEntry = {
+        name: lastFileName,
+        content: extractedText,
+        date: new Date().toISOString(),
+        category: "listen",
+        priority: 0
+      };
+      const addReq = store.add(newEntry);
+      addReq.onsuccess = () => {
+        logMessage(`✅ Saved '${lastFileName}' to Listen Library`);
+        restoreLibraryItems("listen"); // refresh UI
+      };
+      addReq.onerror = () => {
+        alert("❌ Failed to save file.");
+      };
+    });
+  };
+}
 
 
 // ===========================================================
