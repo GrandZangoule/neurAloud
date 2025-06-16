@@ -196,23 +196,45 @@ function restoreLibraryItems(type) {
   request.onsuccess = () => {
     const items = request.result.filter(f => f.category === type);
     const container = document.getElementById(`${type}-library`);
+    if (!container) {
+      console.warn(`⚠️ Container #${type}-library not found.`);
+      return;
+    }
+
+    container.innerHTML = "";
 
     items.forEach(item => {
       const el = document.createElement("div");
-      el.className = `library-item ${type}-item`; // Ensure class like 'listen-item'
-      el.id = item.id;
-      el.innerHTML = `
-        <span class="text-content">${item.name || "Untitled"}</span>
-      `;
+      el.className = `library-item ${type}-item`;
+      el.id = item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      el.setAttribute("data-tooltip", "Right-click or long-press for options");
+
+      const textSpan = document.createElement("span");
+      textSpan.className = "text-content";
+      textSpan.textContent = item.name || "Untitled";
+
+      el.appendChild(textSpan);
       container.appendChild(el);
+
+      // ✅ Add right-click support
+      el.addEventListener("contextmenu", (e) => handleContextMenu(e, el.id, type));
+
+      // ✅ Add mobile long-press support
+      let pressTimer = null;
+      el.addEventListener("touchstart", e => {
+        pressTimer = setTimeout(() => handleContextMenu(e, el.id, type), 500);
+      });
+      el.addEventListener("touchend", () => clearTimeout(pressTimer));
     });
 
     log(`📚 Restored ${items.length} items in ${type} library.`);
+  };
 
-    // ✅ Attach right-click / long-press
-    initializeContextMenus();
+  request.onerror = () => {
+    console.error("❌ Failed to restore library items.");
   };
 }
+
 
 // ===========================
 // MODULE 3 – Playback Controls
