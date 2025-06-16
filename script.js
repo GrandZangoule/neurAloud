@@ -293,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (uploadInput) {
     uploadInput.setAttribute(
       "accept",
-      ".pdf,.txt,.docx,.epub,.pptx,.doc,.xlsx,.xlsm,.xls,.xltx,.xltm"
+      ".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.xls,.xlsx,.xlsm,.xltx,.xltm,.tif,.eps,.tmp"
     );
   }
 });
