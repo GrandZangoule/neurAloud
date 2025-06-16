@@ -222,7 +222,7 @@ document.getElementById("loop-btn").addEventListener("click", () => {
 // ===== Module 4 + 4A =====
 // MODULE 4: File Upload Enhancements & Validations
 const allowedExtensions = [
-  '.pdf', '.txt', '.doc', '.docx', '.epub', '.pptx', '.xlsx', '.xlsm', '.xls', '.xltx', '.xltm'
+  '.pdf', '.txt', '.doc', '.docx', '.epub', '.pptx', '.csv', '.rtf', '.msg', '.sql', '.webp', '.xlsx', '.xlsm', '.xls', '.xltx', '.xltm', '.tif', '.eps', '.tmp' 
 ];
 
 function isValidFile(file) {
