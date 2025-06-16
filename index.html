@@ -174,11 +174,11 @@
                          </div>
                     </div>
 
-                     <!-- 📄 TOGGLE CONTROL FOR CAPTURE OVERWRITE -->
-                    <div id="overwrite-toggle-container" class="overwrite-controls">
-                        <label for="overwrite-capture-toggle">
-                            <input type="checkbox" id="overwrite-capture-toggle" checked />
-                            Overwrite Capture Text On Play
+                 <!-- ⚙️ Toggle for Capture Overwrite -->
+                    <div id="capture-toggle-container" class="context-toggle">
+                      <label>
+                      <input type="checkbox" id="overwrite-capture-toggle" checked />
+                        Auto Overwrite on Capture Play
                       </label>
                     </div>
     
@@ -478,14 +478,16 @@
           </div>
     </section>
 
-    <!-- 📄 CONTEXT MENU FOR RIGHT-CLICK ACTIONS -->
-    <ul id="context-menu" class="context-menu">
-      <li id="menu-play">▶ Play</li>
-      <li id="menu-add">➕ Add to Playlist</li>
-      <li id="menu-download">💾 Download</li>
-      <li id="menu-fav">⭐ Toggle Favorite</li>
-      <li id="menu-delete">🗑️ Delete</li>
-    </ul>
+    <!-- 📋 Right-Click / Long-Press Context Menu -->
+    <div id="context-menu" class="context-menu">
+      <ul>
+        <li id="menu-play">▶️ Play</li>
+        <li id="menu-add">➕ Add to Playlist</li>
+        <li id="menu-fav">⭐ Toggle Favorite</li>
+        <li id="menu-download">⬇️ Download</li>
+        <li id="menu-delete">🗑️ Delete</li>
+      </ul>
+    </div>
 
   </main>
 
