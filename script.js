@@ -280,41 +280,54 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// MODULE 4A: Bulk Delete and Tooltips
+// MODULE 4A: Bulk Delete for Listen and Capture Libraries + Tooltips
+
 function addCheckboxesToLibraryItems() {
-  const items = document.querySelectorAll(".library-item");
-  items.forEach(item => {
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.classList.add("bulk-delete-checkbox");
-    item.insertBefore(checkbox, item.firstChild);
+  const listenItems = document.querySelectorAll("#listen-library .library-item");
+  const captureItems = document.querySelectorAll("#capture-library .library-item");
+
+  [...listenItems, ...captureItems].forEach(item => {
+    if (!item.querySelector(".bulk-delete-checkbox")) {
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.classList.add("bulk-delete-checkbox");
+      item.insertBefore(checkbox, item.firstChild);
+    }
   });
 }
 
-const bulkDeleteBtn = document.getElementById("bulk-delete-btn");
-if (bulkDeleteBtn) {
-  bulkDeleteBtn.addEventListener("click", () => {
-    const selected = document.querySelectorAll(".bulk-delete-checkbox:checked");
-    if (selected.length === 0) return alert("No items selected.");
-    if (!confirm(`Delete ${selected.length} selected items?`)) return;
+function setupBulkDeleteButton(btnId, containerId) {
+  const btn = document.getElementById(btnId);
+  const container = document.getElementById(containerId);
+  if (!btn || !container) return;
 
-    selected.forEach(cb => {
+  btn.addEventListener("click", () => {
+    const checkedItems = container.querySelectorAll(".bulk-delete-checkbox:checked");
+    if (checkedItems.length === 0) return alert("⚠️ No items selected.");
+    if (!confirm(`Delete ${checkedItems.length} selected items from ${containerId}?`)) return;
+
+    checkedItems.forEach(cb => {
       const item = cb.closest(".library-item");
       if (item) item.remove();
-      // Optional: remove from DB here as well
+      // ❗ Optional: Remove from IndexedDB if applicable
     });
 
-    alert(`${selected.length} item(s) deleted.`);
+    alert(`✅ Deleted ${checkedItems.length} item(s).`);
   });
-} else {
-  console.warn("⚠️ 'bulk-delete-btn' not found in DOM.");
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  addCheckboxesToLibraryItems();
+  setupBulkDeleteButton("bulk-delete-listen-btn", "listen-library");
+  setupBulkDeleteButton("bulk-delete-capture-btn", "capture-library");
+});
 
 function applyTooltips() {
   const tooltips = {
     "upload-files-btn": "Upload files (PDF, DOCX, TXT, EPUB, PPTX, XLSX...)",
     "save-to-library-btn": "Save current item to Listen Library",
-    "bulk-delete-btn": "Delete selected items from Library",
+    "bulk-delete-listen-btn": "Delete selected Listen Library items",
+    "bulk-delete-capture-btn": "Delete selected Capture items",
     "play-button": "Play selected file",
     "add-to-playlist-btn": "Add item to Playlist (max 10)"
   };
