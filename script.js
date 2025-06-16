@@ -196,13 +196,21 @@ function restoreLibraryItems(type) {
   request.onsuccess = () => {
     const items = request.result.filter(f => f.category === type);
     const container = document.getElementById(`${type}-library`);
+
     items.forEach(item => {
       const el = document.createElement("div");
-      el.className = "library-item";
-      el.textContent = item.name || "Untitled";
+      el.className = `library-item ${type}-item`; // Ensure class like 'listen-item'
+      el.id = item.id;
+      el.innerHTML = `
+        <span class="text-content">${item.name || "Untitled"}</span>
+      `;
       container.appendChild(el);
     });
+
     log(`📚 Restored ${items.length} items in ${type} library.`);
+
+    // ✅ Attach right-click / long-press
+    initializeContextMenus();
   };
 }
 
@@ -754,6 +762,43 @@ window.addEventListener("DOMContentLoaded", () => {
   renderFavorites();
   loadAutoResumeSetting();
 });
+
+// ==========================================================
+// ✅ CONTEXT MENU + LONG-PRESS SUPPORT FOR LIBRARY ITEMS
+// ==========================================================
+
+const LONG_PRESS_DURATION = 600;
+let longPressTimer = null;
+
+function attachContextHandlers(selector, type) {
+  document.querySelectorAll(selector).forEach(item => {
+    const itemId = item.id;
+
+    // Right-click context menu (desktop)
+    item.addEventListener("contextmenu", (e) => {
+      handleContextMenu(e, itemId, type);
+    });
+
+    // Long-press context menu (mobile)
+    item.addEventListener("touchstart", (e) => {
+      longPressTimer = setTimeout(() => {
+        handleContextMenu(e, itemId, type);
+      }, LONG_PRESS_DURATION);
+    });
+
+    item.addEventListener("touchend", () => clearTimeout(longPressTimer));
+    item.addEventListener("touchmove", () => clearTimeout(longPressTimer));
+  });
+}
+
+// Initialize for both listen and capture items
+function initializeContextMenus() {
+  attachContextHandlers(".listen-item", "listen");
+  attachContextHandlers(".capture-item", "capture");
+}
+
+// Run after DOM is ready
+document.addEventListener("DOMContentLoaded", initializeContextMenus);
 
 // =======================
 // 📦 Module 7: Playlist Enhancements and Playback Features
