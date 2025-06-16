@@ -291,17 +291,24 @@ function addCheckboxesToLibraryItems() {
   });
 }
 
-document.getElementById("bulk-delete-btn").addEventListener("click", () => {
-  const selected = document.querySelectorAll(".bulk-delete-checkbox:checked");
-  if (selected.length === 0) return alert("No items selected.");
-  if (!confirm(`Delete ${selected.length} selected items?`)) return;
+const bulkDeleteBtn = document.getElementById("bulk-delete-btn");
+if (bulkDeleteBtn) {
+  bulkDeleteBtn.addEventListener("click", () => {
+    const selected = document.querySelectorAll(".bulk-delete-checkbox:checked");
+    if (selected.length === 0) return alert("No items selected.");
+    if (!confirm(`Delete ${selected.length} selected items?`)) return;
 
-  selected.forEach(cb => {
-    const item = cb.closest(".library-item");
-    item.remove();
-    // Optional: also remove from DB if needed
+    selected.forEach(cb => {
+      const item = cb.closest(".library-item");
+      if (item) item.remove();
+      // Optional: remove from DB here as well
+    });
+
+    alert(`${selected.length} item(s) deleted.`);
   });
-});
+} else {
+  console.warn("⚠️ 'bulk-delete-btn' not found in DOM.");
+}
 
 function applyTooltips() {
   const tooltips = {
