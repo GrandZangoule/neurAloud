@@ -477,21 +477,57 @@ footer {
 
 /* Default Light Mode */
 /*This is for the background colots of the Listen and Capture modes*/
+/* Base style */
 .theme-background {
-  background-color: #f6fdff;
-  color: #111;
   min-height: 200px;
   border: 1px solid #ccc;
   padding: 10px;
   margin-top: 10px;
   overflow-y: auto;
+  border-radius: 6px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light Mode (Default) */
+body.light-mode .theme-background {
+  background-color: whitesmoke;
+  color: #111;
+  border: 1px solid #ccc;
 }
 
 /* Dark Mode */
 body.dark-mode .theme-background {
   background-color: #1e1e1e;
   color: #f5f5f5;
-  border: 1px solid #555;
+  border: 1px solid #444;
+}
+
+/* Blue Mode */
+body.blue-mode .theme-background {
+  background-color: #e6f0ff;
+  color: #002b5e;
+  border: 1px solid #99c2ff;
+}
+
+/* Royal Mode */
+body.royal-mode .theme-background {
+  background-color: #f3f0ff;
+  color: #2a125e;
+  border: 1px solid #bbaaff;
+}
+
+/* Gray Mode */
+body.gray-mode .theme-background {
+  background-color: #eeeeee;
+  color: #333;
+  border: 1px solid #999;
+}
+
+/* 🌿 Green Mode */
+body.green-mode .theme-background {
+  background-color: #e9f7ef;
+  color: #145a32;
+  border: 1px solid #a9dfbf;
 }
 
 /* === Footer Styling with Theme Support === */
