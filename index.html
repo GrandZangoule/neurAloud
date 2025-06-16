@@ -109,6 +109,53 @@
           </div>
     </section>
 
+    <!-- 📚 Library Section -->
+    <section id="library" class="section">
+          <h2>📚 Your Library</h2>
+
+          <!-- 🔖 Playlist (Max 10) -->
+          <div class="library-subsection">
+               <h3>🎵 Playback Queue</h3>
+               <div id="playback-queue" class="horizontal-scroll">
+                    <!-- Queue items dynamically inserted -->
+               </div>
+               <button id="play-all">▶️ Play Playlist</button>
+               <button id="export-txt">⬇️ Export as TXT</button>
+               <button id="export-json">⬇️ Export as JSON</button>
+          </div>
+
+          <!-- 📄 Saved Listen Items -->
+          <div class="library-subsection">
+               <h3>🗂️ Listen Documents</h3>
+               <div id="listen-library" class="grid-library">
+                    <!-- Listen docs dynamically inserted -->
+               </div>
+          </div>
+
+          <!-- 🎙️ Saved Capture Items -->
+          <div class="library-subsection">
+               <h3>🎙️ Capture Texts</h3>
+               <div id="capture-library" class="grid-library">
+                    <!-- Capture docs dynamically inserted -->
+               </div>
+          </div>
+
+          <!-- 🧷 Favorites (up to 10) -->
+          <div class="library-subsection">
+               <h3>⭐ Favorites</h3>
+               <div id="favorites-library" class="grid-library">
+                    <!-- Favorites dynamically rendered -->
+               </div>
+          </div>
+
+          <!-- 🗑️ Clear & Manage Controls -->
+          <div class="library-controls">
+               <button onclick="confirmClearLibrary()">🗑️ Clear Entire Library</button>
+               <button onclick="confirmClearFavorites()">❌ Remove All Favorites</button>
+               <button onclick="confirmClearPlaylist()">🚫 Clear Playlist</button>
+          </div>
+    </section>    
+
     <!-- Listen Section -->
     <section id="listen" class="section">
           <h2>🔊 Listen</h2>
