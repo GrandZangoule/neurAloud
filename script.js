@@ -289,91 +289,135 @@ document.addEventListener("DOMContentLoaded", applyTooltips);
 
 // 1️⃣ FILE TYPE FILTERING ON UPLOAD
 document.addEventListener("DOMContentLoaded", () => {
-  const uploadInput = document.getElementById("file-upload");
-  if (uploadInput) {
-    uploadInput.setAttribute(
-      "accept",
-      ".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.xls,.xlsx,.xlsm,.xltx,.xltm,.tif,.eps,.tmp"
-    );
-  }
+      const uploadInput = document.getElementById("file-upload");
+      if (uploadInput) {
+            uploadInput.setAttribute(
+                  "accept",
+                  ".pdf,.txt,.docx,.epub,.pptx,.doc,.xlsx,.xlsm,.xls,.xltx,.xltm"
+            );
+      }
 });
 
 // 2️⃣ BULK DELETE FROM LISTEN LIBRARY
 function initializeBulkDeleteFeature() {
-  const deleteButton = document.getElementById("delete-selected-listen-btn");
-  const libraryContainer = document.getElementById("listen-library");
+      const deleteButton = document.getElementById("delete-selected-listen-btn");
+      const libraryContainer = document.getElementById("listen-library");
 
-  if (!deleteButton || !libraryContainer) return;
+      if (!deleteButton || !libraryContainer) return;
 
-  deleteButton.addEventListener("click", () => {
-    const checkboxes = libraryContainer.querySelectorAll("input[type='checkbox']:checked");
+      deleteButton.addEventListener("click", () => {
+            const checkboxes = libraryContainer.querySelectorAll("input[type='checkbox']:checked");
 
-    if (checkboxes.length === 0) {
-      alert("Please select at least one item to delete.");
-      return;
-    }
+            if (checkboxes.length === 0) {
+                  alert("Please select at least one item to delete.");
+                  return;
+            }
 
-    if (!confirm("Are you sure you want to delete the selected item(s)?")) return;
+            if (!confirm("Are you sure you want to delete the selected item(s)?")) return;
 
-    checkboxes.forEach((cb) => {
-      const parent = cb.closest(".library-item");
-      if (parent) parent.remove();
-    });
+            checkboxes.forEach((cb) => {
+                  const parent = cb.closest(".library-item");
+                  if (parent) parent.remove();
+            });
 
-    alert("Selected items deleted successfully.");
-  });
+            alert("Selected items deleted successfully.");
+      });
 }
 
 function addCheckboxesToLibrary() {
-  const libraryContainer = document.getElementById("listen-library");
-  if (!libraryContainer) return;
+      const libraryContainer = document.getElementById("listen-library");
+      if (!libraryContainer) return;
 
-  const items = libraryContainer.querySelectorAll(".library-item");
-  items.forEach((item) => {
-    if (!item.querySelector("input[type='checkbox']")) {
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.classList.add("bulk-delete-checkbox");
-      item.insertBefore(checkbox, item.firstChild);
-    }
-  });
+      const items = libraryContainer.querySelectorAll(".library-item");
+      items.forEach((item) => {
+            if (!item.querySelector("input[type='checkbox']")) {
+                  const checkbox = document.createElement("input");
+                  checkbox.type = "checkbox";
+                  checkbox.classList.add("bulk-delete-checkbox");
+                  item.insertBefore(checkbox, item.firstChild);
+            }
+      });
 }
 
 // Initialize both on DOMContentLoaded
 document.addEventListener("DOMContentLoaded", () => {
-  initializeBulkDeleteFeature();
-  addCheckboxesToLibrary();
+      initializeBulkDeleteFeature();
+      addCheckboxesToLibrary();
+      setupUploadMultipleHandler();
 });
 
 // 3️⃣ TOOLTIP SYSTEM FOR HOVER HINTS
 function addTooltips() {
-  const tooltipMap = [
-    { id: "upload-files-btn", tip: "Upload documents to your Listen Library" },
-    { id: "save-to-library-btn", tip: "Save this file to your personal Library" },
-    { id: "download-selected-btn", tip: "Download selected items from Capture Library" },
-    { id: "delete-selected-listen-btn", tip: "Delete selected Listen items" },
-    { id: "read-queue-btn", tip: "Read all queued files continuously" },
-    { id: "play-button", tip: "Start playback" },
-    { id: "pause-button", tip: "Pause playback" },
-    { id: "stop-button", tip: "Stop reading" },
-    { id: "loop-button", tip: "Enable looping playback" },
-    { id: "tts-engine-select", tip: "Select your preferred text-to-speech engine" },
-    { id: "voice-select", tip: "Choose a reading voice" },
-    { id: "rate-slider", tip: "Control reading speed" },
-    { id: "pitch-slider", tip: "Adjust voice pitch" }
-  ];
+      const tooltipMap = [
+            { id: "upload-files-btn", tip: "Upload documents to your Listen Library" },
+            { id: "save-to-library-btn", tip: "Save this file to your personal Library" },
+            { id: "download-selected-btn", tip: "Download selected items from Capture Library" },
+            { id: "delete-selected-listen-btn", tip: "Delete selected Listen items" },
+            { id: "read-queue-btn", tip: "Read all queued files continuously" },
+            { id: "play-button", tip: "Start playback" },
+            { id: "pause-button", tip: "Pause playback" },
+            { id: "stop-button", tip: "Stop reading" },
+            { id: "loop-button", tip: "Enable looping playback" },
+            { id: "tts-engine-select", tip: "Select your preferred text-to-speech engine" },
+            { id: "voice-select", tip: "Choose a reading voice" },
+            { id: "rate-slider", tip: "Control reading speed" },
+            { id: "pitch-slider", tip: "Adjust voice pitch" },
+            { id: "upload-multiple-btn", tip: "Select and upload multiple files to Library" }
+      ];
 
-  tooltipMap.forEach(({ id, tip }) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.setAttribute("title", tip);
-      el.setAttribute("data-tooltip", tip);
-      el.classList.add("tooltip-enabled");
-    }
-  });
+      tooltipMap.forEach(({ id, tip }) => {
+            const el = document.getElementById(id);
+            if (el) {
+                  el.setAttribute("title", tip);
+                  el.setAttribute("data-tooltip", tip);
+                  el.classList.add("tooltip-enabled");
+            }
+      });
 }
 
 document.addEventListener("DOMContentLoaded", addTooltips);
+
+// 4️⃣ UPLOAD MULTIPLE HANDLER
+function setupUploadMultipleHandler() {
+      const uploadBtn = document.getElementById("upload-multiple-btn");
+      if (!uploadBtn) return;
+
+      uploadBtn.addEventListener("click", () => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.multiple = true;
+            input.accept = ".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.png,.jpeg,.jpg,.bmp,.tif,.eps,.tmp";
+            input.style.display = "none";
+
+            input.addEventListener("change", async (event) => {
+                  const files = event.target.files;
+                  if (!files.length) return;
+
+                  for (const file of files) {
+                        console.log("📁 Uploading:", file.name);
+
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                              const content = reader.result;
+                              const displayName = file.name;
+
+                              saveToLibrary(displayName, content);
+                        };
+                        reader.readAsText(file);
+                  }
+            });
+
+            document.body.appendChild(input);
+            input.click();
+      });
+}
+
+function saveToLibrary(name, content) {
+      const libraryList = document.getElementById("listen-library-list");
+      const li = document.createElement("li");
+      li.textContent = `${name} (uploaded)`;
+      libraryList?.appendChild(li);
+}
 
 
 /* =============================
