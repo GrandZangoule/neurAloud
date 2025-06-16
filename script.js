@@ -737,11 +737,22 @@ function handleContextMenu(event, itemId, type) {
   menu.style.left = `${event.clientX}px`;
   menu.classList.add("show");
 
+  // 🎯 Action bindings
   menu.querySelector("#menu-play").onclick = () => playItem(itemId);
   menu.querySelector("#menu-add").onclick = () => addToPlaylist(itemId);
   menu.querySelector("#menu-download").onclick = () => downloadItem(itemId, type);
   menu.querySelector("#menu-fav").onclick = () => toggleFavorite(itemId);
   menu.querySelector("#menu-delete").onclick = () => deleteItem(itemId, type);
+
+  // ✅ Keyboard accessibility for context menu items
+  menu.querySelectorAll("li").forEach(li => {
+    li.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        li.click();
+      }
+    };
+  });
 }
 
 function hideContextMenu() {
