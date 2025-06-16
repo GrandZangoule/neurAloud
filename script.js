@@ -293,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (uploadInput) {
             uploadInput.setAttribute(
                   "accept",
-                  ".pdf,.txt,.docx,.epub,.pptx,.doc,.xlsx,.xlsm,.xls,.xltx,.xltm"
+                  ".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.xls,.xlsx,.xlsm,.xltx,.xltm,.tif,.eps,.tmp"
             );
       }
 });
@@ -386,7 +386,7 @@ function setupUploadMultipleHandler() {
             const input = document.createElement("input");
             input.type = "file";
             input.multiple = true;
-            input.accept = ".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.png,.jpeg,.jpg,.bmp,.tif,.eps,.tmp";
+            input.accept = ".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.xls,.xlsx,.xlsm,.xltx,.xltm,.tif,.eps,.tmp";
             input.style.display = "none";
 
             input.addEventListener("change", async (event) => {
