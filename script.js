@@ -856,6 +856,41 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 
+// Listen/ Capture Auto Load from Context Menu
+function playItem(itemId, onComplete = null) {
+  const item = document.getElementById(itemId);
+  if (!item) return;
+
+  const type = item.classList.contains("listen-item") ? "listen" : "capture";
+  const text = item.querySelector(".text-content")?.innerText || "";
+
+  if (type === "capture") {
+    const overwrite = document.getElementById("overwrite-capture-toggle")?.checked;
+    const existingText = document.getElementById("capture-display")?.textContent;
+
+    if (!overwrite && existingText?.trim()) {
+      if (!confirm("Overwrite existing captured text?")) return;
+    }
+
+    // Update Capture display and switch
+    navigate("capture");
+    document.getElementById("capture-display").textContent = text;
+  } else {
+    // Navigate to Listen and populate text display
+    navigate("listen");
+    const display = document.getElementById("text-display");
+    display.innerHTML = `<span class="sentence">${text}</span>`;
+  }
+
+  // Start reading
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = parseFloat(localStorage.getItem("rate") || 1);
+  utterance.pitch = parseFloat(localStorage.getItem("pitch") || 1);
+  utterance.voice = getSelectedVoice();
+  utterance.onend = onComplete || null;
+  speechSynthesis.speak(utterance);
+}
+
 // Initialize for both listen and capture items
 function initializeContextMenus() {
   attachContextHandlers(".listen-item", "listen");
