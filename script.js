@@ -424,16 +424,29 @@ async function saveFileToLibrary() {
 // ✅ MODULE 5: Upload Filtering, Bulk Delete, and Tooltips
 // ===========================================================
 
-// 1️⃣ FILE TYPE FILTERING ON UPLOAD
+// 1️⃣ FILE TYPE FILTERING ON UPLOAD (Enhanced)
 document.addEventListener("DOMContentLoaded", () => {
-      const uploadInput = document.getElementById("file-upload");
-      if (uploadInput) {
-            uploadInput.setAttribute(
-                  "accept",
-                  ".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.xls,.xlsx,.xlsm,.xltx,.xltm,.tif,.eps,.tmp"
-            );
-      }
+  const acceptedTypes = [
+    ".pdf", ".txt", ".docx", ".epub", ".pptx", ".doc",
+    ".xlsx", ".xlsm", ".xls", ".xltx", ".xltm",
+    ".csv", ".rtf", ".msg", ".sql",
+    ".webp", ".png", ".jpeg", ".jpg", ".bmp", ".tif", ".eps", ".tmp"
+  ].join(",");
+
+  const fileInputs = [
+    document.getElementById("file-upload"),
+    document.getElementById("upload-multiple-btn"),
+    document.getElementById("upload-files-btn")
+  ];
+
+  fileInputs.forEach(input => {
+    if (input) {
+      input.setAttribute("accept", acceptedTypes);
+      input.setAttribute("multiple", "multiple");  // Optional: force multi-selection where applicable
+    }
+  });
 });
+
 
 // 2️⃣ BULK DELETE FROM LISTEN LIBRARY
 function initializeBulkDeleteFeature() {
