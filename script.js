@@ -732,20 +732,52 @@ function renderFavorites() {
 /* --- Context Menu Enhancements --- */
 function handleContextMenu(event, itemId, type) {
   event.preventDefault();
+
   const menu = document.getElementById("context-menu");
+  const menuItems = menu.querySelectorAll("li");
+
+  // Position and show menu
   menu.style.top = `${event.clientY}px`;
   menu.style.left = `${event.clientX}px`;
   menu.classList.add("show");
 
-  // 🎯 Action bindings
+  // Reset existing animation delays
+  menuItems.forEach((li, i) => {
+    li.style.animation = `fadeIn 0.3s ease ${i * 60}ms forwards`;
+    li.tabIndex = 0; // make focusable
+  });
+
+  // Auto-focus first item
+  setTimeout(() => menuItems[0]?.focus(), 50);
+
+  // Action bindings
   menu.querySelector("#menu-play").onclick = () => playItem(itemId);
   menu.querySelector("#menu-add").onclick = () => addToPlaylist(itemId);
   menu.querySelector("#menu-download").onclick = () => downloadItem(itemId, type);
   menu.querySelector("#menu-fav").onclick = () => toggleFavorite(itemId);
   menu.querySelector("#menu-delete").onclick = () => deleteItem(itemId, type);
 
-  // ✅ Keyboard accessibility for context menu items
-  menu.querySelectorAll("li").forEach(li => {
+  // Keyboard navigation
+  menu.onkeydown = (e) => {
+    const focused = document.activeElement;
+    const items = [...menuItems];
+    const currentIndex = items.indexOf(focused);
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = items[(currentIndex + 1) % items.length];
+      next.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = items[(currentIndex - 1 + items.length) % items.length];
+      prev.focus();
+    } else if (e.key === "Escape") {
+      hideContextMenu();
+    }
+  };
+
+  // Enter/Space fallback
+  menuItems.forEach(li => {
     li.onkeydown = (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
@@ -754,6 +786,14 @@ function handleContextMenu(event, itemId, type) {
     };
   });
 }
+
+function hideContextMenu() {
+  const menu = document.getElementById("context-menu");
+  menu.classList.remove("show");
+  menu.style.top = "-9999px";
+  menu.style.left = "-9999px";
+}
+
 
 function hideContextMenu() {
   document.getElementById("context-menu").classList.remove("show");
