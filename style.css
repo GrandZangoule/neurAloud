@@ -619,6 +619,30 @@ body.gray-mode {
   --footer-text: #e0e0e0;
 }
 
+/* === lIBRARY dIVIDER === */
+.library-flex-container {
+     display: flex;
+     gap: 2rem;
+     margin-top: 1rem;
+     flex-wrap: wrap;
+}
+
+.library-left {
+     flex: 3;
+     min-width: 300px;
+}
+
+.library-right {
+     flex: 2;
+     min-width: 250px;
+}
+
+.library-divider {
+     width: 10px;
+     background: linear-gradient(to bottom, transparent 0%, #999 50%, transparent 100%);
+     border-radius: 10px;
+}
+
 /* === Bottom Navigation Hidden on Desktop === */
 #bottom-navigation {
   display: none;
