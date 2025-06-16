@@ -186,7 +186,38 @@ function loadTTSEngines(context) {
   if (saved) engineDropdown.value = saved;
 }
 
-// Restore Listen and Capture Library items
+// Render & Restore Listen and Capture Library items
+function renderLibraryItem(item, type) {
+  const container = document.getElementById(`${type}-library`);
+  if (!container) {
+    console.warn(`⚠️ Container #${type}-library not found.`);
+    return;
+  }
+
+  const el = document.createElement("div");
+  el.className = `library-item ${type}-item`;
+  el.classList.add("theme-background", "theme-text");
+  el.id = item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+  el.setAttribute("data-tooltip", "Right-click or long-press for options");
+
+  const textSpan = document.createElement("span");
+  textSpan.className = "text-content";
+  textSpan.textContent = item.name || "Untitled";
+
+  el.appendChild(textSpan);
+  container.appendChild(el);
+
+  // ✅ Right-click support
+  el.addEventListener("contextmenu", (e) => handleContextMenu(e, el.id, type));
+
+  // ✅ Long-press mobile support
+  let pressTimer = null;
+  el.addEventListener("touchstart", e => {
+    pressTimer = setTimeout(() => handleContextMenu(e, el.id, type), 500);
+  });
+  el.addEventListener("touchend", () => clearTimeout(pressTimer));
+}
+
 function restoreLibraryItems(type) {
   const storeName = "files";
   const tx = db.transaction(storeName, "readonly");
@@ -201,31 +232,8 @@ function restoreLibraryItems(type) {
       return;
     }
 
-    container.innerHTML = "";
-
-    items.forEach(item => {
-      const el = document.createElement("div");
-      el.className = `library-item ${type}-item`;
-      el.id = item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      el.setAttribute("data-tooltip", "Right-click or long-press for options");
-
-      const textSpan = document.createElement("span");
-      textSpan.className = "text-content";
-      textSpan.textContent = item.name || "Untitled";
-
-      el.appendChild(textSpan);
-      container.appendChild(el);
-
-      // ✅ Add right-click support
-      el.addEventListener("contextmenu", (e) => handleContextMenu(e, el.id, type));
-
-      // ✅ Add mobile long-press support
-      let pressTimer = null;
-      el.addEventListener("touchstart", e => {
-        pressTimer = setTimeout(() => handleContextMenu(e, el.id, type), 500);
-      });
-      el.addEventListener("touchend", () => clearTimeout(pressTimer));
-    });
+    container.innerHTML = ""; // Clear existing before restore
+    items.forEach(item => renderLibraryItem(item, type));
 
     log(`📚 Restored ${items.length} items in ${type} library.`);
   };
@@ -671,6 +679,10 @@ function saveToLibrary(name, content) {
    ✅ MODULE 6 — Advanced Queue, Favorites, Auto-Resume & UI Enhancements
    ============================= */
 
+// =============================
+// ✅ MODULE 6 — Advanced Queue, Favorites, Auto-Resume & UI Enhancements
+// =============================
+
 // Constants
 const MAX_PLAYLIST_ITEMS = 10;
 const MAX_LIBRARY_ITEMS = 100;
@@ -679,139 +691,170 @@ let downloadQueue = [];
 
 /* --- Auto Resume Settings --- */
 function loadAutoResumeSetting() {
-  const autoResume = localStorage.getItem("autoResume") === "true";
-  document.getElementById("auto-resume-toggle").checked = autoResume;
+      const autoResume = localStorage.getItem("autoResume") === "true";
+      document.getElementById("auto-resume-toggle").checked = autoResume;
 }
 
 function toggleAutoResumeSetting() {
-  const toggle = document.getElementById("auto-resume-toggle");
-  localStorage.setItem("autoResume", toggle.checked);
+      const toggle = document.getElementById("auto-resume-toggle");
+      localStorage.setItem("autoResume", toggle.checked);
 }
 
 /* --- Add to Favorites --- */
 function toggleFavorite(itemId) {
-  if (favorites.includes(itemId)) {
-    favorites = favorites.filter(id => id !== itemId);
-  } else {
-    if (favorites.length >= 10) {
-      alert("You can only have up to 10 favorites.");
-      return;
-    }
-    favorites.push(itemId);
-  }
-  localStorage.setItem("favorites", JSON.stringify(favorites));
-  renderFavorites();
+      if (favorites.includes(itemId)) {
+            favorites = favorites.filter(id => id !== itemId);
+      } else {
+            if (favorites.length >= 10) {
+                  alert("You can only have up to 10 favorites.");
+                  return;
+            }
+            favorites.push(itemId);
+      }
+      localStorage.setItem("favorites", JSON.stringify(favorites));
+      renderFavorites();
 }
 
 function renderFavorites() {
-  const favContainer = document.getElementById("favorites-section");
-  if (!favContainer) {
-    console.warn("⚠️ 'favorites-section' not found in DOM.");
-    return;
-  }
+      const favContainer = document.getElementById("favorites-section");
+      if (!favContainer) {
+            console.warn("⚠️ 'favorites-section' not found in DOM.");
+            return;
+      }
 
-  favContainer.innerHTML = "";
-  favorites.forEach(id => {
-    const item = document.getElementById(id);
-    if (item) {
-      const clone = item.cloneNode(true);
-      clone.querySelector(".fav-icon")?.remove();
-      favContainer.appendChild(clone);
-    }
-  });
+      favContainer.innerHTML = "";
+      favorites.forEach(id => {
+            const item = document.getElementById(id);
+            if (item) {
+                  const clone = item.cloneNode(true);
+                  clone.querySelector(".fav-icon")?.remove();
+                  favContainer.appendChild(clone);
+            }
+      });
 }
 
 /* --- Context Menu Enhancements --- */
 function handleContextMenu(event, itemId, type) {
-  event.preventDefault();
-  const menu = document.getElementById("context-menu");
-  menu.style.top = `${event.clientY}px`;
-  menu.style.left = `${event.clientX}px`;
-  menu.style.display = "block";
+      event.preventDefault();
+      const menu = document.getElementById("context-menu");
+      menu.style.top = `${event.clientY}px`;
+      menu.style.left = `${event.clientX}px`;
+      menu.style.display = "block";
 
-  menu.querySelector("#menu-play").onclick = () => playItem(itemId);
-  menu.querySelector("#menu-add").onclick = () => addToPlaylist(itemId);
-  menu.querySelector("#menu-download").onclick = () => downloadItem(itemId, type);
-  menu.querySelector("#menu-fav").onclick = () => toggleFavorite(itemId);
-  menu.querySelector("#menu-delete").onclick = () => deleteItem(itemId, type);
+      menu.querySelector("#menu-play").onclick = () => playItem(itemId);
+      menu.querySelector("#menu-add").onclick = () => addToPlaylist(itemId);
+      menu.querySelector("#menu-download").onclick = () => downloadItem(itemId, type);
+      menu.querySelector("#menu-fav").onclick = () => toggleFavorite(itemId);
+      menu.querySelector("#menu-delete").onclick = () => deleteItem(itemId, type);
 }
 
 function hideContextMenu() {
-  document.getElementById("context-menu").style.display = "none";
+      document.getElementById("context-menu").style.display = "none";
 }
 document.addEventListener("click", hideContextMenu);
 
 /* --- Auto Playlist Play --- */
 function playPlaylistSequentially(index = 0) {
-  if (index >= playlist.length) return;
-  const currentId = playlist[index];
-  playItem(currentId, () => playPlaylistSequentially(index + 1));
+      if (index >= playlist.length) return;
+      const currentId = playlist[index];
+      playItem(currentId, () => playPlaylistSequentially(index + 1));
 }
 
 /* --- Auto Resume Playback --- */
 function resumeLastPlayback() {
-  const lastId = localStorage.getItem("lastPlayedId");
-  if (lastId && document.getElementById("auto-resume-toggle").checked) {
-    playItem(lastId);
-  }
+      const lastId = localStorage.getItem("lastPlayedId");
+      if (lastId && document.getElementById("auto-resume-toggle").checked) {
+            playItem(lastId);
+      }
 }
 
 /* --- Download Queue --- */
 function addToDownloadQueue(itemId) {
-  if (!downloadQueue.includes(itemId)) {
-    downloadQueue.push(itemId);
-  }
+      if (!downloadQueue.includes(itemId)) {
+            downloadQueue.push(itemId);
+      }
 }
 
 function downloadItem(itemId, type) {
-  const item = document.getElementById(itemId);
-  if (!item) return;
+      const item = document.getElementById(itemId);
+      if (!item) return;
 
-  const text = item.querySelector(".text-content")?.innerText || "Untitled";
-  const blob = new Blob([text], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
+      const text = item.querySelector(".text-content")?.innerText || "Untitled";
+      const blob = new Blob([text], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
 
-  anchor.href = url;
-  anchor.download = `${itemId}.txt`;
-  anchor.click();
-  URL.revokeObjectURL(url);
+      anchor.href = url;
+      anchor.download = `${itemId}.txt`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+}
+
+/* --- Library Item Renderer --- */
+function renderLibraryItem(item, type) {
+      const container = document.getElementById(`${type}-library`);
+      if (!container) {
+            console.warn(`⚠️ Container #${type}-library not found.`);
+            return;
+      }
+
+      const el = document.createElement("div");
+      el.className = `library-item ${type}-item`;
+      el.classList.add("theme-background", "theme-text");
+      el.id = item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      el.setAttribute("data-tooltip", "Right-click or long-press for options");
+
+      const textSpan = document.createElement("span");
+      textSpan.className = "text-content";
+      textSpan.textContent = item.name || "Untitled";
+
+      el.appendChild(textSpan);
+      container.appendChild(el);
+
+      // ✅ Right-click support
+      el.addEventListener("contextmenu", (e) => handleContextMenu(e, el.id, type));
+
+      // ✅ Long-press mobile support
+      let pressTimer = null;
+      el.addEventListener("touchstart", e => {
+            pressTimer = setTimeout(() => handleContextMenu(e, el.id, type), 500);
+      });
+      el.addEventListener("touchend", () => clearTimeout(pressTimer));
+}
+
+/* --- Restore Library Items --- */
+function restoreLibraryItems(type) {
+      const storeName = "files";
+      const tx = db.transaction(storeName, "readonly");
+      const store = tx.objectStore(storeName);
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+            const items = request.result.filter(f => f.category === type);
+            const container = document.getElementById(`${type}-library`);
+            if (!container) {
+                  console.warn(`⚠️ Container #${type}-library not found.`);
+                  return;
+            }
+
+            container.innerHTML = ""; // Clear existing before restore
+            items.forEach(item => renderLibraryItem(item, type));
+
+            log(`📚 Restored ${items.length} items in ${type} library.`);
+      };
+
+      request.onerror = () => {
+            console.error("❌ Failed to restore library items.");
+      };
 }
 
 /* --- Initialization --- */
 window.addEventListener("DOMContentLoaded", () => {
-  favorites = JSON.parse(localStorage.getItem("favorites")) || [];
-  renderFavorites();
-  loadAutoResumeSetting();
+      favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+      renderFavorites();
+      loadAutoResumeSetting();
 });
 
-// ==========================================================
-// ✅ CONTEXT MENU + LONG-PRESS SUPPORT FOR LIBRARY ITEMS
-// ==========================================================
-
-const LONG_PRESS_DURATION = 600;
-let longPressTimer = null;
-
-function attachContextHandlers(selector, type) {
-  document.querySelectorAll(selector).forEach(item => {
-    const itemId = item.id;
-
-    // Right-click context menu (desktop)
-    item.addEventListener("contextmenu", (e) => {
-      handleContextMenu(e, itemId, type);
-    });
-
-    // Long-press context menu (mobile)
-    item.addEventListener("touchstart", (e) => {
-      longPressTimer = setTimeout(() => {
-        handleContextMenu(e, itemId, type);
-      }, LONG_PRESS_DURATION);
-    });
-
-    item.addEventListener("touchend", () => clearTimeout(longPressTimer));
-    item.addEventListener("touchmove", () => clearTimeout(longPressTimer));
-  });
-}
 
 // Initialize for both listen and capture items
 function initializeContextMenus() {
@@ -820,7 +863,7 @@ function initializeContextMenus() {
 }
 
 // Run after DOM is ready
-document.addEventListener("DOMContentLoaded", initializeContextMenus);
+//no longer needed      document.addEventListener("DOMContentLoaded", initializeContextMenus);
 
 // =======================
 // 📦 Module 7: Playlist Enhancements and Playback Features
