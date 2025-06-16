@@ -143,7 +143,16 @@
                     <!-- 📤 Upload Multiple -->
                     <div class="library-subsection">
                          <h3>📤 Upload Multiple</h3>
-                         <button id="upload-multiple-btn">📁 Select & Upload Files</button>
+                         <label for="file-input" class="custom-upload-button">
+                              📁 Select & Upload Files
+                         </label>
+                         <input 
+                              type="file" 
+                              id="file-input" 
+                              multiple 
+                              accept=".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.xls,.xlsx,.xlsm,.xltx,.xltm,.tif,.eps,.tmp" 
+                              style="display:none;" 
+                         />
                     </div>
                </div>
 
@@ -228,7 +237,7 @@
           <!-- 📥 Upload New Document -->
           <div class="upload-area">
                <label for="file-input" class="file-label">📤 Choose File</label>
-               <input type="file" id="file-input" accept=".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.png,.jpeg,.jpg,.bmp,.tif,.eps,.tmp" />
+               <input type="file" id="file-input" accept=".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.xls,.xlsx,.xlsm,.xltx,.xltm,.tif,.eps,.tmp" />
           </div>
 
           <!-- 💬 Sentence Navigation -->
