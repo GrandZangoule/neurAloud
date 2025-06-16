@@ -675,10 +675,6 @@ function saveToLibrary(name, content) {
 }
 
 
-/* =============================
-   ✅ MODULE 6 — Advanced Queue, Favorites, Auto-Resume & UI Enhancements
-   ============================= */
-
 // =============================
 // ✅ MODULE 6 — Advanced Queue, Favorites, Auto-Resume & UI Enhancements
 // =============================
@@ -691,172 +687,162 @@ let downloadQueue = [];
 
 /* --- Auto Resume Settings --- */
 function loadAutoResumeSetting() {
-      const autoResume = localStorage.getItem("autoResume") === "true";
-      document.getElementById("auto-resume-toggle").checked = autoResume;
+  const autoResume = localStorage.getItem("autoResume") === "true";
+  document.getElementById("auto-resume-toggle").checked = autoResume;
 }
 
 function toggleAutoResumeSetting() {
-      const toggle = document.getElementById("auto-resume-toggle");
-      localStorage.setItem("autoResume", toggle.checked);
+  const toggle = document.getElementById("auto-resume-toggle");
+  localStorage.setItem("autoResume", toggle.checked);
 }
 
 /* --- Add to Favorites --- */
 function toggleFavorite(itemId) {
-      if (favorites.includes(itemId)) {
-            favorites = favorites.filter(id => id !== itemId);
-      } else {
-            if (favorites.length >= 10) {
-                  alert("You can only have up to 10 favorites.");
-                  return;
-            }
-            favorites.push(itemId);
-      }
-      localStorage.setItem("favorites", JSON.stringify(favorites));
-      renderFavorites();
+  if (favorites.includes(itemId)) {
+    favorites = favorites.filter(id => id !== itemId);
+  } else {
+    if (favorites.length >= 10) {
+      alert("You can only have up to 10 favorites.");
+      return;
+    }
+    favorites.push(itemId);
+  }
+  localStorage.setItem("favorites", JSON.stringify(favorites));
+  renderFavorites();
 }
 
 function renderFavorites() {
-      const favContainer = document.getElementById("favorites-section");
-      if (!favContainer) {
-            console.warn("⚠️ 'favorites-section' not found in DOM.");
-            return;
-      }
+  const favContainer = document.getElementById("favorites-section");
+  if (!favContainer) {
+    console.warn("⚠️ 'favorites-section' not found in DOM.");
+    return;
+  }
 
-      favContainer.innerHTML = "";
-      favorites.forEach(id => {
-            const item = document.getElementById(id);
-            if (item) {
-                  const clone = item.cloneNode(true);
-                  clone.querySelector(".fav-icon")?.remove();
-                  favContainer.appendChild(clone);
-            }
-      });
+  favContainer.innerHTML = "";
+  favorites.forEach(id => {
+    const item = document.getElementById(id);
+    if (item) {
+      const clone = item.cloneNode(true);
+      clone.querySelector(".fav-icon")?.remove();
+      favContainer.appendChild(clone);
+    }
+  });
 }
 
 /* --- Context Menu Enhancements --- */
 function handleContextMenu(event, itemId, type) {
-      event.preventDefault();
-      const menu = document.getElementById("context-menu");
-      menu.style.top = `${event.clientY}px`;
-      menu.style.left = `${event.clientX}px`;
-      menu.style.display = "block";
+  event.preventDefault();
+  const menu = document.getElementById("context-menu");
+  menu.style.top = `${event.clientY}px`;
+  menu.style.left = `${event.clientX}px`;
+  menu.classList.add("show");
 
-      menu.querySelector("#menu-play").onclick = () => playItem(itemId);
-      menu.querySelector("#menu-add").onclick = () => addToPlaylist(itemId);
-      menu.querySelector("#menu-download").onclick = () => downloadItem(itemId, type);
-      menu.querySelector("#menu-fav").onclick = () => toggleFavorite(itemId);
-      menu.querySelector("#menu-delete").onclick = () => deleteItem(itemId, type);
+  menu.querySelector("#menu-play").onclick = () => playItem(itemId);
+  menu.querySelector("#menu-add").onclick = () => addToPlaylist(itemId);
+  menu.querySelector("#menu-download").onclick = () => downloadItem(itemId, type);
+  menu.querySelector("#menu-fav").onclick = () => toggleFavorite(itemId);
+  menu.querySelector("#menu-delete").onclick = () => deleteItem(itemId, type);
 }
 
 function hideContextMenu() {
-      document.getElementById("context-menu").style.display = "none";
+  document.getElementById("context-menu").classList.remove("show");
 }
 document.addEventListener("click", hideContextMenu);
 
 /* --- Auto Playlist Play --- */
 function playPlaylistSequentially(index = 0) {
-      if (index >= playlist.length) return;
-      const currentId = playlist[index];
-      playItem(currentId, () => playPlaylistSequentially(index + 1));
+  if (index >= playlist.length) return;
+  const currentId = playlist[index];
+  playItem(currentId, () => playPlaylistSequentially(index + 1));
 }
 
 /* --- Auto Resume Playback --- */
 function resumeLastPlayback() {
-      const lastId = localStorage.getItem("lastPlayedId");
-      if (lastId && document.getElementById("auto-resume-toggle").checked) {
-            playItem(lastId);
-      }
+  const lastId = localStorage.getItem("lastPlayedId");
+  if (lastId && document.getElementById("auto-resume-toggle").checked) {
+    playItem(lastId);
+  }
 }
 
 /* --- Download Queue --- */
 function addToDownloadQueue(itemId) {
-      if (!downloadQueue.includes(itemId)) {
-            downloadQueue.push(itemId);
-      }
+  if (!downloadQueue.includes(itemId)) {
+    downloadQueue.push(itemId);
+  }
 }
 
 function downloadItem(itemId, type) {
-      const item = document.getElementById(itemId);
-      if (!item) return;
+  const item = document.getElementById(itemId);
+  if (!item) return;
 
-      const text = item.querySelector(".text-content")?.innerText || "Untitled";
-      const blob = new Blob([text], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
+  const text = item.querySelector(".text-content")?.innerText || "Untitled";
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
 
-      anchor.href = url;
-      anchor.download = `${itemId}.txt`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+  anchor.href = url;
+  anchor.download = `${itemId}.txt`;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 /* --- Library Item Renderer --- */
 function renderLibraryItem(item, type) {
-      const container = document.getElementById(`${type}-library`);
-      if (!container) {
-            console.warn(`⚠️ Container #${type}-library not found.`);
-            return;
-      }
+  const container = document.getElementById(`${type}-library`);
+  if (!container) {
+    console.warn(`⚠️ Container #${type}-library not found.`);
+    return;
+  }
 
-      const el = document.createElement("div");
-      el.className = `library-item ${type}-item`;
-      el.classList.add("theme-background", "theme-text");
-      el.id = item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      el.setAttribute("data-tooltip", "Right-click or long-press for options");
+  const el = document.createElement("div");
+  el.className = `library-item ${type}-item`;
+  el.classList.add("theme-background", "theme-text");
+  el.id = item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+  el.setAttribute("data-tooltip", "Right-click or long-press for options");
 
-      const textSpan = document.createElement("span");
-      textSpan.className = "text-content";
-      textSpan.textContent = item.name || "Untitled";
+  const textSpan = document.createElement("span");
+  textSpan.className = "text-content";
+  textSpan.textContent = item.name || "Untitled";
 
-      el.appendChild(textSpan);
-      container.appendChild(el);
+  el.appendChild(textSpan);
+  container.appendChild(el);
 
-      // ✅ Right-click support
-      el.addEventListener("contextmenu", (e) => handleContextMenu(e, el.id, type));
+  el.addEventListener("contextmenu", (e) => handleContextMenu(e, el.id, type));
 
-      // ✅ Long-press mobile support
-      let pressTimer = null;
-      el.addEventListener("touchstart", e => {
-            pressTimer = setTimeout(() => handleContextMenu(e, el.id, type), 500);
-      });
-      el.addEventListener("touchend", () => clearTimeout(pressTimer));
+  let pressTimer = null;
+  el.addEventListener("touchstart", e => {
+    pressTimer = setTimeout(() => handleContextMenu(e, el.id, type), 500);
+  });
+  el.addEventListener("touchend", () => clearTimeout(pressTimer));
 }
 
 /* --- Restore Library Items --- */
 function restoreLibraryItems(type) {
-      const storeName = "files";
-      const tx = db.transaction(storeName, "readonly");
-      const store = tx.objectStore(storeName);
-      const request = store.getAll();
+  const storeName = "files";
+  const tx = db.transaction(storeName, "readonly");
+  const store = tx.objectStore(storeName);
+  const request = store.getAll();
 
-      request.onsuccess = () => {
-            const items = request.result.filter(f => f.category === type);
-            const container = document.getElementById(`${type}-library`);
-            if (!container) {
-                  console.warn(`⚠️ Container #${type}-library not found.`);
-                  return;
-            }
+  request.onsuccess = () => {
+    const items = request.result.filter(f => f.category === type);
+    const container = document.getElementById(`${type}-library`);
+    if (!container) {
+      console.warn(`⚠️ Container #${type}-library not found.`);
+      return;
+    }
 
-            container.innerHTML = ""; // Clear existing before restore
-            items.forEach(item => renderLibraryItem(item, type));
+    container.innerHTML = "";
+    items.forEach(item => renderLibraryItem(item, type));
 
-            log(`📚 Restored ${items.length} items in ${type} library.`);
-      };
+    log(`📚 Restored ${items.length} items in ${type} library.`);
+  };
 
-      request.onerror = () => {
-            console.error("❌ Failed to restore library items.");
-      };
+  request.onerror = () => {
+    console.error("❌ Failed to restore library items.");
+  };
 }
 
-/* --- Initialization --- */
-window.addEventListener("DOMContentLoaded", () => {
-      favorites = JSON.parse(localStorage.getItem("favorites")) || [];
-      renderFavorites();
-      loadAutoResumeSetting();
-});
-
-
-// Listen/ Capture Auto Load from Context Menu
+/* --- Play Item (Context Aware) --- */
 function playItem(itemId, onComplete = null) {
   const item = document.getElementById(itemId);
   if (!item) return;
@@ -867,22 +853,17 @@ function playItem(itemId, onComplete = null) {
   if (type === "capture") {
     const overwrite = document.getElementById("overwrite-capture-toggle")?.checked;
     const existingText = document.getElementById("capture-display")?.textContent;
-
     if (!overwrite && existingText?.trim()) {
       if (!confirm("Overwrite existing captured text?")) return;
     }
-
-    // Update Capture display and switch
     navigate("capture");
     document.getElementById("capture-display").textContent = text;
   } else {
-    // Navigate to Listen and populate text display
     navigate("listen");
     const display = document.getElementById("text-display");
     display.innerHTML = `<span class="sentence">${text}</span>`;
   }
 
-  // Start reading
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.rate = parseFloat(localStorage.getItem("rate") || 1);
   utterance.pitch = parseFloat(localStorage.getItem("pitch") || 1);
@@ -890,6 +871,14 @@ function playItem(itemId, onComplete = null) {
   utterance.onend = onComplete || null;
   speechSynthesis.speak(utterance);
 }
+
+/* --- Initialization --- */
+window.addEventListener("DOMContentLoaded", () => {
+  favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+  renderFavorites();
+  loadAutoResumeSetting();
+});
+
 
 // Initialize for both listen and capture items
 function initializeContextMenus() {
