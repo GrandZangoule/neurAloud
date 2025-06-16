@@ -262,18 +262,22 @@ function isValidFile(file) {
   return allowedExtensions.includes(fileExtension);
 }
 
-document.getElementById("upload-files-btn").addEventListener("change", (event) => {
-  const files = Array.from(event.target.files);
-  const validFiles = files.filter(isValidFile);
+const uploadFilesInput = document.getElementById("upload-files-btn");
 
-  if (validFiles.length !== files.length) {
-    alert("Some files were skipped due to unsupported types.");
-  }
+if (uploadFilesInput) {
+  uploadFilesInput.addEventListener("change", (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = files.filter(isValidFile);
 
-  validFiles.forEach(file => {
-    saveFileToLibrary(file); // Assuming function defined earlier
+    if (validFiles.length !== files.length) {
+      alert("Some files were skipped due to unsupported types.");
+    }
+
+    validFiles.forEach(file => {
+      saveFileToLibrary(file); // Assuming function defined earlier
+    });
   });
-});
+}
 
 // MODULE 4A: Bulk Delete and Tooltips
 function addCheckboxesToLibraryItems() {
