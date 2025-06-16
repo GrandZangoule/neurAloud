@@ -436,6 +436,33 @@ footer {
   margin: 1rem 0;
 }
 
+.library-item[data-tooltip] {
+  position: relative;
+  cursor: pointer;
+}
+
+.library-item[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 10px;
+  background: rgba(60, 60, 60, 0.9);
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.library-item[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateY(-12px);
+}
+
 @media (max-width: 600px) {
   nav {
     flex-direction: row;
