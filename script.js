@@ -283,78 +283,84 @@ function applyTooltips() {
 
 document.addEventListener("DOMContentLoaded", applyTooltips);
 
-// ===========================================================
-// ✅ MODULE 4B: Upload Validations, Enhanced Upload Handling
-// ===========================================================
+// ✅ MODULE 4B: Enhanced 'Choose File' Handling with IndexedDB
 
-const allowedExtensions = [
-  '.pdf', '.txt', '.doc', '.docx', '.epub', '.pptx', '.csv', '.rtf', '.msg', '.sql', '.webp', '.xlsx', '.xlsm', '.xls', '.xltx', '.xltm', '.tif', '.eps', '.tmp'
-];
-
-function isValidFile(file) {
-  const fileExtension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-  return allowedExtensions.includes(fileExtension);
-}
-
-// 🧩 Enhanced Save to Library Function
-function saveFileToLibrary(file) {
-  const reader = new FileReader();
-
-  reader.onload = function () {
-    const content = reader.result;
-    const libraryContainer = document.getElementById("listen-library");
-    const currentCount = libraryContainer.children.length;
-
-    if (currentCount >= 100) {
-      alert("❌ Your Listen Library is full. Please delete a file before saving a new one.");
-      return;
-    }
-
-    const newItem = document.createElement("div");
-    newItem.className = "library-item";
-    newItem.textContent = file.name;
-    libraryContainer.prepend(newItem);
-
-    // Store to IndexedDB
-    const tx = db.transaction("files", "readwrite");
-    const store = tx.objectStore("files");
-    store.add({ name: file.name, content, category: "listen" });
-    logMessage("📥 Saved to Listen Library: " + file.name);
-  };
-
-  reader.onerror = function () {
-    logMessage(`❌ Failed to read file: ${file.name}`);
-    alert(`The file \"${file.name}\" could not be loaded. It may be corrupt or unreadable.`);
-  };
-
-  if (file.name.endsWith(".pdf")) reader.readAsArrayBuffer(file);
-  else reader.readAsText(file);
-}
-
-// 📤 Handle Upload Multiple Files
-const multiUploadInput = document.getElementById("upload-files-btn");
-if (multiUploadInput) {
-  multiUploadInput.addEventListener("change", (event) => {
-    const files = Array.from(event.target.files);
-    const validFiles = files.filter(isValidFile);
-    const existingItems = document.querySelectorAll("#listen-library .library-item").length;
-    const totalAfterUpload = validFiles.length + existingItems;
-
-    if (validFiles.length !== files.length) {
-      alert("Some files were skipped due to unsupported types.");
-    }
-
-    if (totalAfterUpload > 100) {
-      const excess = totalAfterUpload - 100;
-      alert(`Too many files selected. Please deselect at least ${excess} file(s).`);
-      return;
-    }
-
-    validFiles.forEach(file => {
-      saveFileToLibrary(file);
-    });
+// 1️⃣ Utility to save a file into IndexedDB
+async function saveToIndexedDB(file, category = "session") {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function () {
+      const content = reader.result;
+      const tx = db.transaction("files", "readwrite");
+      const store = tx.objectStore("files");
+      const entry = {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        content,
+        timestamp: Date.now(),
+        category
+      };
+      const request = store.add(entry);
+      request.onsuccess = () => {
+        const id = request.result;
+        localStorage.setItem("lastFileId", id);
+        resolve(id);
+      };
+      request.onerror = () => reject("❌ Failed to save to IndexedDB");
+    };
+    if (file.name.endsWith(".pdf")) reader.readAsArrayBuffer(file);
+    else reader.readAsText(file);
   });
 }
+
+// 2️⃣ Restore last file after refresh
+function restoreLastFileFromIndexedDB() {
+  const lastFileId = Number(localStorage.getItem("lastFileId"));
+  if (!lastFileId) return;
+
+  const tx = db.transaction("files", "readonly");
+  const store = tx.objectStore("files");
+  const request = store.get(lastFileId);
+
+  request.onsuccess = () => {
+    const entry = request.result;
+    if (!entry) return;
+
+    let text = "";
+    if (entry.content instanceof ArrayBuffer) {
+      const typedarray = new Uint8Array(entry.content);
+      pdfjsLib.getDocument({ data: typedarray }).promise.then(async (pdf) => {
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map(item => item.str).join(" ") + " ";
+        }
+        showExtractedText(text);
+      });
+    } else {
+      text = entry.content;
+      showExtractedText(text);
+    }
+  };
+}
+
+// 3️⃣ Display text and parse sentences
+function showExtractedText(text) {
+  extractedText = text.trim();
+  sentences = extractedText.match(/[^.!?]+[.!?]+/g) || [extractedText];
+  currentSentenceIndex = 0;
+  textDisplay.innerHTML = sentences.map((s, i) =>
+    `<span id="s-${i}" class="sentence">${s.trim()}</span>`
+  ).join(" ");
+  logMessage("✅ Restored file with " + sentences.length + " sentences.");
+}
+
+// 4️⃣ Patch DOMContentLoaded to run restore
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (db) restoreLastFileFromIndexedDB();
+});
 
 
 // ===========================================================
