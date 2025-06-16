@@ -284,6 +284,80 @@ function applyTooltips() {
 document.addEventListener("DOMContentLoaded", applyTooltips);
 
 // ===========================================================
+// ✅ MODULE 4B: Upload Validations, Enhanced Upload Handling
+// ===========================================================
+
+const allowedExtensions = [
+  '.pdf', '.txt', '.doc', '.docx', '.epub', '.pptx', '.csv', '.rtf', '.msg', '.sql', '.webp', '.xlsx', '.xlsm', '.xls', '.xltx', '.xltm', '.tif', '.eps', '.tmp'
+];
+
+function isValidFile(file) {
+  const fileExtension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+  return allowedExtensions.includes(fileExtension);
+}
+
+// 🧩 Enhanced Save to Library Function
+function saveFileToLibrary(file) {
+  const reader = new FileReader();
+
+  reader.onload = function () {
+    const content = reader.result;
+    const libraryContainer = document.getElementById("listen-library");
+    const currentCount = libraryContainer.children.length;
+
+    if (currentCount >= 100) {
+      alert("❌ Your Listen Library is full. Please delete a file before saving a new one.");
+      return;
+    }
+
+    const newItem = document.createElement("div");
+    newItem.className = "library-item";
+    newItem.textContent = file.name;
+    libraryContainer.prepend(newItem);
+
+    // Store to IndexedDB
+    const tx = db.transaction("files", "readwrite");
+    const store = tx.objectStore("files");
+    store.add({ name: file.name, content, category: "listen" });
+    logMessage("📥 Saved to Listen Library: " + file.name);
+  };
+
+  reader.onerror = function () {
+    logMessage(`❌ Failed to read file: ${file.name}`);
+    alert(`The file \"${file.name}\" could not be loaded. It may be corrupt or unreadable.`);
+  };
+
+  if (file.name.endsWith(".pdf")) reader.readAsArrayBuffer(file);
+  else reader.readAsText(file);
+}
+
+// 📤 Handle Upload Multiple Files
+const multiUploadInput = document.getElementById("upload-files-btn");
+if (multiUploadInput) {
+  multiUploadInput.addEventListener("change", (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = files.filter(isValidFile);
+    const existingItems = document.querySelectorAll("#listen-library .library-item").length;
+    const totalAfterUpload = validFiles.length + existingItems;
+
+    if (validFiles.length !== files.length) {
+      alert("Some files were skipped due to unsupported types.");
+    }
+
+    if (totalAfterUpload > 100) {
+      const excess = totalAfterUpload - 100;
+      alert(`Too many files selected. Please deselect at least ${excess} file(s).`);
+      return;
+    }
+
+    validFiles.forEach(file => {
+      saveFileToLibrary(file);
+    });
+  });
+}
+
+
+// ===========================================================
 // ✅ MODULE 5: Upload Filtering, Bulk Delete, and Tooltips
 // ===========================================================
 
