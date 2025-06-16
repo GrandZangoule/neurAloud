@@ -137,6 +137,38 @@ function restoreSection() {
   navigate(lastSection);
 }
 
+// ✅ Add this immediately after the above:
+async function loadLastSessionFile() {
+  const lastFileName = localStorage.getItem("lastFileName");
+  if (!lastFileName || !db) return;
+
+  const tx = db.transaction("files", "readonly");
+  const store = tx.objectStore("files");
+  const req = store.getAll();
+
+  req.onsuccess = async () => {
+    const files = req.result;
+    const lastFile = files.find(f => f.name === lastFileName && f.category === "last");
+
+    if (!lastFile) return;
+
+    log("🔄 Restoring last loaded file: " + lastFile.name);
+
+    extractedText = lastFile.content;
+    sentences = extractedText.match(/[^.!?]+[.!?]+/g) || [extractedText];
+    currentSentenceIndex = parseInt(localStorage.getItem("currentSentenceIndex") || "0");
+
+    if (textDisplay) {
+      textDisplay.innerHTML = sentences.map((s, i) =>
+        `<span id="s-${i}" class="sentence">${s.trim()}</span>`
+      ).join(" ");
+    }
+
+    log("✅ Session restored with " + sentences.length + " sentences.");
+  };
+}
+
+
 // Load available TTS engines for Listen & Capture
 function loadTTSEngines(context) {
   const engineDropdown = document.getElementById(`tts-engine-${context}`);
@@ -425,7 +457,7 @@ async function saveFileToLibrary() {
 // ===========================================================
 
 // 1️⃣ FILE TYPE FILTERING ON UPLOAD (Enhanced)
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const acceptedTypes = [
     ".pdf", ".txt", ".docx", ".epub", ".pptx", ".doc",
     ".xlsx", ".xlsm", ".xls", ".xltx", ".xltm",
@@ -446,12 +478,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // ✅ Initialize IndexedDB and restore last file if any
+  await initDB();
+  await loadLastSessionFile();
+
   // ✅ Wire up Save to Library button AFTER DOM loads
   const saveBtn = document.getElementById("save-to-library-btn");
   if (saveBtn) {
     saveBtn.addEventListener("click", saveFileToLibrary);
   }
 });
+
 
 // 2️⃣ BULK DELETE FROM LISTEN LIBRARY
 function initializeBulkDeleteFeature() {
