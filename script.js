@@ -662,6 +662,11 @@ function toggleFavorite(itemId) {
 
 function renderFavorites() {
   const favContainer = document.getElementById("favorites-section");
+  if (!favContainer) {
+    console.warn("⚠️ 'favorites-section' not found in DOM.");
+    return;
+  }
+
   favContainer.innerHTML = "";
   favorites.forEach(id => {
     const item = document.getElementById(id);
@@ -942,21 +947,26 @@ function toggleDeveloperMode() {
 }
 
 // UI Handlers
-document.getElementById("save-profile-btn").addEventListener("click", () => {
-  const settings = {
-    theme: document.querySelector("input[name='theme']:checked").value,
-    ttsRate: parseFloat(rateSlider.value),
-    ttsPitch: parseFloat(pitchSlider.value),
-    selectedVoice: voiceSelect.value,
-    autoResume: autoResumeToggle.checked,
-    notificationTime: document.getElementById("notification-time").value,
-    language: languageSelect.value,
-    translationLanguage: translationSelect.value,
-    developerMode: document.body.dataset.developer === "true",
-  };
-  saveProfileSettings(settings);
-  applyProfileSettings(settings);
-  alert("✅ Profile settings saved.");
+document.addEventListener("DOMContentLoaded", () => {
+  const saveBtn = document.getElementById("save-profile-btn");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", () => {
+      const settings = {
+        theme: document.querySelector("input[name='theme']:checked")?.value || "light",
+        ttsRate: parseFloat(rateSlider.value),
+        ttsPitch: parseFloat(pitchSlider.value),
+        selectedVoice: voiceSelect.value,
+        autoResume: autoResumeToggle.checked,
+        notificationTime: document.getElementById("notification-time")?.value || "18:00",
+        language: languageSelect.value,
+        translationLanguage: translationSelect.value,
+        developerMode: document.body.dataset.developer === "true",
+      };
+      saveProfileSettings(settings);
+      applyProfileSettings(settings);
+      alert("✅ Profile settings saved.");
+    });
+  }
 });
 
 document.addEventListener("DOMContentLoaded", () => {
