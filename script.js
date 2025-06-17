@@ -786,6 +786,135 @@ document.getElementById("loop-btn").addEventListener("click", () => {
   document.getElementById("loop-btn").classList.toggle("active", isLooping);
 });
 
+// =============================
+// 🌐 IBM + ResponsiveVoice Integration for NeurAloud
+// =============================
+
+let ibmQuotaCount = 0;
+const IBM_QUOTA_LIMIT = 9500;
+let isResponsiveVoiceLoaded = false;
+
+// 🧠 Load IBM Voices
+async function loadIBMVoices() {
+  const url = "https://api.us-east.text-to-speech.watson.cloud.ibm.com/v1/voices";
+  const username = "apikey";
+  const password = "clMaAFKOaK9TDgy-u9X2O5lsgaeYDOqeqaDTtTULgk4_";
+  const headers = new Headers();
+  headers.set("Authorization", "Basic " + btoa(username + ":" + password));
+  try {
+    const res = await fetch(url, { headers });
+    const data = await res.json();
+    return data.voices.map(v => ({ name: v.name, language: v.language }));
+  } catch (err) {
+    console.error("IBM Voice Load Error", err);
+    return [];
+  }
+}
+
+// 🎤 Speak with IBM
+async function speakWithIBM(text, voice, rate, pitch) {
+  if (ibmQuotaCount >= IBM_QUOTA_LIMIT) {
+    alert("IBM quota exceeded. Try a different engine.");
+    return;
+  }
+
+  ibmQuotaCount++;
+  const url =
+    "https://api.us-east.text-to-speech.watson.cloud.ibm.com/v1/synthesize?voice=" + voice;
+  const username = "apikey";
+  const password = "clMaAFKOaK9TDgy-u9X2O5lsgaeYDOqeqaDTtTULgk4_";
+  const headers = new Headers();
+  headers.set("Authorization", "Basic " + btoa(username + ":" + password));
+  headers.set("Content-Type", "application/json");
+  headers.set("Accept", "audio/mp3");
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ text })
+  });
+
+  if (response.ok) {
+    const blob = await response.blob();
+    const audio = new Audio(URL.createObjectURL(blob));
+    audio.play();
+  } else {
+    alert("IBM TTS failed.");
+  }
+}
+
+// 📦 ResponsiveVoice Embed
+function loadResponsiveVoiceSDK() {
+  return new Promise((resolve) => {
+    if (window.responsiveVoice) return resolve();
+    const script = document.createElement("script");
+    script.src = "https://code.responsivevoice.org/responsivevoice.js?key=4KSLPhgK";
+    script.onload = () => {
+      isResponsiveVoiceLoaded = true;
+      resolve();
+    };
+    document.body.appendChild(script);
+  });
+}
+
+// 🔊 Speak with ResponsiveVoice
+function speakWithResponsiveVoice(text, voice, rate, pitch) {
+  if (!window.responsiveVoice) {
+    alert("ResponsiveVoice SDK not ready");
+    return;
+  }
+  window.responsiveVoice.speak(text, voice, { rate, pitch });
+}
+
+// 🧠 Unified TTS Dispatcher
+function playWithSelectedEngine(text, context = "listen") {
+  const engine = document.getElementById(`tts-engine-${context}`).value;
+  const voice = document.getElementById(`voice-select-${context}`).value;
+  const rate = parseFloat(
+    document.getElementById(`rate-${context}-slider`)?.value || 1
+  );
+  const pitch = parseFloat(
+    document.getElementById(`pitch-${context}-slider`)?.value || 1
+  );
+
+  if (engine === "Google" || engine === "Local") {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = speechSynthesis
+      .getVoices()
+      .find(v => v.name === voice);
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+    speechSynthesis.speak(utterance);
+  } else if (engine === "IBM") {
+    speakWithIBM(text, voice, rate, pitch);
+  } else if (engine === "ResponsiveVoice") {
+    speakWithResponsiveVoice(text, voice, rate, pitch);
+  }
+}
+
+// 🧪 Voice Loader By Engine
+async function loadVoicesDropdown(engine, target) {
+  let voices = [];
+  if (engine === "Google" || engine === "Local") {
+    voices = speechSynthesis.getVoices();
+  } else if (engine === "IBM") {
+    voices = await loadIBMVoices();
+  } else if (engine === "ResponsiveVoice") {
+    await loadResponsiveVoiceSDK();
+    voices = window.responsiveVoice.getVoices();
+  }
+
+  const dropdown = document.getElementById(`voice-select-${target}`);
+  dropdown.innerHTML = "";
+  voices.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v.name || v.voice || v;
+    opt.textContent = v.name || v.voice || v;
+    dropdown.appendChild(opt);
+  });
+}
+
+
 // ===== Module 4 + 4A =====
 // MODULE 4: File Upload Enhancements & Validations
 const allowedExtensions = [
