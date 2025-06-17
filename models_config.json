@@ -1,0 +1,53 @@
+{
+  "en-US": {
+    "coqui": [
+      "coqui-tts/en-us-kathleen",
+      "coqui-tts/en-us-ryan"
+    ],
+    "mozilla": [
+      "mozilla/tts-en-us-male1",
+      "mozilla/tts-en-us-female1"
+    ]
+  },
+  "fr-FR": {
+    "coqui": [
+      "coqui-tts/fr-fr-maelle"
+    ],
+    "mozilla": [
+      "mozilla/tts-fr-fr-henri"
+    ]
+  },
+  "sw-KE": {
+    "coqui": [
+      "coqui-tts/sw-ke-nyasha"
+    ]
+  },
+  "es-ES": {
+    "coqui": [
+      "coqui-tts/es-es-sofia"
+    ],
+    "mozilla": [
+      "mozilla/tts-es-es-manuel"
+    ]
+  },
+  "hi-IN": {
+    "mozilla": [
+      "mozilla/tts-hi-in-female1"
+    ]
+  },
+  "ar-SA": {
+    "mozilla": [
+      "mozilla/tts-ar-sa-ali"
+    ]
+  },
+  "ln-CD": {
+    "custom": [
+      "manual/tts-ln-cd-baseline"
+    ]
+  },
+  "dou-CM": {
+    "custom": [
+      "manual/tts-dou-cm-alpha"
+    ]
+  }
+}
