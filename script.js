@@ -365,13 +365,11 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
 }
 
 
-function loadTTSEngines(context = "listen") {
+async function loadTTSEngines(context = "listen") {
   const engineDropdown = document.getElementById(`tts-engine-${context}`);
   if (!engineDropdown) return;
 
-  // Clean slate
   engineDropdown.innerHTML = "";
-
   const engines = ["Google", "IBM", "ResponsiveVoice", "Local"];
   engines.forEach(engine => {
     const opt = document.createElement("option");
@@ -380,17 +378,37 @@ function loadTTSEngines(context = "listen") {
     engineDropdown.appendChild(opt);
   });
 
-  const key = `selectedEngine-${context}`;
+  const key = context === "capture" ? "ttsEngineCapture" : "ttsEngine";
   const saved = localStorage.getItem(key) || "google";
-
   engineDropdown.value = saved;
   localStorage.setItem(key, saved);
-  loadVoicesDropdown(saved, context); // universal now
 
-  engineDropdown.addEventListener("change", () => {
+  // ✅ Handle async fetch for IBM properly
+  if (saved.toLowerCase() === "ibm") {
+    const voices = await fetchIBMVoices(context);  // must await this!
+    updateVoiceDropdown("ibm", voices, context);
+  } else if (saved.toLowerCase() === "responsivevoice") {
+    const voices = responsiveVoice.getVoices();
+    updateVoiceDropdown("responsivevoice", voices, context);
+  } else {
+    const voices = speechSynthesis.getVoices();
+    updateVoiceDropdown("google", voices, context);
+  }
+
+  engineDropdown.addEventListener("change", async () => {
     const selected = engineDropdown.value;
     localStorage.setItem(key, selected);
-    loadVoicesDropdown(selected, context);
+
+    if (selected === "ibm") {
+      const voices = await fetchIBMVoices(context);
+      updateVoiceDropdown("ibm", voices, context);
+    } else if (selected === "responsivevoice") {
+      const voices = responsiveVoice.getVoices();
+      updateVoiceDropdown("responsivevoice", voices, context);
+    } else {
+      const voices = speechSynthesis.getVoices();
+      updateVoiceDropdown("google", voices, context);
+    }
   });
 }
 
@@ -1023,17 +1041,16 @@ function speakWithResponsiveVoice(text, target = "listen") {
 // ===========================
 // 🚀 Load TTS on DOM Ready
 // ===========================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   bindTTSSelectors();
-  loadLocalVoices(); // trigger early voice binding
+  loadLocalVoices();
 
-  ["listen", "capture"].forEach(context => {
-    loadTTSEngines(context);
-
+  for (const context of ["listen", "capture"]) {
+    await loadTTSEngines(context);  // await this so async voice loading doesn't get skipped
     const langDropdown = document.getElementById(`language-select-${context}`);
     const savedLang = localStorage.getItem(`selectedLanguage-${context}`) || "en-US";
     if (langDropdown) langDropdown.value = savedLang;
-  });
+  }
 });
 
 
