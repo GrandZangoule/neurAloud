@@ -317,8 +317,9 @@ function loadTTSEngines(context = "listen") {
     engineDropdown.appendChild(option);
   });
 
-  const savedKey = context === "capture" ? "ttsEngineCapture" : "ttsEngine";
-  const savedEngine = localStorage.getItem(savedKey) || "google";
+  // const savedKey = context === "capture" ? "ttsEngineCapture" : "ttsEngine";
+  const savedKey = `selectedEngine-${context}`;
+  const savedEngine = (localStorage.getItem(savedKey) || "google").toLowerCase();
 
   // Restore saved or default
   engineDropdown.value = savedEngine.toLowerCase();
@@ -337,13 +338,13 @@ function loadTTSEngines(context = "listen") {
 
 
 // ✅ TTS Engine + Voice Loading Setup
-function loadVoicesDropdown(engine = "google", context = "listen") {
+async function loadVoicesDropdown(engine = "google", context = "listen") {
   const dropdown = document.getElementById(
     context === "capture" ? "voice-select-capture" : "voice-select"
   );
   if (!dropdown) return;
 
-  dropdown.innerHTML = ""; // clear before load
+  dropdown.innerHTML = ""; // Clear before load
 
   if (engine === "google" || engine === "local") {
     const allVoices = speechSynthesis.getVoices();
@@ -370,19 +371,47 @@ function loadVoicesDropdown(engine = "google", context = "listen") {
     });
 
   } else if (engine === "ibm") {
-    // Simulated voice list — replace with real API pull if needed
-    const ibmVoices = [
-      { name: "en-US_MichaelV3Voice", lang: "en-US" },
-      { name: "fr-FR_ReneeV3Voice", lang: "fr-FR" },
-      { name: "es-ES_EnriqueV3Voice", lang: "es-ES" },
+    try {
+      // 🔄 Fetch dynamically from IBM setup if available
+      const ibmVoices = await fetchIBMVoices(context); // Must return voice array [{name, lang}]
+      if (!ibmVoices || ibmVoices.length === 0) throw new Error("Empty voice list");
+
+      ibmVoices.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.name;
+        opt.textContent = `${v.name} (${v.lang || "?"})`;
+        dropdown.appendChild(opt);
+      });
+
+    } catch (err) {
+      console.error("❌ IBM voice fetch failed:", err);
+      const fallbackVoices = [
+        { name: "en-US_MichaelV3Voice", lang: "en-US" },
+        { name: "fr-FR_ReneeV3Voice", lang: "fr-FR" },
+        { name: "es-ES_EnriqueV3Voice", lang: "es-ES" },
+      ];
+      fallbackVoices.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.name;
+        opt.textContent = `${v.name} (${v.lang})`;
+        dropdown.appendChild(opt);
+      });
+    }
+
+  } else {
+    // 🧪 Fallback voices for unsupported engines
+    const mockVoices = [
+      { name: "Test Voice 1", lang: "en" },
+      { name: "Test Voice 2", lang: "en" }
     ];
-    ibmVoices.forEach(v => {
+    mockVoices.forEach(v => {
       const opt = document.createElement("option");
       opt.value = v.name;
       opt.textContent = `${v.name} (${v.lang})`;
       dropdown.appendChild(opt);
     });
   }
+}
 
   // Auto-select first voice if nothing stored
   const key = context === "capture" ? "selectedVoiceCapture" : "selectedVoice";
@@ -488,47 +517,6 @@ function restoreLibraryItems(type) {
   request.onerror = () => {
     console.error("❌ Failed to restore library items.");
   };
-}
-
-function loadVoicesDropdown(engine = "google", target = "listen") {
-  const dropdown = document.getElementById(
-    target === "capture" ? "voice-select-capture" : "voice-select"
-  );
-
-  if (!dropdown) {
-    console.warn("⚠️ Voice dropdown not found for target:", target);
-    return;
-  }
-
-  const allVoices = speechSynthesis.getVoices();
-
-  if (!allVoices.length) {
-    console.warn("⚠️ No voices loaded yet — retrying...");
-    setTimeout(() => loadVoicesDropdown(engine, target), 200);
-    return;
-  }
-
-  dropdown.innerHTML = ""; // Clear previous
-
-  allVoices.forEach((voice) => {
-    const opt = document.createElement("option");
-    opt.value = voice.name;
-    opt.textContent = `${voice.name} (${voice.lang})`;
-    dropdown.appendChild(opt);
-  });
-
-  // Restore saved voice if available
-  const key = target === "capture" ? "selectedVoiceCapture" : "selectedVoice";
-  const saved = localStorage.getItem(key);
-
-  if (saved && [...dropdown.options].some((o) => o.value === saved)) {
-    dropdown.value = saved;
-  } else {
-    dropdown.selectedIndex = 0;
-    localStorage.setItem(key, dropdown.value);
-  }
-
-  console.log(`✅ Loaded ${allVoices.length} voices into ${target} dropdown.`);
 }
 
 
@@ -698,21 +686,6 @@ function fetchResponsiveVoices() {
   });
 }
 
-// ===========================
-// 🔁 Dynamic Voice Loader
-// ===========================
-
-async function loadVoicesDropdown(engine = "Google", context = "listen") {
-  let voices = [];
-  if (engine === "Google" || engine === "Local") {
-    voices = speechSynthesis.getVoices();
-  } else if (engine === "IBM") {
-    voices = await fetchIBMWatsonVoices();
-  } else if (engine === "ResponsiveVoice") {
-    voices = await fetchResponsiveVoices();
-  }
-  updateVoiceDropdown(engine, voices);
-}
 
 // ===========================
 // 📤 Hook Up TTS Engine Switch
@@ -965,23 +938,6 @@ function incrementQuota(engine) {
   localStorage.setItem(usageKey, usage.toString());
 }
 
-// ===========================
-// 🎯 Load Voices Dynamically
-// ===========================
-
-async function loadVoicesDropdown(engine = "Google", context = "listen") {
-  let voices = [];
-
-  if (engine === "Google" || engine === "Local") {
-    voices = speechSynthesis.getVoices();
-  } else if (engine === "IBM" && checkQuota("IBM")) {
-    voices = await fetchVoicesFromIBM();
-  } else if (engine === "ResponsiveVoice" && checkQuota("ResponsiveVoice")) {
-    voices = await fetchVoicesFromResponsiveVoice();
-  }
-
-  updateVoiceDropdown(engine, voices);
-}
 
 // 🧩 Populate voice dropdowns
 function updateVoiceDropdown(engine, voices) {
@@ -1011,33 +967,6 @@ function switchVoiceEngine(context) {
   loadVoicesDropdown(selectedEngine, context);
 }
 
-// Unified Engine Voice Loader
-function loadVoicesDropdown(engine = "Google", target = "listen") {
-  if (engine === "Google" || engine === "Local") {
-    const voices = speechSynthesis.getVoices().filter(v =>
-      target === "capture" || !v.name.toLowerCase().includes("capture")
-    );
-    updateVoiceDropdown(engine, voices);
-    return;
-  }
-
-  if (engine === "ResponsiveVoice") {
-    if (window.responsiveVoice) {
-      const voices = responsiveVoice.getVoices();
-      updateVoiceDropdown(engine, voices);
-    } else {
-      console.warn("ResponsiveVoice SDK not loaded.");
-    }
-    return;
-  }
-
-  if (engine === "IBM") {
-    fetch("/api/ibm/voices") // 🔧 Replace with real IBM proxy later
-      .then(res => res.json())
-      .then(data => updateVoiceDropdown(engine, data.voices || []))
-      .catch(err => console.error("Failed to load IBM voices", err));
-  }
-}
 
 // ===========================
 // 🔐 Quota Enforcement Setup
