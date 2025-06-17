@@ -326,6 +326,75 @@ function loadTTSEngines(context = "listen") {
   });
 }
 
+
+// ✅ TTS Engine + Voice Loading Setup
+
+function loadVoicesDropdown(engine = "google", context = "listen") {
+  const dropdown = document.getElementById(
+    context === "capture" ? "voice-select-capture" : "voice-select"
+  );
+  if (!dropdown) return;
+
+  const allVoices = speechSynthesis.getVoices();
+  if (!allVoices.length) {
+    setTimeout(() => loadVoicesDropdown(engine, context), 250);
+    return;
+  }
+
+  dropdown.innerHTML = "";
+  allVoices.forEach((voice) => {
+    const option = document.createElement("option");
+    option.value = voice.name;
+    option.textContent = `${voice.name} (${voice.lang})`;
+    dropdown.appendChild(option);
+  });
+
+  const key = context === "capture" ? "selectedVoiceCapture" : "selectedVoice";
+  const saved = localStorage.getItem(key);
+  if (saved && [...dropdown.options].some(o => o.value === saved)) {
+    dropdown.value = saved;
+  } else {
+    dropdown.selectedIndex = 0;
+    localStorage.setItem(key, dropdown.value);
+  }
+}
+
+function loadTTSEngines(context = "listen") {
+  const engineDropdown = document.getElementById(`tts-engine-${context}`);
+  if (!engineDropdown) return;
+
+  engineDropdown.innerHTML = "";
+  const engines = ["Google", "IBM", "ResponsiveVoice", "Local"];
+  engines.forEach(engine => {
+    const opt = document.createElement("option");
+    opt.value = engine.toLowerCase();
+    opt.textContent = engine;
+    engineDropdown.appendChild(opt);
+  });
+
+  const key = context === "capture" ? "ttsEngineCapture" : "ttsEngine";
+  const saved = localStorage.getItem(key) || "google";
+  engineDropdown.value = saved;
+  localStorage.setItem(key, saved);
+  loadVoicesDropdown(saved, context);
+
+  engineDropdown.addEventListener("change", () => {
+    const selected = engineDropdown.value;
+    localStorage.setItem(key, selected);
+    loadVoicesDropdown(selected, context);
+  });
+}
+
+speechSynthesis.onvoiceschanged = () => {
+  loadVoicesDropdown("google", "listen");
+  loadVoicesDropdown("google", "capture");
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadTTSEngines("listen");
+  loadTTSEngines("capture");
+});
+
 // Render & Restore Listen and Capture Library items
 function renderLibraryItem(item, type) {
   const container = document.getElementById(`${type}-library`);
