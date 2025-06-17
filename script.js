@@ -300,7 +300,7 @@ async function loadLastSessionFile() {
 
 
 // ✅ Dynamically load TTS voices per engine and context
-async function loadVoicesDropdown(engine = "google", context = "listen") {
+aasync function loadVoicesDropdown(engine = "google", context = "listen") {
   const dropdown = document.getElementById(
     context === "capture" ? "voice-select-capture" : "voice-select"
   );
@@ -341,13 +341,12 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
         ];
     }
 
-    // ✅ Safeguard against empty/undefined voice array
+    // ✅ Safeguard and populate
     if (!Array.isArray(voices) || voices.length === 0) {
       console.warn(`❌ No valid voices returned for ${engine} → ${context}`);
       return;
     }
 
-    // ✅ Populate dropdown
     voices.forEach(v => {
       const opt = document.createElement("option");
       opt.value = v.name;
@@ -355,23 +354,20 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
       dropdown.appendChild(opt);
     });
 
-    // ✅ Restore or select first
     const key = `selectedVoice-${context}`;
     const saved = localStorage.getItem(key);
     if (saved && [...dropdown.options].some(o => o.value === saved)) {
       dropdown.value = saved;
-    } else if (dropdown.options.length) {
+    } else {
       dropdown.selectedIndex = 0;
       localStorage.setItem(key, dropdown.value);
     }
 
     console.log(`✅ Loaded ${dropdown.options.length} voices for ${engine} → ${context}`);
-
   } catch (err) {
     console.error(`🔥 Voice loading failed for ${engine} → ${context}:`, err);
   }
 }
-
 
 
 async function loadTTSEngines(context = "listen") {
@@ -380,6 +376,7 @@ async function loadTTSEngines(context = "listen") {
 
   engineDropdown.innerHTML = "";
   const engines = ["Google", "IBM", "ResponsiveVoice", "Local"];
+
   engines.forEach(engine => {
     const opt = document.createElement("option");
     opt.value = engine.toLowerCase();
@@ -387,37 +384,18 @@ async function loadTTSEngines(context = "listen") {
     engineDropdown.appendChild(opt);
   });
 
-  const key = context === "capture" ? "ttsEngineCapture" : "ttsEngine";
+  const key = `selectedEngine-${context}`;
   const saved = localStorage.getItem(key) || "google";
   engineDropdown.value = saved;
   localStorage.setItem(key, saved);
 
-  // ✅ Handle async fetch for IBM properly
-  if (saved.toLowerCase() === "ibm") {
-    const voices = await fetchIBMVoices(context);  // must await this!
-    updateVoiceDropdown("ibm", voices, context);
-  } else if (saved.toLowerCase() === "responsivevoice") {
-    const voices = responsiveVoice.getVoices();
-    updateVoiceDropdown("responsivevoice", voices, context);
-  } else {
-    const voices = speechSynthesis.getVoices();
-    updateVoiceDropdown("google", voices, context);
-  }
+  // ✅ Dynamically load voices based on engine type
+  await loadVoicesDropdown(saved, context);
 
   engineDropdown.addEventListener("change", async () => {
     const selected = engineDropdown.value;
     localStorage.setItem(key, selected);
-
-    if (selected === "ibm") {
-      const voices = await fetchIBMVoices(context);
-      updateVoiceDropdown("ibm", voices, context);
-    } else if (selected === "responsivevoice") {
-      const voices = responsiveVoice.getVoices();
-      updateVoiceDropdown("responsivevoice", voices, context);
-    } else {
-      const voices = speechSynthesis.getVoices();
-      updateVoiceDropdown("google", voices, context);
-    }
+    await loadVoicesDropdown(selected, context);
   });
 }
 
