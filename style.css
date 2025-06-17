@@ -931,3 +931,46 @@ hr.translation-separator {
     font-size: 1.4rem;
   }
 }
+
+#profile-settings {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 10px;
+  background-color: var(--background, #f9f9f9);
+  color: var(--font-color, #000);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  max-width: 600px;
+}
+
+#profile-settings div {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+}
+
+#profile-settings label {
+  flex: 0 0 140px;
+  font-weight: 600;
+}
+
+#profile-settings input,
+#profile-settings select {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  color: #000;
+}
+
+body[data-theme='dark'] #profile-settings {
+  background-color: #2b2b2b;
+  color: #eee;
+}
+
+body[data-theme='dark'] #profile-settings input,
+body[data-theme='dark'] #profile-settings select {
+  background: #444;
+  color: #fff;
+  border: 1px solid #555;
+}
