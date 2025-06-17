@@ -1,12 +1,12 @@
 // === Navigation Fix ===
-function navigate(id) {
-  console.log("Navigating to:", id);  // Add this
+window.navigate = function(id) {
+  console.log("Navigating to:", id);
   document.querySelectorAll("main section").forEach(section =>
     section.classList.remove("active-section")
   );
   const target = document.getElementById(id);
   if (target) target.classList.add("active-section");
-}
+};
 
 
 // 🧩 Module 1: File Load, Text Extraction, and Metadata Setup (Enhanced)
