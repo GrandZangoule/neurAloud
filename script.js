@@ -34,6 +34,17 @@ function logMessage(msg) {
   }
 }
 
+function toggleLoop() {
+  isLooping = !isLooping;
+  const loopBtn = document.getElementById("panel-loop");
+  if (loopBtn) {
+    loopBtn.classList.toggle("active", isLooping);
+    loopBtn.title = isLooping ? "🔁 Looping Enabled" : "🔁 Looping Off";
+    loopBtn.textContent = isLooping ? "🔁 Looping..." : "🔁 Loop";
+  }
+  console.log("🔁 Loop is now:", isLooping);
+}
+
 // Utility: Extract page count if PDF
 function getPdfPageCount(arrayBuffer) {
   return pdfjsLib.getDocument({ data: arrayBuffer }).promise.then(pdf => pdf.numPages);
