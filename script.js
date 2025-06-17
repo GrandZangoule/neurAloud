@@ -424,7 +424,6 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
   }
 
   console.log(`✅ Loaded ${dropdown.options.length} voices for ${engine} → ${context}`);
-}
 
 function loadTTSEngines(context = "listen") {
   const engineDropdown = document.getElementById(`tts-engine-${context}`);
