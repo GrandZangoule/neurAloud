@@ -489,6 +489,57 @@
       </ul>
     </div>
 
+    <!-- 🌐 TRANSLATION & SUMMARY TOOLS SECTION -->
+    <section id="translation-tools">
+      <h2>🌍 Translation & Chapter Summary Tools</h2>
+      <p class="description">Translate text, auto-detect languages, and summarize chapters with advanced tools. Powered by cloud and local TTS engines.</p>
+
+      <!-- 🔠 Language Translation -->
+      <div class="translation-tool" id="language-translation">
+        <label for="language-input">Text to Translate:</label>
+        <textarea id="language-input" rows="4" placeholder="Enter your text here..."></textarea>
+
+        <label for="target-language">Translate to:</label>
+        <select id="target-language">
+          <option value="fr">🇫🇷 French</option>
+          <option value="es">🇪🇸 Spanish</option>
+          <option value="pt">🇵🇹 Portuguese</option>
+          <option value="la">🏛️ Latin</option>
+          <option value="af">🇿🇦 Afrikaans</option>
+          <option value="ln">🇨🇩 Lingala</option>
+          <option value="sw">🇰🇪 Swahili</option>
+          <option value="zh">🇨🇳 Chinese</option>
+          <option value="ja">🇯🇵 Japanese</option>
+          <option value="ar">🇸🇦 Arabic</option>
+        </select>
+
+        <button onclick="translateText()">🌐 Translate</button>
+
+        <div class="translation-result" id="translation-output">🔍 Translated result will appear here.</div>
+      </div>
+
+      <hr class="translation-separator">
+
+      <!-- 🧠 Auto Language Detection and Live Translation -->
+      <div class="translation-tool" id="auto-translate">
+        <label for="auto-input">Auto-Detect Language:</label>
+        <textarea id="auto-input" rows="4" placeholder="Paste foreign text..."></textarea>
+        <button onclick="autoDetectTranslate()">🔎 Detect & Translate</button>
+        <div class="translation-result" id="auto-translate-output">🌐 Detected language and translation will appear here.</div>
+      </div>
+
+      <hr class="translation-separator">
+
+      <!-- 📚 Chapter Summary -->
+      <div class="translation-tool" id="chapter-summary">
+        <label for="summary-text">Chapter Text:</label>
+        <textarea id="summary-text" rows="5" placeholder="Paste full chapter or section here..."></textarea>
+        <button onclick="summarizeChapter()">🧠 Summarize</button>
+        <div class="translation-result" id="summary-output">📄 Summary will be displayed here.</div>
+      </div>
+    </section>
+
+    
   </main>
 
   <!-- Modal -->
