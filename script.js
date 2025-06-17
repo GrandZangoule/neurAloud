@@ -951,22 +951,17 @@ window.addEventListener("DOMContentLoaded", () => {
 // 📦 Module 7: Playlist Enhancements and Playback Features
 // =======================
 
-// Global playlist array
 let playlist = [];
 
-// Load playlist from localStorage if exists
 function loadPlaylist() {
-  const stored = localStorage.getItem("neurAloudPlaylist");
-  playlist = stored ? JSON.parse(stored) : [];
+  playlist = JSON.parse(localStorage.getItem("neurAloudPlaylist") || "[]");
   updatePlaylistUI();
 }
 
-// Save playlist to localStorage
 function savePlaylist() {
   localStorage.setItem("neurAloudPlaylist", JSON.stringify(playlist));
 }
 
-// Add file to playlist
 function addToPlaylist(fileId) {
   if (!playlist.includes(fileId)) {
     playlist.push(fileId);
@@ -975,14 +970,12 @@ function addToPlaylist(fileId) {
   }
 }
 
-// Remove file from playlist
 function removeFromPlaylist(fileId) {
   playlist = playlist.filter(id => id !== fileId);
   savePlaylist();
   updatePlaylistUI();
 }
 
-// Reorder playlist
 function reorderPlaylist(fromIndex, toIndex) {
   const item = playlist.splice(fromIndex, 1)[0];
   playlist.splice(toIndex, 0, item);
@@ -990,7 +983,6 @@ function reorderPlaylist(fromIndex, toIndex) {
   updatePlaylistUI();
 }
 
-// Play the current playlist sequentially
 let currentPlaylistIndex = 0;
 
 function playPlaylistSequentially() {
@@ -1006,7 +998,6 @@ function playPlaylistSequentially() {
   });
 }
 
-// Update the UI for playlist
 function updatePlaylistUI() {
   const container = document.getElementById("playlist-container");
   if (!container) return;
@@ -1017,12 +1008,18 @@ function updatePlaylistUI() {
     div.textContent = getFileNameById(fileId) || `File ${fileId}`;
     div.setAttribute("draggable", "true");
     div.setAttribute("data-index", index);
+
     div.ondragstart = e => {
       e.dataTransfer.setData("text/plain", index);
+      div.classList.add("dragging");
     };
-    div.ondragover = e => {
-      e.preventDefault();
+
+    div.ondragend = () => {
+      div.classList.remove("dragging");
     };
+
+    div.ondragover = e => e.preventDefault();
+
     div.ondrop = e => {
       e.preventDefault();
       const fromIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
@@ -1043,7 +1040,6 @@ function updatePlaylistUI() {
   });
 }
 
-// Simulated play function
 function playFileById(fileId, callback) {
   const fileText = getFileTextById(fileId);
   if (!fileText) {
@@ -1051,7 +1047,6 @@ function playFileById(fileId, callback) {
     return;
   }
 
-  // Break text into sentences
   const sentences = fileText.match(/[^.!?]+[.!?]+/g) || [fileText];
   let index = 0;
 
@@ -1066,42 +1061,36 @@ function playFileById(fileId, callback) {
       index++;
       speakSentence();
     };
+    utter.rate = parseFloat(localStorage.getItem("rate") || 1);
+    utter.pitch = parseFloat(localStorage.getItem("pitch") || 1);
+    utter.voice = getSelectedVoice();
     speechSynthesis.speak(utter);
   };
 
   speakSentence();
 }
 
-// Utility: Fetch file name by ID
 function getFileNameById(id) {
   const files = JSON.parse(localStorage.getItem("neurAloudLibrary") || "[]");
   const found = files.find(f => f.id === id);
   return found ? found.name : null;
 }
 
-// Utility: Fetch file text by ID
 function getFileTextById(id) {
   const files = JSON.parse(localStorage.getItem("neurAloudLibrary") || "[]");
   const found = files.find(f => f.id === id);
   return found ? found.text : null;
 }
 
-// Initialize playlist on load
 window.addEventListener("DOMContentLoaded", loadPlaylist);
 
-/**
- * Module 8 – Profile Customization & User Settings
- * Handles saving, restoring, and applying user preferences such as:
- * - Theme selection
- * - Playback settings (rate, pitch, voice)
- * - Notification preferences
- * - Language and translation options
- * - Developer mode toggle
- */
+
+// =======================
+// 📦 Module 8: Profile Customization & User Settings (Enhanced)
+// =======================
 
 const PROFILE_SETTINGS_KEY = "userProfileSettings";
 
-// Default profile settings
 const defaultProfileSettings = {
   theme: "light",
   ttsRate: 1.0,
@@ -1111,39 +1100,34 @@ const defaultProfileSettings = {
   notificationTime: "18:30",
   language: "en-US",
   translationLanguage: "none",
-  developerMode: false,
+  developerMode: false
 };
 
-// Save profile settings to localStorage
 function saveProfileSettings(settings) {
   localStorage.setItem(PROFILE_SETTINGS_KEY, JSON.stringify(settings));
 }
 
-// Load profile settings from localStorage or defaults
 function loadProfileSettings() {
   const stored = localStorage.getItem(PROFILE_SETTINGS_KEY);
   return stored ? JSON.parse(stored) : defaultProfileSettings;
 }
 
-// Apply profile settings to UI and system
 function applyProfileSettings(settings) {
   if (settings.theme) setTheme(settings.theme);
-  if (settings.ttsRate) rateSlider.value = settings.ttsRate;
-  if (settings.ttsPitch) pitchSlider.value = settings.ttsPitch;
-  if (settings.selectedVoice) voiceSelect.value = settings.selectedVoice;
-  if (settings.autoResume !== undefined) autoResumeToggle.checked = settings.autoResume;
-  if (settings.language) languageSelect.value = settings.language;
-  if (settings.translationLanguage) translationSelect.value = settings.translationLanguage;
+  if (settings.ttsRate) document.getElementById("rate").value = settings.ttsRate;
+  if (settings.ttsPitch) document.getElementById("pitch").value = settings.ttsPitch;
+  if (settings.selectedVoice) document.getElementById("voice-select").value = settings.selectedVoice;
+  if (settings.autoResume !== undefined) document.getElementById("auto-resume-toggle").checked = settings.autoResume;
+  if (settings.language) document.getElementById("language-select").value = settings.language;
+  if (settings.translationLanguage) document.getElementById("translation-select").value = settings.translationLanguage;
   if (settings.notificationTime) document.getElementById("notification-time").value = settings.notificationTime;
   document.body.dataset.developer = settings.developerMode;
 }
 
-// Set theme
 function setTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
 }
 
-// Toggle developer mode
 function toggleDeveloperMode() {
   const settings = loadProfileSettings();
   settings.developerMode = !settings.developerMode;
@@ -1151,21 +1135,23 @@ function toggleDeveloperMode() {
   applyProfileSettings(settings);
 }
 
-// UI Handlers
 document.addEventListener("DOMContentLoaded", () => {
+  const settings = loadProfileSettings();
+  applyProfileSettings(settings);
+
   const saveBtn = document.getElementById("save-profile-btn");
   if (saveBtn) {
     saveBtn.addEventListener("click", () => {
       const settings = {
         theme: document.querySelector("input[name='theme']:checked")?.value || "light",
-        ttsRate: parseFloat(rateSlider.value),
-        ttsPitch: parseFloat(pitchSlider.value),
-        selectedVoice: voiceSelect.value,
-        autoResume: autoResumeToggle.checked,
-        notificationTime: document.getElementById("notification-time")?.value || "18:00",
-        language: languageSelect.value,
-        translationLanguage: translationSelect.value,
-        developerMode: document.body.dataset.developer === "true",
+        ttsRate: parseFloat(document.getElementById("rate").value),
+        ttsPitch: parseFloat(document.getElementById("pitch").value),
+        selectedVoice: document.getElementById("voice-select").value,
+        autoResume: document.getElementById("auto-resume-toggle").checked,
+        notificationTime: document.getElementById("notification-time").value || "18:30",
+        language: document.getElementById("language-select").value,
+        translationLanguage: document.getElementById("translation-select").value,
+        developerMode: document.body.dataset.developer === "true"
       };
       saveProfileSettings(settings);
       applyProfileSettings(settings);
@@ -1174,38 +1160,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-  const settings = loadProfileSettings();
-  applyProfileSettings(settings);
-});
-
-
 // ======================
-// 📦 MODULE 9: Ads Integration and Management
+// 📦 MODULE 9: Ads Integration and Management (Enhanced)
 // ======================
 
-// ✅ Ad Display Conditions
 const showAds = () => {
   const isPremium = localStorage.getItem("userPlan") === "premium";
-  const adContainers = document.querySelectorAll(".ad-container");
-  adContainers.forEach(container => {
+  document.querySelectorAll(".ad-container").forEach(container => {
     container.style.display = isPremium ? "none" : "block";
   });
 };
 
-// ✅ Ad Slots Initialization
 const initAds = () => {
-  const adSlotIds = ["sidebar-ad", "footer-ad"];
-  adSlotIds.forEach(id => {
+  ["sidebar-ad", "footer-ad"].forEach(id => {
     const slot = document.getElementById(id);
-    if (slot) {
-      slot.innerHTML = "<span class='ad-placeholder'>[Ad Placeholder]</span>";
-    }
+    if (slot) slot.innerHTML = "<span class='ad-placeholder'>[Ad Placeholder]</span>";
   });
   showAds();
 };
 
-// ✅ Consent Modal
 const displayConsentModal = () => {
   if (localStorage.getItem("adsConsent") !== "true") {
     const consent = confirm("We use ads to support the app. Continue?");
@@ -1213,27 +1186,24 @@ const displayConsentModal = () => {
   }
 };
 
-// ✅ Toggle Ads Debug
+document.addEventListener("DOMContentLoaded", () => {
+  displayConsentModal();
+  initAds();
+});
+
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key === "d") toggleAdDebug();
+});
+
 const toggleAdDebug = () => {
   const current = localStorage.getItem("adDebug") === "true";
   localStorage.setItem("adDebug", !current);
   alert("Ad Debug mode is now " + (!current ? "ON" : "OFF"));
 };
 
-// ✅ DOMContentLoaded Initialization
-document.addEventListener("DOMContentLoaded", () => {
-  displayConsentModal();
-  initAds();
-});
-
-// ✅ Manual Control for Admin
-document.addEventListener("keydown", e => {
-  if (e.ctrlKey && e.key === "d") {
-    toggleAdDebug();
-  }
-});
-
-// 📦 Module 10: Floating Playback Panel with Enhanced Features
+// ========================
+// 📦 Module 10: Floating Playback Panel (Cleaned)
+// ========================
 
 document.addEventListener("DOMContentLoaded", () => {
   initFloatingPanel();
@@ -1270,21 +1240,18 @@ function initFloatingPanel() {
   `;
   document.body.appendChild(panel);
 
-  // Controls wiring
+  // Controls
   document.getElementById("panel-close").onclick = () => panel.style.display = "none";
-  document.getElementById("panel-play").onclick = () => playFloatingContent();
+  document.getElementById("panel-play").onclick = playFloatingContent;
   document.getElementById("panel-pause").onclick = () => speechSynthesis.pause();
   document.getElementById("panel-stop").onclick = () => {
     speechSynthesis.cancel();
     updateTimer(0);
   };
-  document.getElementById("panel-loop").onclick = () => toggleLoop();
+  document.getElementById("panel-loop").onclick = toggleLoop;
 
-  // Voice dropdown populated
   loadTTSEngines("floating");
   populateVoiceDropdown("floating");
-
-  // Optional: drag-to-move
   enableDrag(panel);
 }
 
@@ -1298,11 +1265,9 @@ function playFloatingContent() {
   utterance.voice = getVoiceByName(voice);
   utterance.rate = rate;
   utterance.pitch = pitch;
-
   utterance.onboundary = e => {
     if (e.name === "word") updateTimer(e.elapsedTime);
   };
-
   speechSynthesis.speak(utterance);
 }
 
@@ -1313,12 +1278,12 @@ function updateTimer(ms) {
   document.getElementById("panel-timer").textContent = `${min}:${remaining.toString().padStart(2, "0")}`;
 }
 
+let isLooping = false;
 function toggleLoop() {
   isLooping = !isLooping;
   document.getElementById("panel-loop").classList.toggle("active", isLooping);
 }
 
-// Basic drag
 function enableDrag(el) {
   el.onmousedown = function (e) {
     e.preventDefault();
@@ -1342,411 +1307,3 @@ function enableDrag(el) {
   };
   el.ondragstart = () => false;
 }
-
-// ============ Module 6: Side Panel & Playback Queue ============
-// ✅ NeurAloud Full Script (Module 1–6 Merged)
-document.addEventListener("DOMContentLoaded", initSidePanel);
-function initSidePanel() {
-  const panel = document.getElementById("side-panel");
-  const backdrop = document.getElementById("side-panel-backdrop");
-  const toggleButton = document.getElementById("side-panel-toggle");
-  const closeButton = document.getElementById("side-panel-close");
-  const readButton = document.getElementById("read-live-button");
-  const urlInput = document.getElementById("live-url");
-  const contentDiv = document.getElementById("side-panel-content");
-  const voiceSelect = document.getElementById("voice-select");
-  const rateSlider = document.getElementById("rate");
-  const pitchSlider = document.getElementById("pitch");
-  const rateVal = document.getElementById("rate-val");
-  const pitchVal = document.getElementById("pitch-val");
-  const playBtn = document.getElementById("play-tts");
-  const pauseBtn = document.getElementById("pause-tts");
-  const stopBtn = document.getElementById("stop-tts");
-  const repeatBtn = document.getElementById("repeat-tts");
-  const loopToggle = document.getElementById("loop-toggle");
-  const smartSkipToggle = document.getElementById("smart-skip-toggle");
-  const thresholdSlider = document.getElementById("importance-threshold");
-  const thresholdVal = document.getElementById("threshold-val");
-  const addToQueueBtn = document.getElementById("add-to-queue");
-  const queueList = document.getElementById("playback-queue");
-  const clearQueueBtn = document.getElementById("clear-queue");
-
-  let utterance, isPaused = false;
-  let sentenceList = [], sentenceIndex = 0;
-  let currentContent = "";
-  let queue = [];
-
-  toggleButton.addEventListener("click", () => {
-    panel.classList.add("open");
-    backdrop.classList.add("open");
-  });
-
-  closeButton.addEventListener("click", () => {
-    panel.classList.remove("open");
-    backdrop.classList.remove("open");
-  });
-
-  backdrop.addEventListener("click", () => {
-    panel.classList.remove("open");
-    backdrop.classList.remove("open");
-  });
-
-  readButton.addEventListener("click", async () => {
-    const url = urlInput.value.trim();
-    if (!url) {
-      contentDiv.textContent = "⚠️ Please enter a valid URL.";
-      return;
-    }
-    contentDiv.textContent = "🔄 Loading...";
-    try {
-      const res = await fetch(url);
-      const html = await res.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
-      const text = doc.body?.innerText?.trim() || "⚠️ Could not extract text.";
-      currentContent = text;
-      contentDiv.textContent = text;
-      splitSentences(text);
-    } catch (e) {
-      contentDiv.textContent = "❌ Error loading or parsing URL.";
-    }
-  });
-
-  function splitSentences(text) {
-    sentenceList = text.match(/[^.!?]+[.!?]+/g) || [];
-    sentenceIndex = 0;
-  }
-
-  function scoreSentence(sentence) {
-    const keywords = ["important", "must", "need", "critical"];
-    let score = sentence.length / 120;
-    keywords.forEach(k => {
-      if (sentence.includes(k)) score += 0.2;
-    });
-    if (/[!?\-:]/.test(sentence)) score += 0.2;
-    return Math.min(score, 1.0);
-  }
-
-  function playSentences() {
-    if (!sentenceList.length) return;
-    if (sentenceIndex >= sentenceList.length) {
-      if (loopToggle.checked) sentenceIndex = 0;
-      else return;
-    }
-    const sentence = sentenceList[sentenceIndex];
-    const score = scoreSentence(sentence);
-    const threshold = parseFloat(thresholdSlider.value);
-    if (smartSkipToggle.checked && score < threshold) {
-      console.log("⏭️ Skipped:", sentence, "Score:", score.toFixed(2));
-      sentenceIndex++;
-      playSentences();
-      return;
-    }
-
-    const voiceName = voiceSelect.value;
-    utterance = new SpeechSynthesisUtterance(sentence);
-    utterance.voice = speechSynthesis.getVoices().find(v => v.name === voiceName);
-    utterance.rate = parseFloat(rateSlider.value);
-    utterance.pitch = parseFloat(pitchSlider.value);
-    utterance.onend = () => {
-      sentenceIndex++;
-      playSentences();
-    };
-    highlightSentence(sentence);
-    speechSynthesis.speak(utterance);
-  }
-
-  function highlightSentence(sentence) {
-    const content = contentDiv.textContent;
-    const start = content.indexOf(sentence);
-    if (start < 0) return;
-    const end = start + sentence.length;
-    contentDiv.innerHTML =
-      content.substring(0, start) +
-      `<mark>${sentence}</mark>` +
-      content.substring(end);
-  }
-
-  playBtn.addEventListener("click", () => {
-    if (isPaused && utterance) {
-      speechSynthesis.resume();
-      isPaused = false;
-    } else {
-      splitSentences(currentContent);
-      playSentences();
-    }
-  });
-
-  pauseBtn.addEventListener("click", () => {
-    speechSynthesis.pause();
-    isPaused = true;
-  });
-
-  stopBtn.addEventListener("click", () => {
-    speechSynthesis.cancel();
-    sentenceIndex = 0;
-    isPaused = false;
-  });
-
-  repeatBtn.addEventListener("click", () => {
-    sentenceIndex = Math.max(0, sentenceIndex - 1);
-    isPaused = false;
-    playSentences();
-  });
-
-  loopToggle.addEventListener("change", () => {
-    localStorage.setItem("loopEnabled", loopToggle.checked);
-  });
-
-  function populateVoices() {
-    const voices = speechSynthesis.getVoices();
-    voiceSelect.innerHTML = voices.map(v => `<option value="${v.name}">${v.name}</option>`).join("");
-    const savedVoice = localStorage.getItem("voiceSelect");
-    if (savedVoice) voiceSelect.value = savedVoice;
-  }
-
-  speechSynthesis.onvoiceschanged = populateVoices;
-  populateVoices();
-
-  voiceSelect.addEventListener("change", () => {
-    localStorage.setItem("voiceSelect", voiceSelect.value);
-  });
-
-  rateSlider.addEventListener("input", () => {
-    rateVal.textContent = parseFloat(rateSlider.value).toFixed(2);
-    localStorage.setItem("rate", rateSlider.value);
-  });
-
-  pitchSlider.addEventListener("input", () => {
-    pitchVal.textContent = parseFloat(pitchSlider.value).toFixed(2);
-    localStorage.setItem("pitch", pitchSlider.value);
-  });
-
-  smartSkipToggle.addEventListener("change", () => {
-    localStorage.setItem("smartSkip", smartSkipToggle.checked);
-  });
-
-  thresholdSlider.addEventListener("input", () => {
-    thresholdVal.textContent = parseFloat(thresholdSlider.value).toFixed(2);
-    localStorage.setItem("threshold", thresholdSlider.value);
-  });
-
-  function restoreSettings() {
-    if (localStorage.getItem("loopEnabled") === "true") loopToggle.checked = true;
-    if (localStorage.getItem("smartSkip") === "true") smartSkipToggle.checked = true;
-    if (localStorage.getItem("threshold")) {
-      thresholdSlider.value = localStorage.getItem("threshold");
-      thresholdVal.textContent = parseFloat(thresholdSlider.value).toFixed(2);
-    }
-    if (localStorage.getItem("rate")) {
-      rateSlider.value = localStorage.getItem("rate");
-      rateVal.textContent = parseFloat(rateSlider.value).toFixed(2);
-    }
-    if (localStorage.getItem("pitch")) {
-      pitchSlider.value = localStorage.getItem("pitch");
-      pitchVal.textContent = parseFloat(pitchSlider.value).toFixed(2);
-    }
-  }
-
-  restoreSettings();
-}
-
-  // Drag and Drop for Queue
-  queueList.addEventListener("dragstart", (e) => {
-    draggedItem = e.target;
-    e.target.classList.add("dragging");
-  });
-
-  queueList.addEventListener("dragend", (e) => {
-    e.target.classList.remove("dragging");
-  });
-
-  queueList.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    const afterElement = getDragAfterElement(queueList, e.clientY);
-    const dragging = document.querySelector(".dragging");
-    if (afterElement == null) {
-      queueList.appendChild(dragging);
-    } else {
-      queueList.insertBefore(dragging, afterElement);
-    }
-  });
-
-  function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll("li:not(.dragging)")];
-    return draggableElements.reduce((closest, child) => {
-      const box = child.getBoundingClientRect();
-      const offset = y - box.top - box.height / 2;
-      if (offset < 0 && offset > closest.offset) {
-        return { offset: offset, element: child };
-      } else {
-        return closest;
-      }
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
-  }
-
-  // Export Options
-  document.getElementById("export-txt").addEventListener("click", exportQueueAsText);
-  document.getElementById("export-json").addEventListener("click", exportQueueAsJSON);
-
-  function exportQueueAsText() {
-    const items = Array.from(document.querySelectorAll("#playback-queue li"))
-                       .map(el => el.textContent.trim());
-    const blob = new Blob([items.join("\n")], { type: "text/plain" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "queue.txt";
-    a.click();
-  }
-
-  function exportQueueAsJSON() {
-    const items = Array.from(document.querySelectorAll("#playback-queue li"))
-                       .map(el => ({ text: el.textContent.trim() }));
-    const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "queue.json";
-    a.click();
-  }
-
-  // Queue Preview
-  document.querySelectorAll("#playback-queue li").forEach(li => {
-    li.addEventListener("click", () => {
-      alert(`Preview: ${li.textContent.trim()}`);
-    });
-  });
-
-  // Add to Queue
-  addToQueueBtn.addEventListener("click", () => {
-    const title = prompt("🎵 Enter queue item title:");
-    if (title) {
-      const li = document.createElement("li");
-      li.textContent = title;
-      li.setAttribute("draggable", "true");
-      queueList.appendChild(li);
-      li.addEventListener("click", () => alert(`Preview: ${li.textContent.trim()}`));
-    }
-  });
-
-  // Clear Queue
-  clearQueueBtn.addEventListener("click", () => {
-    if (confirm("❌ Clear all items from the queue?")) {
-      queueList.innerHTML = "";
-    }
-  });
-
-  // Optional: Initialize Side Panel on Page Load
-  window.addEventListener("load", () => {
-    if (localStorage.getItem("sidePanelOpen") === "true") {
-      document.getElementById("side-panel").classList.add("open");
-      document.getElementById("side-panel-backdrop").classList.add("open");
-    }
-  });
-
-  // Optional: Save panel state
-  document.getElementById("side-panel-toggle").addEventListener("click", () => {
-    localStorage.setItem("sidePanelOpen", "true");
-  });
-
-  document.getElementById("side-panel-close").addEventListener("click", () => {
-    localStorage.setItem("sidePanelOpen", "false");
-  });
-
-  document.getElementById("side-panel-backdrop").addEventListener("click", () => {
-    localStorage.setItem("sidePanelOpen", "false");
-  });
-
-  // === Module 7: Playback Queue Enhancements ===
-
-  // Save current queue to localStorage
-  function saveQueueToLocal() {
-    const queueItems = Array.from(document.querySelectorAll("#playback-queue li")).map(li => li.textContent.trim());
-    localStorage.setItem("playbackQueue", JSON.stringify(queueItems));
-  }
-
-  // Load and restore queue from localStorage
-  function loadQueueFromLocal() {
-    const saved = JSON.parse(localStorage.getItem("playbackQueue") || "[]");
-    const ul = document.getElementById("playback-queue");
-    ul.innerHTML = "";
-    saved.forEach(text => {
-      const li = document.createElement("li");
-      li.textContent = text;
-      li.setAttribute("draggable", "true");
-      ul.appendChild(li);
-    });
-    addQueuePreviewHandlers();
-  }
-
-  // Add current input to queue and persist
-  function addToQueueAndSave(text) {
-    const ul = document.getElementById("playback-queue");
-    const li = document.createElement("li");
-    li.textContent = text.trim();
-    li.setAttribute("draggable", "true");
-    ul.appendChild(li);
-    addQueuePreviewHandlers();
-    saveQueueToLocal();
-  }
-
-  // Playback entire queue in order
-  function playQueueSequentially() {
-    const queueItems = Array.from(document.querySelectorAll("#playback-queue li"));
-    if (queueItems.length === 0) return;
-
-    let index = 0;
-    function playNext() {
-      if (index >= queueItems.length) return;
-      const text = queueItems[index].textContent.trim();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.onend = () => {
-        index++;
-        playNext();
-      };
-      speechSynthesis.speak(utter);
-    }
-
-    playNext();
-  }
-
-  // Modal Preview Logic
-  function setupPreviewModal() {
-    const modal = document.getElementById("preview-modal");
-    const modalText = document.getElementById("modal-text");
-    const closeBtn = document.getElementById("modal-close");
-
-    closeBtn.addEventListener("click", () => {
-      modal.style.display = "none";
-    });
-
-    document.querySelectorAll("#playback-queue li").forEach(li => {
-      li.addEventListener("click", () => {
-        modalText.textContent = li.textContent.trim();
-        modal.style.display = "block";
-      });
-    });
-  }
-
-  // Initialize all Module 7 logic
-  function initModule7QueuePlayback() {
-    document.getElementById("play-all").addEventListener("click", playQueueSequentially);
-    document.getElementById("export-txt").addEventListener("click", exportQueueAsText);
-    document.getElementById("export-json").addEventListener("click", exportQueueAsJSON);
-    loadQueueFromLocal();
-    setupPreviewModal();
-  }
-
-  // === Section Navigation Persistence ===
-  document.addEventListener("DOMContentLoaded", () => {
-    const lastSection = localStorage.getItem("lastSection") || "home";
-    navigate(lastSection);
-
-    document.querySelectorAll("nav button").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const match = btn.getAttribute("onclick")?.match(/navigate\('(.+?)'\)/);
-        if (match) {
-          localStorage.setItem("lastSection", match[1]);
-        }
-      });
-    });
-  });
