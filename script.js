@@ -568,6 +568,34 @@ function setupResponsiveVoice() {
   document.body.appendChild(script);
 }
 
+// 🌐 Fetch IBM Watson voices and update dropdown
+function fetchIBMVoices(context = "listen") {
+  const ibmUrl = "https://api.us-east.text-to-speech.watson.cloud.ibm.com/v1/voices";
+  const ibmApiKey = "clMaAFKOaK9TDgy-u9X2O5lsgaeYDOqeqaDTtTULgk4_"; // Replace with env-secured value in production
+
+  fetch(ibmUrl, {
+    headers: {
+      "Authorization": "Basic " + btoa("apikey:" + ibmApiKey),
+      "Content-Type": "application/json"
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.voices && Array.isArray(data.voices)) {
+      const voices = data.voices.map(v => ({
+        name: v.name,
+        language: v.language,
+        gender: v.gender
+      }));
+      updateVoiceDropdown("ibm", voices);
+      console.log(`✅ IBM voices (${voices.length}) loaded for ${context}`);
+    } else {
+      console.warn("⚠️ IBM returned no voices:", data);
+    }
+  })
+  .catch(err => console.error("❌ Error fetching IBM voices:", err));
+}
+
 // 🔁 Bind engine and language switch logic
 function bindTTSSelectors() {
   ["listen", "capture"].forEach(context => {
