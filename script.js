@@ -23,6 +23,24 @@ let sentences = [];
 let currentSentenceIndex = 0;
 let lastFileName = "";
 
+// ===============================
+// 🔊 Voice Engine Globals & Flags
+// ===============================
+let currentEngine = "Google";
+let allVoices = [];
+let ibmQuotaUsed = 0;
+let ibmQuotaLimit = 9500;
+let isAdmin = false;  // Toggle true for testing or admin access
+// ===============================
+// 🔊 Voice Engine Globals & Flags
+// ===============================
+let currentEngine = "Google";
+let allVoices = [];
+let ibmQuotaUsed = 0;
+let ibmQuotaLimit = 9500;
+let isAdmin = false;  // Toggle true for testing or admin access
+
+
 // ✅ SAFE DOM ELEMENT BINDINGS
 const bindings = {
   // General
@@ -521,6 +539,89 @@ function loadVoicesDropdown(engine = "google", target = "listen") {
 
   console.log(`✅ Loaded ${allVoices.length} voices into ${target} dropdown.`);
 }
+
+
+// ===============================
+// 🔁 Load All Voice Engines
+// ===============================
+function initializeTTS() {
+  loadLocalVoices();
+  setupResponsiveVoice();
+  bindTTSSelectors();
+}
+
+// 🔊 Load local voices (Google/OS)
+function loadLocalVoices() {
+  function populate(voices) {
+    allVoices = voices;
+    updateVoiceDropdown("google", voices);
+  }
+
+  const voices = speechSynthesis.getVoices();
+  if (voices.length) {
+    populate(voices);
+  } else {
+    speechSynthesis.onvoiceschanged = () => populate(speechSynthesis.getVoices());
+  }
+}
+
+// 🔌 Load ResponsiveVoice SDK
+function setupResponsiveVoice() {
+  const script = document.createElement("script");
+  script.src = "https://code.responsivevoice.org/responsivevoice.js?key=4KSLPhgK";
+  script.onload = () => {
+    const rvVoices = responsiveVoice.getVoices();
+    updateVoiceDropdown("responsiveVoice", rvVoices);
+    console.log("✅ ResponsiveVoice loaded:", rvVoices.length, "voices");
+  };
+  document.body.appendChild(script);
+}
+
+// 🔁 Bind engine switch logic
+function bindTTSSelectors() {
+  const listenEngine = document.getElementById("tts-engine");
+  const captureEngine = document.getElementById("tts-engine-capture");
+
+  [listenEngine, captureEngine].forEach(drop => {
+    if (!drop) return;
+    drop.addEventListener("change", (e) => {
+      currentEngine = e.target.value;
+      switch (currentEngine) {
+        case "google":
+          updateVoiceDropdown("google", speechSynthesis.getVoices());
+          break;
+        case "responsiveVoice":
+          updateVoiceDropdown("responsiveVoice", responsiveVoice.getVoices());
+          break;
+        case "ibm":
+          fetchIBMVoices(); // See Chunk 2
+          break;
+      }
+    });
+  });
+}
+
+// 🧩 Populate voice dropdowns
+function updateVoiceDropdown(engine, voices) {
+  const listenSelect = document.getElementById("voice-select");
+  const captureSelect = document.getElementById("voice-select-capture");
+  [listenSelect, captureSelect].forEach(select => {
+    if (!select) return;
+    select.innerHTML = "";
+    voices.forEach(v => {
+      const option = document.createElement("option");
+      option.value = v.name || v.voice || v.voiceName || v;
+      option.textContent = v.name || v.voice || v.voiceName || v;
+      select.appendChild(option);
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadTTSEngines("listen");
+  loadTTSEngines("capture");
+});
+
 
 // ===========================
 // MODULE 3 – Playback Controls
