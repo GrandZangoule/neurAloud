@@ -250,27 +250,39 @@ function restoreLibraryItems(type) {
 
 let utterance;
 // let currentSentenceIndex = 0;
-let isLooping = false;
+et isLooping = false;
 
 function playCurrentSentence() {
+  if (sentences.length === 0) return;
+
   if (currentSentenceIndex >= sentences.length) {
     if (isLooping) {
       currentSentenceIndex = 0;
     } else {
-      return;
+      return; // Stop playback if not looping
     }
   }
+
   const sentence = sentences[currentSentenceIndex];
   utterance = new SpeechSynthesisUtterance(sentence);
-  utterance.rate = parseFloat(document.getElementById("rate").value);
-  utterance.pitch = parseFloat(document.getElementById("pitch").value);
-  utterance.voice = getSelectedVoice();
+
+  // Set user-controlled options
+  const rateInput = document.getElementById("rate");
+  const pitchInput = document.getElementById("pitch");
+  const voice = getSelectedVoice();
+
+  utterance.rate = rateInput ? parseFloat(rateInput.value) : 1.0;
+  utterance.pitch = pitchInput ? parseFloat(pitchInput.value) : 1.0;
+  utterance.voice = voice;
+
   utterance.onend = () => {
     currentSentenceIndex++;
     playCurrentSentence();
   };
+
   speechSynthesis.speak(utterance);
 }
+
 
 function pauseSpeech() {
   speechSynthesis.pause();
