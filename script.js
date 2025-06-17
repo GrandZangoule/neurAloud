@@ -1187,6 +1187,9 @@ function applyProfileSettings(settings) {
     createLabeledElement("language-select", "🌐 Language:", "select", settings.language || "").value = settings.language || "";
     createLabeledElement("translation-select", "🌎 Translate To:", "select", settings.translationLanguage || "").value = settings.translationLanguage || "";
     createLabeledElement("notification-time", "⏰ Notify At:", "input", settings.notificationTime || "").value = settings.notificationTime || "";
+    createLabeledElement("language-select", "🌐 Language:", "select", settings.language || "en").value = settings.language || "en";
+    createLabeledElement("translation-select", "🌎 Translate To:", "select", settings.translationLanguage || "fr").value = settings.translationLanguage || "fr";
+
 
     document.body.dataset.developer = settings.developerMode ?? false;
 
