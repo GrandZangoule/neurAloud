@@ -1192,6 +1192,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const langDropdown = document.getElementById(`language-select-${context}`);
     if (langDropdown) langDropdown.value = savedLang;
   });
+
+  // ✅ Defer TTS engine load for Capture if dropdown is initially empty
+  setTimeout(() => {
+    const captureDropdown = document.getElementById("tts-engine-capture");
+    if (captureDropdown && captureDropdown.options.length === 0) {
+      loadTTSEngines("capture");
+    }
+  }, 300);
 });
 
 
