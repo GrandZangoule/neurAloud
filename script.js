@@ -1160,12 +1160,39 @@ function speakWithResponsiveVoice(text, target = "listen") {
 // 🚀 Load TTS on DOM Ready
 // ===========================
 document.addEventListener("DOMContentLoaded", () => {
-  bindTTSSelectors();          // Hook up dropdown change listeners
-  initializeTTS();             // Load voices & restore previous selections
-  loadTTSEngines("listen");    // Populate engine dropdowns
-  loadTTSEngines("capture");
-});
+  bindTTSSelectors();          // Attach listeners to dropdowns
+  initializeTTS();             // Load voices and setup Google/Local
 
+  ["listen", "capture"].forEach(context => {
+    // 1. Restore selected engine (default: Google)
+    const savedEngine = localStorage.getItem(`selectedEngine-${context}`) || "google";
+    const engineDropdown = document.getElementById(`tts-engine-${context}`);
+    if (engineDropdown) engineDropdown.value = savedEngine;
+
+    // 2. Load voices for selected engine
+    switch (savedEngine.toLowerCase()) {
+      case "google":
+      case "local":
+        updateVoiceDropdown("google", speechSynthesis.getVoices());
+        break;
+      case "responsivevoice":
+        updateVoiceDropdown("responsiveVoice", responsiveVoice.getVoices());
+        break;
+      case "ibm":
+        fetchIBMVoices(context);
+        break;
+      default:
+        updateVoiceDropdown("mock", [
+          { name: "Test Voice 1" }, { name: "Test Voice 2" }
+        ]);
+    }
+
+    // 3. Restore selected language (default: en-US)
+    const savedLang = localStorage.getItem(`selectedLanguage-${context}`) || "en-US";
+    const langDropdown = document.getElementById(`language-select-${context}`);
+    if (langDropdown) langDropdown.value = savedLang;
+  });
+});
 
 
 // ===========================
