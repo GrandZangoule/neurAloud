@@ -834,3 +834,99 @@ body.green-mode {
     transform: translateY(0);
   }
 }
+
+/* =========================
+   🌐 TRANSLATION & SUMMARY MODULES
+   ========================= */
+
+/* Container for Translation Tools */
+#translation-tools {
+  padding: 1.5rem;
+  background-color: var(--background, #f9f9f9);
+  color: var(--font-color, #333);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin: 1rem auto;
+  max-width: 1000px;
+}
+
+/* Heading and Description */
+#translation-tools h2 {
+  font-size: 1.6rem;
+  margin-bottom: 1rem;
+}
+
+#translation-tools p.description {
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+  color: var(--secondary-font, #666);
+}
+
+/* Tool Blocks */
+.translation-tool {
+  margin-bottom: 2rem;
+}
+
+.translation-tool label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.translation-tool select,
+.translation-tool input[type="text"],
+.translation-tool textarea {
+  width: 100%;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+  background-color: var(--input-bg, #fff);
+  color: var(--font-color, #333);
+}
+
+/* Buttons */
+.translation-tool button {
+  background-color: var(--accent, #3498db);
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.translation-tool button:hover {
+  background-color: var(--accent-hover, #2980b9);
+}
+
+/* Results Box */
+.translation-result {
+  background: var(--secondary-bg, #f2f2f2);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  min-height: 60px;
+  white-space: pre-wrap;
+  border: 1px solid #ddd;
+}
+
+/* Section Separator */
+hr.translation-separator {
+  margin: 2rem 0;
+  border: none;
+  border-top: 1px dashed #ccc;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #translation-tools {
+    padding: 1rem;
+  }
+
+  #translation-tools h2 {
+    font-size: 1.4rem;
+  }
+}
