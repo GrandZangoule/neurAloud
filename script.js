@@ -306,7 +306,7 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
   );
   if (!dropdown) return;
 
-  dropdown.innerHTML = ""; // Clear current options
+  dropdown.innerHTML = "";
   let voices = [];
 
   try {
@@ -315,39 +315,101 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
       case "local":
         voices = speechSynthesis.getVoices();
         if (!voices.length) {
-          console.warn("⚠️ Google voices not ready — retrying...");
-          speechSynthesis.onvoiceschanged = () =>
-            updateVoiceDropdown(engine, speechSynthesis.getVoices(), context);
+          console.warn("⚠️ Google/Local voices not ready — retrying...");
+          setTimeout(() => loadVoicesDropdown(engine, context), 300);
           return;
         }
+        break;
+
+      case "ibm":
+        voices = await fetchIBMVoices(context);
         break;
 
       case "responsivevoice":
         if (typeof responsiveVoice !== "undefined") {
           voices = responsiveVoice.getVoices();
         } else {
-          console.warn("⚠️ responsiveVoice is not defined");
+          console.warn("⚠️ responsiveVoice not defined.");
         }
         break;
 
-      case "ibm":
-        voices = await fetchIBMVoices(context); // Must be awaited!
-        break;
-
       default:
-        voices = [
-          { name: "Test Voice 1", lang: "en" },
-          { name: "Test Voice 2", lang: "en" }
-        ];
+        voices = [];
+    }
+
+    if (!Array.isArray(voices) || voices.length === 0) {
+      console.warn(`❌ No voices returned for ${engine} → ${context}`);
+      return;
     }
 
     updateVoiceDropdown(engine, voices, context);
   } catch (err) {
-    console.error(`🔥 Voice loading failed for ${engine} → ${context}:`, err);
+    console.error(`🔥 Failed to load voices for ${engine} → ${context}`, err);
   }
 }
 
 
+function updateVoiceDropdown(engine, voices, context = "listen") {
+  const dropdown = document.getElementById(
+    context === "capture" ? "voice-select-capture" : "voice-select"
+  );
+  if (!dropdown || !Array.isArray(voices)) return;
+
+  dropdown.innerHTML = "";
+
+  voices.forEach(v => {
+    const opt = document.createElement("option");
+    const name = v.name || v.voice || v.voiceName || v;
+    opt.value = name;
+    opt.textContent = `${name} (${v.lang || "?"})`;
+    dropdown.appendChild(opt);
+  });
+
+  const key = `selectedVoice-${context}`;
+  const saved = localStorage.getItem(key);
+
+  if (saved && [...dropdown.options].some(o => o.value === saved)) {
+    dropdown.value = saved;
+  } else if (dropdown.options.length) {
+    dropdown.selectedIndex = 0;
+    localStorage.setItem(key, dropdown.value);
+  }
+
+  console.log(`✅ Voice dropdown updated for ${engine} → ${context}`);
+}
+
+
+
+let responsiveVoiceLoaded = false;
+
+function setupResponsiveVoice(context = "listen") {
+  if (responsiveVoiceLoaded && typeof responsiveVoice !== "undefined") {
+    const voices = responsiveVoice.getVoices();
+    updateVoiceDropdown("responsiveVoice", voices, context);
+    return;
+  }
+
+  const script = document.createElement("script");
+  script.src = "https://code.responsivevoice.org/responsivevoice.js?key=4KSLPhgK";
+
+  script.onload = () => {
+    if (typeof responsiveVoice === "undefined") {
+      console.warn("❌ ResponsiveVoice loaded, but global object missing.");
+      return;
+    }
+
+    responsiveVoiceLoaded = true;
+    const voices = responsiveVoice.getVoices();
+    updateVoiceDropdown("responsiveVoice", voices, context);
+    console.log(`✅ ResponsiveVoice loaded (${voices.length} voices) for ${context}`);
+  };
+
+  script.onerror = () => {
+    console.error("❌ Failed to load ResponsiveVoice SDK.");
+  };
+
+  document.body.appendChild(script);
+}
 
 // ✅ Setup & persist engine dropdown, then load voices
 async function loadTTSEngines(context = "listen") {
@@ -526,16 +588,33 @@ function loadLocalVoices() {
 }
 
 // 🔌 Load ResponsiveVoice SDK
-function setupResponsiveVoice() {
+function setupResponsiveVoice(context = "listen") {
   const script = document.createElement("script");
   script.src = "https://code.responsivevoice.org/responsivevoice.js?key=4KSLPhgK";
+
   script.onload = () => {
+    if (typeof responsiveVoice === "undefined") {
+      console.warn("❌ ResponsiveVoice SDK failed to load");
+      return;
+    }
+
     const rvVoices = responsiveVoice.getVoices();
-    updateVoiceDropdown("responsiveVoice", rvVoices);
-    console.log("✅ ResponsiveVoice loaded:", rvVoices.length, "voices");
+    if (!Array.isArray(rvVoices) || !rvVoices.length) {
+      console.warn("❌ No ResponsiveVoice voices found.");
+      return;
+    }
+
+    updateVoiceDropdown("responsiveVoice", rvVoices, context);
+    console.log(`✅ ResponsiveVoice loaded (${rvVoices.length} voices) for ${context}`);
   };
+
+  script.onerror = () => {
+    console.error("❌ Failed to load ResponsiveVoice script.");
+  };
+
   document.body.appendChild(script);
 }
+
 
 // 🌐 Fetch IBM Watson voices and update dropdown
 function fetchIBMVoices(context = "listen") {
@@ -563,39 +642,6 @@ function fetchIBMVoices(context = "listen") {
     }
   })
   .catch(err => console.error("❌ Error fetching IBM voices:", err));
-}
-
-
-// 🧩 Populate voice dropdowns
-function updateVoiceDropdown(engine, voices, context = "listen") {
-  const dropdown = document.getElementById(
-    context === "capture" ? "voice-select-capture" : "voice-select"
-  );
-  if (!dropdown || !Array.isArray(voices)) {
-    console.warn(`❌ No valid voices returned for ${engine} → ${context}`);
-    return;
-  }
-
-  dropdown.innerHTML = ""; // Clear before populating
-
-  voices.forEach(v => {
-    const opt = document.createElement("option");
-    opt.value = v.name;
-    opt.textContent = `${v.name} (${v.lang || "?"})`;
-    dropdown.appendChild(opt);
-  });
-
-  const key = `selectedVoice-${context}`;
-  const saved = localStorage.getItem(key);
-
-  if (saved && [...dropdown.options].some(o => o.value === saved)) {
-    dropdown.value = saved;
-  } else if (dropdown.options.length) {
-    dropdown.selectedIndex = 0;
-    localStorage.setItem(key, dropdown.value);
-  }
-
-  console.log(`✅ Loaded ${dropdown.options.length} voices for ${engine} → ${context}`);
 }
 
 
@@ -777,27 +823,13 @@ function bindTTSSelectors() {
     if (!engineDropdown) return;
 
     engineDropdown.addEventListener("change", async () => {
-      const engine = engineDropdown.value.toLowerCase();
-      localStorage.setItem(`selectedEngine-${context}`, engine);
+      const selected = engineDropdown.value.toLowerCase();
+      localStorage.setItem(`selectedEngine-${context}`, selected);
 
-      if (engine === "google" || engine === "local") {
-        loadVoicesDropdown(engine, context);
-      } else if (engine === "ibm") {
-        try {
-          const voices = await fetchIBMVocalList(context);  // pass context if needed
-          updateVoiceDropdown("ibm", voices, context);
-        } catch (err) {
-          console.error("❌ IBM voice fetch failed:", err);
-        }
-      } else if (engine === "responsivevoice") {
-        if (typeof responsiveVoice !== "undefined") {
-          const voices = responsiveVoice.getVoices();
-          updateVoiceDropdown("responsivevoice", voices, context);
-        } else {
-          console.warn("⚠️ responsiveVoice is not defined or not loaded.");
-        }
+      if (selected === "responsivevoice") {
+        setupResponsiveVoice(context);
       } else {
-        console.warn(`⚠️ Unknown TTS engine selected: ${engine}`);
+        await loadVoicesDropdown(selected, context);
       }
     });
   });
@@ -1173,9 +1205,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
   bindTTSSelectors();
-  initializeTTS();                      // ← Add this
-  ["listen", "capture"].forEach(ctx => {
-    loadTTSEngines(ctx);
+
+  ["listen", "capture"].forEach(context => {
+    const savedEngine = localStorage.getItem(`selectedEngine-${context}`) || "google";
+    const dropdown = document.getElementById(`tts-engine-${context}`);
+    if (dropdown) dropdown.value = savedEngine;
+    if (savedEngine.toLowerCase() === "responsivevoice") {
+      setupResponsiveVoice(context);
+    } else {
+      loadVoicesDropdown(savedEngine, context);
+    }
   });
 });
 
