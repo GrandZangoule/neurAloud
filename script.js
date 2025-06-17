@@ -726,18 +726,14 @@ function initializeTTS() {
   };
 }
 
+// Always keep this below all the above functions.
 // ===========================
 // 🚀 Load TTS on DOM Ready
 // ===========================
-
 document.addEventListener("DOMContentLoaded", () => {
-  bindTTSSelectors();
-  initializeTTS();
-});
-
-// Always keep this below all the above functions.
-document.addEventListener("DOMContentLoaded", () => {
-  loadTTSEngines("listen");
+  bindTTSSelectors();          // Hook up dropdown change listeners
+  initializeTTS();             // Load voices & restore previous selections
+  loadTTSEngines("listen");    // Populate engine dropdowns
   loadTTSEngines("capture");
 });
 
