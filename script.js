@@ -364,6 +364,46 @@ function restoreLibraryItems(type) {
   };
 }
 
+function loadVoicesDropdown(engine = "google", target = "listen") {
+  const dropdown = document.getElementById(
+    target === "capture" ? "voice-select-capture" : "voice-select"
+  );
+
+  if (!dropdown) {
+    console.warn("⚠️ Voice dropdown not found for target:", target);
+    return;
+  }
+
+  const allVoices = speechSynthesis.getVoices();
+
+  if (!allVoices.length) {
+    console.warn("⚠️ No voices loaded yet — retrying...");
+    setTimeout(() => loadVoicesDropdown(engine, target), 200);
+    return;
+  }
+
+  dropdown.innerHTML = ""; // Clear previous
+
+  allVoices.forEach((voice) => {
+    const opt = document.createElement("option");
+    opt.value = voice.name;
+    opt.textContent = `${voice.name} (${voice.lang})`;
+    dropdown.appendChild(opt);
+  });
+
+  // Restore saved voice if available
+  const key = target === "capture" ? "selectedVoiceCapture" : "selectedVoice";
+  const saved = localStorage.getItem(key);
+
+  if (saved && [...dropdown.options].some((o) => o.value === saved)) {
+    dropdown.value = saved;
+  } else {
+    dropdown.selectedIndex = 0;
+    localStorage.setItem(key, dropdown.value);
+  }
+
+  console.log(`✅ Loaded ${allVoices.length} voices into ${target} dropdown.`);
+}
 
 // ===========================
 // MODULE 3 – Playback Controls
