@@ -250,7 +250,7 @@ function restoreLibraryItems(type) {
 
 let utterance;
 // let currentSentenceIndex = 0;
-et isLooping = false;
+let isLooping = false;
 
 function playCurrentSentence() {
   if (sentences.length === 0) return;
@@ -282,7 +282,6 @@ function playCurrentSentence() {
 
   speechSynthesis.speak(utterance);
 }
-
 
 function pauseSpeech() {
   speechSynthesis.pause();
