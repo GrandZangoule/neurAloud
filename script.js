@@ -568,27 +568,48 @@ function setupResponsiveVoice() {
   document.body.appendChild(script);
 }
 
-// 🔁 Bind engine switch logic
+// 🔁 Bind engine and language switch logic
 function bindTTSSelectors() {
-  const listenEngine = document.getElementById("tts-engine");
-  const captureEngine = document.getElementById("tts-engine-capture");
+  ["listen", "capture"].forEach(context => {
+    const engineDropdown = document.getElementById(`tts-engine-${context}`);
+    const voiceDropdown = document.getElementById(`voice-select-${context}`);
+    const languageDropdown = document.getElementById(`language-select-${context}`);
 
-  [listenEngine, captureEngine].forEach(drop => {
-    if (!drop) return;
-    drop.addEventListener("change", (e) => {
-      currentEngine = e.target.value;
-      switch (currentEngine) {
-        case "google":
-          updateVoiceDropdown("google", speechSynthesis.getVoices());
-          break;
-        case "responsiveVoice":
-          updateVoiceDropdown("responsiveVoice", responsiveVoice.getVoices());
-          break;
-        case "ibm":
-          fetchIBMVoices(); // See Chunk 2
-          break;
-      }
-    });
+    if (engineDropdown) {
+      engineDropdown.addEventListener("change", (e) => {
+        const selectedEngine = e.target.value;
+        localStorage.setItem(`selectedEngine-${context}`, selectedEngine);
+
+        switch (selectedEngine.toLowerCase()) {
+          case "google":
+          case "local":
+            const voices = speechSynthesis.getVoices();
+            updateVoiceDropdown("google", voices); // Local = Google for now
+            break;
+
+          case "responsivevoice":
+            const rvVoices = responsiveVoice.getVoices();
+            updateVoiceDropdown("responsiveVoice", rvVoices);
+            break;
+
+          case "ibm":
+            fetchIBMVoices(context); // Make sure this is implemented
+            break;
+
+          default:
+            updateVoiceDropdown("mock", [
+              { name: "Test Voice 1" }, { name: "Test Voice 2" }
+            ]);
+        }
+      });
+    }
+
+    // Bind language selection
+    if (languageDropdown) {
+      languageDropdown.addEventListener("change", (e) => {
+        localStorage.setItem(`selectedLanguage-${context}`, e.target.value);
+      });
+    }
   });
 }
 
@@ -1124,26 +1145,38 @@ document.addEventListener("DOMContentLoaded", () => {
 // ===========================
 
 const availableModels = {
-  "en-US": { name: "English (US)", engine: "CoquiTTS" },
-  "de-DE": { name: "German", engine: "CoquiTTS" },
-  "fr-FR": { name: "French", engine: "CoquiTTS" },
-  "es-ES": { name: "Spanish", engine: "CoquiTTS" },
-  "hi-IN": { name: "Hindi", engine: "CoquiTTS" },
-  "sw-KE": { name: "Swahili", engine: "Mock" },
-  "ln-CD": { name: "Lingala", engine: "Mock" },
-  "dou-CM": { name: "Douala", engine: "Mock" }
+  "en-US":  { name: "English (US)",     engine: "CoquiTTS" },
+  "de-DE":  { name: "German",           engine: "CoquiTTS" },
+  "fr-FR":  { name: "French",           engine: "CoquiTTS" },
+  "es-ES":  { name: "Spanish",          engine: "CoquiTTS" },
+  "pt-BR":  { name: "Portuguese (BR)",  engine: "CoquiTTS" },
+  "hi-IN":  { name: "Hindi",            engine: "CoquiTTS" },
+  "zh-CN":  { name: "Chinese",          engine: "Mock" },
+  "ja-JP":  { name: "Japanese",         engine: "Mock" },
+  "ar-SA":  { name: "Arabic",           engine: "Mock" },
+  "ru-RU":  { name: "Russian",          engine: "Mock" },
+  "sw-KE":  { name: "Swahili",          engine: "Mock" },
+  "ln-CD":  { name: "Lingala",          engine: "Mock" },
+  "dua-CM": { name: "Douala",           engine: "Mock" }
 };
 
-function populateLanguageDropdown(selectId) {
-  const dropdown = document.getElementById(selectId);
+
+function populateLanguageDropdown(context) {
+  const dropdown = document.getElementById(`language-select-${context}`);
+  if (!dropdown) return;
+
   dropdown.innerHTML = "";
+
   Object.entries(availableModels).forEach(([code, data]) => {
     const option = document.createElement("option");
     option.value = code;
     option.textContent = `${data.name} [${data.engine}]`;
     dropdown.appendChild(option);
   });
-  dropdown.value = "en-US";
+
+  // Restore previously selected language or default to en-US
+  const savedLang = localStorage.getItem(`selectedLanguage-${context}`) || "en-US";
+  dropdown.value = savedLang;
 }
 
 // ===========================
