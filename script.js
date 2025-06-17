@@ -309,67 +309,69 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
   dropdown.innerHTML = "";
 
   let voices = [];
-  switch (engine.toLowerCase()) {
-    case "google":
-    case "local":
-      voices = speechSynthesis.getVoices();
-      if (!voices.length) {
-        setTimeout(() => loadVoicesDropdown(engine, context), 300);
-        return;
-      }
-      break;
 
-    case "responsivevoice":
-      if (typeof responsiveVoice !== "undefined") {
-        voices = responsiveVoice.getVoices();
-      }
-      break;
+  try {
+    switch (engine.toLowerCase()) {
+      case "google":
+      case "local":
+        voices = speechSynthesis.getVoices();
+        if (!voices.length) {
+          console.warn("⚠️ Google voices not ready — retrying...");
+          setTimeout(() => loadVoicesDropdown(engine, context), 300);
+          return;
+        }
+        break;
 
-    case "ibm":
-      try {
+      case "responsivevoice":
+        if (typeof responsiveVoice !== "undefined") {
+          voices = responsiveVoice.getVoices();
+        } else {
+          console.warn("⚠️ responsiveVoice is not defined");
+        }
+        break;
+
+      case "ibm":
         voices = await fetchIBMVoices(context);
-      } catch (err) {
-        console.error("❌ IBM fetch error:", err);
+        break;
+
+      default:
         voices = [
-          { name: "en-US_MichaelV3Voice", lang: "en-US" },
-          { name: "fr-FR_ReneeV3Voice", lang: "fr-FR" }
+          { name: "Test Voice 1", lang: "en" },
+          { name: "Test Voice 2", lang: "en" }
         ];
-      }
-      break;
+    }
 
-    default:
-      voices = [
-        { name: "Test Voice 1", lang: "en" },
-        { name: "Test Voice 2", lang: "en" }
-      ];
+    // ✅ Safeguard against empty/undefined voice array
+    if (!Array.isArray(voices) || voices.length === 0) {
+      console.warn(`❌ No valid voices returned for ${engine} → ${context}`);
+      return;
+    }
+
+    // ✅ Populate dropdown
+    voices.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v.name;
+      opt.textContent = `${v.name} (${v.lang || "?"})`;
+      dropdown.appendChild(opt);
+    });
+
+    // ✅ Restore or select first
+    const key = `selectedVoice-${context}`;
+    const saved = localStorage.getItem(key);
+    if (saved && [...dropdown.options].some(o => o.value === saved)) {
+      dropdown.value = saved;
+    } else if (dropdown.options.length) {
+      dropdown.selectedIndex = 0;
+      localStorage.setItem(key, dropdown.value);
+    }
+
+    console.log(`✅ Loaded ${dropdown.options.length} voices for ${engine} → ${context}`);
+
+  } catch (err) {
+    console.error(`🔥 Voice loading failed for ${engine} → ${context}:`, err);
   }
-
-  // ✅ Safeguard for undefined/null/empty
-  if (!Array.isArray(voices)) {
-    console.warn(`❌ No valid voices returned for ${engine} → ${context}`);
-    return;
-  }
-
-  // ✅ Populate dropdown
-  voices.forEach(v => {
-    const opt = document.createElement("option");
-    opt.value = v.name;
-    opt.textContent = `${v.name} (${v.lang || "?"})`;
-    dropdown.appendChild(opt);
-  });
-
-  // ✅ Restore or select first
-  const key = `selectedVoice-${context}`;
-  const saved = localStorage.getItem(key);
-  if (saved && [...dropdown.options].some(o => o.value === saved)) {
-    dropdown.value = saved;
-  } else if (dropdown.options.length) {
-    dropdown.selectedIndex = 0;
-    localStorage.setItem(key, dropdown.value);
-  }
-
-  console.log(`✅ Loaded ${dropdown.options.length} voices for ${engine} → ${context}`);
 }
+
 
 
 async function loadTTSEngines(context = "listen") {
@@ -558,21 +560,23 @@ function fetchIBMVoices(context = "listen") {
 function bindTTSSelectors() {
   ["listen", "capture"].forEach(context => {
     const engineDropdown = document.getElementById(`tts-engine-${context}`);
-    const langDropdown = document.getElementById(`language-select-${context}`);
+    if (!engineDropdown) return;
 
-    if (engineDropdown) {
-      engineDropdown.addEventListener("change", () => {
-        const selected = engineDropdown.value;
-        localStorage.setItem(`selectedEngine-${context}`, selected);
-        loadVoicesDropdown(selected, context);
-      });
-    }
+    engineDropdown.addEventListener("change", async () => {
+      const selected = engineDropdown.value;
+      localStorage.setItem(`selectedEngine-${context}`, selected);
 
-    if (langDropdown) {
-      langDropdown.addEventListener("change", () => {
-        localStorage.setItem(`selectedLanguage-${context}`, langDropdown.value);
-      });
-    }
+      if (selected === "responsivevoice") {
+        if (typeof responsiveVoice !== "undefined") {
+          const voices = responsiveVoice.getVoices();
+          updateVoiceDropdown("responsiveVoice", voices, context);
+        } else {
+          console.warn("⚠️ responsiveVoice is not defined. SDK missing?");
+        }
+      } else {
+        await loadVoicesDropdown(selected, context);
+      }
+    });
   });
 }
 
@@ -592,7 +596,6 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
     dropdown.appendChild(opt);
   });
 
-  // Restore selected or choose first
   const key = `selectedVoice-${context}`;
   const saved = localStorage.getItem(key);
   if (saved && [...dropdown.options].some(o => o.value === saved)) {
@@ -602,7 +605,7 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
     localStorage.setItem(key, dropdown.value);
   }
 
-  console.log(`✅ Loaded ${dropdown.options.length} voices for ${engine} → ${context}`);
+  console.log(`✅ Loaded ${voices.length} voices for ${engine} → ${context}`);
 }
 
 // ===========================
