@@ -402,6 +402,7 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
   console.log(`✅ Loaded ${voices.length} voices for ${engine} → ${context}`);
 }
 
+
 function loadTTSEngines(context = "listen") {
   const dropdown = document.getElementById(`tts-engine-${context}`);
   if (!dropdown) return;
@@ -500,6 +501,13 @@ function restoreLibraryItems(type) {
 // ===============================
 // 🔁 Load All Voice Engines
 // ===============================
+function initializeTTS() {
+  loadLocalVoices();
+  setupResponsiveVoice();
+  bindTTSSelectors();
+}
+
+// 🔊 Load local voices (Google/OS) for both Listen & Capture
 function loadLocalVoices() {
   function populate(voices) {
     allVoices = voices;
@@ -515,7 +523,6 @@ function loadLocalVoices() {
     speechSynthesis.onvoiceschanged = () => populate(speechSynthesis.getVoices());
   }
 }
-
 
 // 🔌 Load ResponsiveVoice SDK
 function setupResponsiveVoice() {
