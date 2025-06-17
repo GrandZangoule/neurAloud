@@ -306,8 +306,7 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
   );
   if (!dropdown) return;
 
-  dropdown.innerHTML = "";
-
+  dropdown.innerHTML = ""; // Clear current options
   let voices = [];
 
   try {
@@ -317,7 +316,8 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
         voices = speechSynthesis.getVoices();
         if (!voices.length) {
           console.warn("⚠️ Google voices not ready — retrying...");
-          setTimeout(() => loadVoicesDropdown(engine, context), 300);
+          speechSynthesis.onvoiceschanged = () =>
+            updateVoiceDropdown(engine, speechSynthesis.getVoices(), context);
           return;
         }
         break;
@@ -331,7 +331,7 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
         break;
 
       case "ibm":
-        voices = await fetchIBMVoices(context);
+        voices = await fetchIBMVoices(context); // Must be awaited!
         break;
 
       default:
@@ -341,42 +341,25 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
         ];
     }
 
-    // ✅ Safeguard and populate
-    if (!Array.isArray(voices) || voices.length === 0) {
-      console.warn(`❌ No valid voices returned for ${engine} → ${context}`);
-      return;
-    }
-
-    voices.forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = v.name;
-      opt.textContent = `${v.name} (${v.lang || "?"})`;
-      dropdown.appendChild(opt);
-    });
-
-    const key = `selectedVoice-${context}`;
-    const saved = localStorage.getItem(key);
-    if (saved && [...dropdown.options].some(o => o.value === saved)) {
-      dropdown.value = saved;
-    } else {
-      dropdown.selectedIndex = 0;
-      localStorage.setItem(key, dropdown.value);
-    }
-
-    console.log(`✅ Loaded ${dropdown.options.length} voices for ${engine} → ${context}`);
+    updateVoiceDropdown(engine, voices, context);
   } catch (err) {
     console.error(`🔥 Voice loading failed for ${engine} → ${context}:`, err);
   }
 }
 
 
+
+// ✅ Setup & persist engine dropdown, then load voices
 async function loadTTSEngines(context = "listen") {
   const engineDropdown = document.getElementById(`tts-engine-${context}`);
+  const voiceKey = `selectedVoice-${context}`;
+  const engineKey = `selectedEngine-${context}`;
+
   if (!engineDropdown) return;
 
-  // Populate Engine Options
-  const engines = ["Google", "IBM", "ResponsiveVoice", "Local"];
+  // Clear and repopulate engine list
   engineDropdown.innerHTML = "";
+  const engines = ["Google", "IBM", "ResponsiveVoice", "Local"];
   engines.forEach(engine => {
     const opt = document.createElement("option");
     opt.value = engine.toLowerCase();
@@ -384,23 +367,19 @@ async function loadTTSEngines(context = "listen") {
     engineDropdown.appendChild(opt);
   });
 
-  // Load saved engine for context
-  const engineKey = `ttsEngine-${context}`;
+  // Restore saved engine or default to google
   const savedEngine = localStorage.getItem(engineKey) || "google";
   engineDropdown.value = savedEngine;
   localStorage.setItem(engineKey, savedEngine);
 
-  // Load voices for engine
-  const voices = await fetchVoicesByEngine(savedEngine, context);
-  updateVoiceDropdown(savedEngine, voices, context);
+  // Load voices for selected engine
+  await loadVoicesDropdown(savedEngine, context);
 
-  // Listen for engine changes
+  // When user changes engine
   engineDropdown.addEventListener("change", async () => {
     const selected = engineDropdown.value;
     localStorage.setItem(engineKey, selected);
-
-    const voices = await fetchVoicesByEngine(selected, context);
-    updateVoiceDropdown(selected, voices, context);
+    await loadVoicesDropdown(selected, context);  // ✅ await voice load
   });
 }
 
@@ -443,10 +422,6 @@ speechSynthesis.onvoiceschanged = () => {
   loadVoicesDropdown("google", "capture");
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadTTSEngines("listen");
-  loadTTSEngines("capture");
-});
 
 // Render & Restore Listen and Capture Library items
 function renderLibraryItem(item, type) {
@@ -572,29 +547,6 @@ function fetchIBMVoices(context = "listen") {
   .catch(err => console.error("❌ Error fetching IBM voices:", err));
 }
 
-// 🔁 Bind engine and language switch logic
-function bindTTSSelectors() {
-  ["listen", "capture"].forEach(context => {
-    const engineDropdown = document.getElementById(`tts-engine-${context}`);
-    if (!engineDropdown) return;
-
-    engineDropdown.addEventListener("change", async () => {
-      const selected = engineDropdown.value;
-      localStorage.setItem(`selectedEngine-${context}`, selected);
-
-      if (selected === "responsivevoice") {
-        if (typeof responsiveVoice !== "undefined") {
-          const voices = responsiveVoice.getVoices();
-          updateVoiceDropdown("responsiveVoice", voices, context);
-        } else {
-          console.warn("⚠️ responsiveVoice is not defined. SDK missing?");
-        }
-      } else {
-        await loadVoicesDropdown(selected, context);
-      }
-    });
-  });
-}
 
 // 🧩 Populate voice dropdowns
 function updateVoiceDropdown(engine, voices, context = "listen") {
@@ -602,11 +554,11 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
     context === "capture" ? "voice-select-capture" : "voice-select"
   );
   if (!dropdown || !Array.isArray(voices)) {
-    console.warn(`❌ Invalid voices for ${engine} → ${context}`);
+    console.warn(`❌ No valid voices returned for ${engine} → ${context}`);
     return;
   }
 
-  dropdown.innerHTML = "";
+  dropdown.innerHTML = ""; // Clear before populating
 
   voices.forEach(v => {
     const opt = document.createElement("option");
@@ -615,23 +567,19 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
     dropdown.appendChild(opt);
   });
 
-  const voiceKey = `selectedVoice-${context}`;
-  const savedVoice = localStorage.getItem(voiceKey);
+  const key = `selectedVoice-${context}`;
+  const saved = localStorage.getItem(key);
 
-  if (savedVoice && [...dropdown.options].some(o => o.value === savedVoice)) {
-    dropdown.value = savedVoice;
-  } else if (dropdown.options.length > 0) {
+  if (saved && [...dropdown.options].some(o => o.value === saved)) {
+    dropdown.value = saved;
+  } else if (dropdown.options.length) {
     dropdown.selectedIndex = 0;
-    localStorage.setItem(voiceKey, dropdown.value);
+    localStorage.setItem(key, dropdown.value);
   }
-
-  // Save on change
-  dropdown.addEventListener("change", () => {
-    localStorage.setItem(voiceKey, dropdown.value);
-  });
 
   console.log(`✅ Loaded ${dropdown.options.length} voices for ${engine} → ${context}`);
 }
+
 
 // ===========================
 // 🎤 IBM Watson TTS Integration
@@ -674,24 +622,6 @@ function fetchResponsiveVoices() {
   });
 }
 
-
-// ===========================
-// 📤 Hook Up TTS Engine Switch
-// ===========================
-
-function bindTTSSelectors() {
-  ["listen", "capture"].forEach(context => {
-    const engineSelect = document.getElementById(`tts-engine-${context}`);
-    if (engineSelect) {
-      engineSelect.addEventListener("change", () => {
-        const selectedEngine = engineSelect.value;
-        localStorage.setItem(`selectedEngine-${context}`, selectedEngine);
-        loadVoicesDropdown(selectedEngine, context);
-      });
-    }
-  });
-}
-
 // ===========================
 // 🧩 Populate Voice Dropdowns
 // ===========================
@@ -712,33 +642,6 @@ function updateVoiceDropdown(engine, voices) {
   });
 }
 
-
-// Place below fetchResponsiveVoices
-// =============================
-// 🎯 Engine-Based Voice Filter
-// =============================
-
-function bindTTSSelectors() {
-  ["listen", "capture"].forEach(context => {
-    const engineSelector = document.getElementById(`tts-engine-${context}`);
-    if (!engineSelector) return;
-
-    engineSelector.addEventListener("change", () => {
-      const selected = engineSelector.value.toLowerCase();
-      localStorage.setItem(`selectedEngine-${context}`, selected);
-
-      if (selected === "google" || selected === "local") {
-        loadVoicesDropdown(selected, context);
-      }
-      else if (selected === "ibm") {
-        updateVoiceDropdown("ibm", fetchIBMVocalList());
-      }
-      else if (selected === "responsivevoice") {
-        updateVoiceDropdown("responsivevoice", fetchResponsiveVoices());
-      }
-    });
-  });
-}
 
 // ===========================
 // 🌐 Dynamic Voice Engine Switching
@@ -826,31 +729,6 @@ function incrementIBMUsage() {
   }
 })();
 
-// ===========================
-// 🔄 Bind Dynamic Loading to Engine Selection
-// ===========================
-
-function bindTTSSelectors() {
-  ["listen", "capture"].forEach(context => {
-    const engineDropdown = document.getElementById(`tts-engine-${context}`);
-    if (!engineDropdown) return;
-
-    engineDropdown.addEventListener("change", async () => {
-      const engine = engineDropdown.value;
-      localStorage.setItem(`selectedEngine-${context}`, engine);
-
-      if (engine === "Google" || engine === "Local") {
-        loadVoicesDropdown(engine, context);
-      } else if (engine === "IBM") {
-        const voices = await fetchIBMVocalList();
-        updateVoiceDropdown(engine, voices);
-      } else if (engine === "ResponsiveVoice") {
-        const voices = await fetchResponsiveVoices();
-        updateVoiceDropdown(engine, voices);
-      }
-    });
-  });
-}
 
 // ===========================
 // 🌐 Fetch Voices from TTS APIs
@@ -889,6 +767,44 @@ async function fetchVoicesFromResponsiveVoice() {
     return [];
   }
 }
+
+
+// Place below fetchResponsiveVoices
+// =============================
+// 🎯 Engine-Based Voice Filter
+// =============================
+function bindTTSSelectors() {
+  ["listen", "capture"].forEach(context => {
+    const engineDropdown = document.getElementById(`tts-engine-${context}`);
+    if (!engineDropdown) return;
+
+    engineDropdown.addEventListener("change", async () => {
+      const engine = engineDropdown.value.toLowerCase();
+      localStorage.setItem(`selectedEngine-${context}`, engine);
+
+      if (engine === "google" || engine === "local") {
+        loadVoicesDropdown(engine, context);
+      } else if (engine === "ibm") {
+        try {
+          const voices = await fetchIBMVocalList(context);  // pass context if needed
+          updateVoiceDropdown("ibm", voices, context);
+        } catch (err) {
+          console.error("❌ IBM voice fetch failed:", err);
+        }
+      } else if (engine === "responsivevoice") {
+        if (typeof responsiveVoice !== "undefined") {
+          const voices = responsiveVoice.getVoices();
+          updateVoiceDropdown("responsivevoice", voices, context);
+        } else {
+          console.warn("⚠️ responsiveVoice is not defined or not loaded.");
+        }
+      } else {
+        console.warn(`⚠️ Unknown TTS engine selected: ${engine}`);
+      }
+    });
+  });
+}
+
 
 // ===========================
 // 🔒 Quota Control & Engine Lock
@@ -1270,6 +1186,16 @@ document.addEventListener("DOMContentLoaded", () => {
     `speak-btn-${context}`,
     `tts-input-${context}`
   );
+});
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  bindTTSSelectors();               // Binds dropdown change events
+  loadLocalVoices();               // Fallback loading for Google/local voices
+
+  ["listen", "capture"].forEach(ctx => {
+    loadTTSEngines(ctx);           // Populates each TTS engine dropdown and sets voices
+  });
 });
 
 // MODULE 4A: Bulk Delete for Listen and Capture Libraries + Tooltips
