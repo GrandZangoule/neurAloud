@@ -703,6 +703,33 @@ function updateVoiceDropdown(engine, voices) {
   });
 }
 
+// Place below fetchResponsiveVoices
+// =============================
+// 🎯 Engine-Based Voice Filter
+// =============================
+
+function bindTTSSelectors() {
+  ["listen", "capture"].forEach(context => {
+    const engineSelector = document.getElementById(`tts-engine-${context}`);
+    if (!engineSelector) return;
+
+    engineSelector.addEventListener("change", () => {
+      const selected = engineSelector.value.toLowerCase();
+      localStorage.setItem(`selectedEngine-${context}`, selected);
+
+      if (selected === "google" || selected === "local") {
+        loadVoicesDropdown(selected, context);
+      }
+      else if (selected === "ibm") {
+        updateVoiceDropdown("ibm", fetchIBMVocalList());
+      }
+      else if (selected === "responsivevoice") {
+        updateVoiceDropdown("responsivevoice", fetchResponsiveVoices());
+      }
+    });
+  });
+}
+
 // ===========================
 // 🧠 Initialize TTS System
 // ===========================
