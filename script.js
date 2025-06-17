@@ -2328,7 +2328,7 @@ function initFloatingPanel() {
   document.getElementById("panel-loop").onclick = toggleLoop;
 
   loadTTSEngines("floating");
-  populateVoiceDropdown("floating");
+  loadVoicesDropdown("floating", "capture"); // or "listen", "capture"
   enableDrag(panel);
 }
 
