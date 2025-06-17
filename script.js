@@ -23,6 +23,113 @@ let sentences = [];
 let currentSentenceIndex = 0;
 let lastFileName = "";
 
+// ✅ SAFE DOM ELEMENT BINDINGS
+const bindings = {
+  // General
+  fileInput: document.getElementById("file-input") ?? null,
+  textDisplay: document.getElementById("text-display") ?? null,
+  previewModal: document.getElementById("preview-modal") ?? null,
+  modalClose: document.getElementById("modal-close") ?? null,
+  modalText: document.getElementById("modal-text") ?? null,
+
+  // Listen Section
+  ttsEngineSelect: document.getElementById("tts-engine") ?? null,
+  voiceSelect: document.getElementById("voice-select") ?? null,
+  playBtn: document.getElementById("play-btn") ?? null,
+  pauseBtn: document.getElementById("pause-btn") ?? null,
+  stopBtn: document.getElementById("stop-btn") ?? null,
+  loopBtn: document.getElementById("loop-btn") ?? null,
+  saveToLibraryBtn: document.getElementById("save-to-library-btn") ?? null,
+  rateSlider: document.getElementById("rate-slider") ?? null,
+  pitchSlider: document.getElementById("pitch-slider") ?? null,
+  rateValue: document.getElementById("rate-value") ?? null,
+  pitchValue: document.getElementById("pitch-value") ?? null,
+  playbackQueue: document.getElementById("playback-queue") ?? null,
+  playAllBtn: document.getElementById("play-all") ?? null,
+  exportTxtBtn: document.getElementById("export-txt") ?? null,
+  exportJsonBtn: document.getElementById("export-json") ?? null,
+  prevSentenceBtn: document.getElementById("prev-sentence") ?? null,
+  nextSentenceBtn: document.getElementById("next-sentence") ?? null,
+
+  // Library
+  favoritesSection: document.getElementById("favorites-section") ?? null,
+  favoritesList: document.getElementById("favorites-list") ?? null,
+  listenLibraryGrid: document.querySelector("#listen-library.grid-library") ?? null,
+  listenLibraryList: document.querySelector("#listen-library.library-list") ?? null,
+  bulkDeleteListenBtn: document.getElementById("bulk-delete-listen-btn") ?? null,
+  saveCapturedBtn: document.getElementById("save-captured-btn") ?? null,
+  captureLibraryGrid: document.querySelector("#capture-library.grid-library") ?? null,
+  captureLibraryList: document.querySelector("#capture-library.library-list") ?? null,
+  bulkDeleteCaptureBtn: document.getElementById("bulk-delete-capture-btn") ?? null,
+  overwriteCaptureToggle: document.getElementById("overwrite-capture-toggle") ?? null,
+  clearLibraryBtn: document.querySelector("button[onclick='confirmClearLibrary()']") ?? null,
+  clearFavoritesBtn: document.querySelector("button[onclick='confirmClearFavorites()']") ?? null,
+  clearPlaylistBtn: document.querySelector("button[onclick='confirmClearPlaylist()']") ?? null,
+
+  // Capture Section
+  ttsEngineCapture: document.getElementById("tts-engine-capture") ?? null,
+  voiceSelectCapture: document.getElementById("voice-select-capture") ?? null,
+  playCaptureBtn: document.getElementById("play-capture-btn") ?? null,
+  pauseCaptureBtn: document.getElementById("pause-capture-btn") ?? null,
+  stopCaptureBtn: document.getElementById("stop-capture-btn") ?? null,
+  loopCaptureBtn: document.getElementById("loop-capture-btn") ?? null,
+  rateCaptureSlider: document.getElementById("rate-capture-slider") ?? null,
+  pitchCaptureSlider: document.getElementById("pitch-capture-slider") ?? null,
+  rateCaptureValue: document.getElementById("rate-capture-value") ?? null,
+  pitchCaptureValue: document.getElementById("pitch-capture-value") ?? null,
+  captureDisplay: document.getElementById("capture-display") ?? null,
+  captureLanguageSelect: document.getElementById("capture-language") ?? null,
+  readLanguageSelect: document.getElementById("read-language") ?? null,
+  captureTranslateToggle: document.getElementById("capture-translate") ?? null,
+  startCaptureBtn: document.getElementById("start-capture") ?? null,
+  stopCaptureBtn: document.getElementById("stop-capture") ?? null,
+  captureStatus: document.getElementById("capture-status") ?? null,
+
+  // Profile / Settings
+  themeSelect: document.getElementById("theme-select") ?? null,
+  voiceAvatarSelect: document.getElementById("voice-avatar") ?? null,
+  pitchSliderProfile: document.querySelector("#profile #pitch-slider") ?? null,
+  pitchValueProfile: document.querySelector("#profile #pitch-value") ?? null,
+  rateSliderProfile: document.querySelector("#profile #rate-slider") ?? null,
+  rateValueProfile: document.querySelector("#profile #rate-value") ?? null,
+  loopToggle: document.getElementById("loop-toggle") ?? null,
+  autoResumeToggle: document.getElementById("auto-resume") ?? null,
+  langReadSelect: document.getElementById("lang-read") ?? null,
+  langTranslateSelect: document.getElementById("lang-translate") ?? null,
+  enableTranslationToggle: document.getElementById("enable-translation") ?? null,
+  totalListeningSpan: document.getElementById("total-listening") ?? null,
+  chaptersCompletedSpan: document.getElementById("chapters-completed") ?? null,
+  favoritesCountSpan: document.getElementById("favorites-count") ?? null,
+  autoRewardToggle: document.getElementById("auto-reward-toggle") ?? null,
+  nextRewardSpan: document.getElementById("next-reward") ?? null,
+  manageSubscriptionBtn: document.getElementById("manage-subscription") ?? null,
+  signOutBtn: document.getElementById("sign-out") ?? null,
+  devModeToggle: document.getElementById("dev-mode-toggle") ?? null,
+
+  // Developer
+  viewLogsBtn: document.querySelector("button[onclick='viewLogs()']") ?? null,
+  simulateFreeBtn: document.querySelector("button[onclick='simulateFree()']") ?? null,
+  simulateTrialBtn: document.querySelector("button[onclick='simulateTrial()']") ?? null,
+  simulatePremiumBtn: document.querySelector("button[onclick='simulatePremium()']") ?? null,
+
+  // Context Menu
+  contextMenu: document.getElementById("context-menu") ?? null,
+  menuPlay: document.getElementById("menu-play") ?? null,
+  menuAdd: document.getElementById("menu-add") ?? null,
+  menuFav: document.getElementById("menu-fav") ?? null,
+  menuDownload: document.getElementById("menu-download") ?? null,
+  menuDelete: document.getElementById("menu-delete") ?? null,
+
+  // Translation Tools
+  languageInput: document.getElementById("language-input") ?? null,
+  targetLanguageSelect: document.getElementById("target-language") ?? null,
+  translationOutput: document.getElementById("translation-output") ?? null,
+  autoInput: document.getElementById("auto-input") ?? null,
+  autoTranslateOutput: document.getElementById("auto-translate-output") ?? null,
+  summaryText: document.getElementById("summary-text") ?? null,
+  summaryOutput: document.getElementById("summary-output") ?? null,
+};
+
 // Utility logging function
 function logMessage(msg) {
   console.log(msg);
