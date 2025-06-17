@@ -329,6 +329,7 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
       try {
         voices = await fetchIBMVoices(context);
       } catch (err) {
+        console.error("❌ IBM fetch error:", err);
         voices = [
           { name: "en-US_MichaelV3Voice", lang: "en-US" },
           { name: "fr-FR_ReneeV3Voice", lang: "fr-FR" }
@@ -343,7 +344,13 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
       ];
   }
 
-  // Add to dropdown
+  // ✅ Safeguard for undefined/null/empty
+  if (!Array.isArray(voices)) {
+    console.warn(`❌ No valid voices returned for ${engine} → ${context}`);
+    return;
+  }
+
+  // ✅ Populate dropdown
   voices.forEach(v => {
     const opt = document.createElement("option");
     opt.value = v.name;
@@ -351,7 +358,7 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
     dropdown.appendChild(opt);
   });
 
-  // Restore or select first
+  // ✅ Restore or select first
   const key = `selectedVoice-${context}`;
   const saved = localStorage.getItem(key);
   if (saved && [...dropdown.options].some(o => o.value === saved)) {
