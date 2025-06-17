@@ -500,17 +500,12 @@ function restoreLibraryItems(type) {
 // ===============================
 // 🔁 Load All Voice Engines
 // ===============================
-function initializeTTS() {
-  loadLocalVoices();
-  setupResponsiveVoice();
-  bindTTSSelectors();
-}
-
-// 🔊 Load local voices (Google/OS)
 function loadLocalVoices() {
   function populate(voices) {
     allVoices = voices;
-    updateVoiceDropdown("google", voices);
+    ["listen", "capture"].forEach(ctx => {
+      updateVoiceDropdown("google", voices, ctx);
+    });
   }
 
   const voices = speechSynthesis.getVoices();
@@ -520,6 +515,7 @@ function loadLocalVoices() {
     speechSynthesis.onvoiceschanged = () => populate(speechSynthesis.getVoices());
   }
 }
+
 
 // 🔌 Load ResponsiveVoice SDK
 function setupResponsiveVoice() {
@@ -607,19 +603,31 @@ function bindTTSSelectors() {
 }
 
 // 🧩 Populate voice dropdowns
-function updateVoiceDropdown(engine, voices) {
-  const listenSelect = document.getElementById("voice-select");
-  const captureSelect = document.getElementById("voice-select-capture");
-  [listenSelect, captureSelect].forEach(select => {
-    if (!select) return;
-    select.innerHTML = "";
-    voices.forEach(v => {
-      const option = document.createElement("option");
-      option.value = v.name || v.voice || v.voiceName || v;
-      option.textContent = v.name || v.voice || v.voiceName || v;
-      select.appendChild(option);
-    });
+function updateVoiceDropdown(engine, voices, context = "listen") {
+  const dropdown = document.getElementById(
+    context === "capture" ? "voice-select-capture" : "voice-select"
+  );
+  if (!dropdown) return;
+
+  dropdown.innerHTML = "";
+
+  voices.forEach(v => {
+    const option = document.createElement("option");
+    option.value = v.name || v.voice || v;
+    option.textContent = v.name || v.voice || v;
+    dropdown.appendChild(option);
   });
+
+  const key = context === "capture" ? "selectedVoiceCapture" : "selectedVoice";
+  const saved = localStorage.getItem(key);
+  if (saved && [...dropdown.options].some(o => o.value === saved)) {
+    dropdown.value = saved;
+  } else {
+    dropdown.selectedIndex = 0;
+    localStorage.setItem(key, dropdown.value);
+  }
+
+  console.log(`✅ Loaded ${voices.length} voices for ${engine} → ${context}`);
 }
 
 // ===========================
