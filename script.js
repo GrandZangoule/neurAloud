@@ -1113,16 +1113,63 @@ function loadProfileSettings() {
 }
 
 function applyProfileSettings(settings) {
-  if (settings.theme) setTheme(settings.theme);
-  if (settings.ttsRate) document.getElementById("rate").value = settings.ttsRate;
-  if (settings.ttsPitch) document.getElementById("pitch").value = settings.ttsPitch;
-  if (settings.selectedVoice) document.getElementById("voice-select").value = settings.selectedVoice;
-  if (settings.autoResume !== undefined) document.getElementById("auto-resume-toggle").checked = settings.autoResume;
-  if (settings.language) document.getElementById("language-select").value = settings.language;
-  if (settings.translationLanguage) document.getElementById("translation-select").value = settings.translationLanguage;
-  if (settings.notificationTime) document.getElementById("notification-time").value = settings.notificationTime;
-  document.body.dataset.developer = settings.developerMode;
+  try {
+    if (settings.theme) setTheme(settings.theme);
+
+    // Ensure a visible container exists for profile settings
+    let container = document.getElementById("profile-settings");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "profile-settings";
+      container.style.marginTop = "2rem";
+      document.body.appendChild(container);
+    }
+
+    // Helper: Create labeled input/select if missing
+    const createLabeledElement = (id, label, type = "input", defaultValue = "") => {
+      let el = document.getElementById(id);
+      if (!el) {
+        const wrapper = document.createElement("div");
+        wrapper.style.marginBottom = "10px";
+
+        const lbl = document.createElement("label");
+        lbl.textContent = label;
+        lbl.htmlFor = id;
+        lbl.style.marginRight = "0.5rem";
+
+        el = document.createElement(type);
+        el.id = id;
+        el.name = id;
+        el.value = defaultValue;
+        if (type === "input" && id.includes("toggle")) {
+          el.type = "checkbox";
+          el.checked = defaultValue;
+        }
+
+        wrapper.appendChild(lbl);
+        wrapper.appendChild(el);
+        container.appendChild(wrapper);
+
+        console.warn(`⚠️ Auto-created #${id} with default value.`);
+      }
+      return el;
+    };
+
+    createLabeledElement("rate", "🗣️ TTS Rate:", "input", settings.ttsRate || "1.0").value = settings.ttsRate || "1.0";
+    createLabeledElement("pitch", "🎵 Pitch:", "input", settings.ttsPitch || "1.0").value = settings.ttsPitch || "1.0";
+    createLabeledElement("voice-select", "🎤 Voice:", "select", settings.selectedVoice || "").value = settings.selectedVoice || "";
+    createLabeledElement("auto-resume-toggle", "🔁 Auto Resume:", "input", settings.autoResume || false).checked = settings.autoResume || false;
+    createLabeledElement("language-select", "🌐 Language:", "select", settings.language || "").value = settings.language || "";
+    createLabeledElement("translation-select", "🌎 Translate To:", "select", settings.translationLanguage || "").value = settings.translationLanguage || "";
+    createLabeledElement("notification-time", "⏰ Notify At:", "input", settings.notificationTime || "").value = settings.notificationTime || "";
+
+    document.body.dataset.developer = settings.developerMode ?? false;
+
+  } catch (err) {
+    console.error("❌ Failed to apply profile settings:", err);
+  }
 }
+
 
 function setTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
