@@ -31,14 +31,6 @@ let allVoices = [];
 let ibmQuotaUsed = 0;
 let ibmQuotaLimit = 9500;
 let isAdmin = false;  // Toggle true for testing or admin access
-// ===============================
-// 🔊 Voice Engine Globals & Flags
-// ===============================
-let currentEngine = "Google";
-let allVoices = [];
-let ibmQuotaUsed = 0;
-let ibmQuotaLimit = 9500;
-let isAdmin = false;  // Toggle true for testing or admin access
 
 
 // ✅ SAFE DOM ELEMENT BINDINGS
