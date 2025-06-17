@@ -15,6 +15,9 @@ function navigate(id) {
 const fileInput = document.getElementById("file-input");
 const textDisplay = document.getElementById("text-display");
 const logArea = document.getElementById("log-area");
+
+// Safe logging function
+const log = (...args) => console.log("📘", ...args);
 let extractedText = "";
 let sentences = [];
 let currentSentenceIndex = 0;
