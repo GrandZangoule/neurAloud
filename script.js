@@ -1307,3 +1307,198 @@ function enableDrag(el) {
   };
   el.ondragstart = () => false;
 }
+
+// ==============================
+// 🔤 Module 11: Auto-Translate (Preview Mode)
+// ==============================
+function autoTranslate(text, targetLang = "en") {
+  // Stub logic: will be replaced by cloud translator APIs
+  const placeholder = `[Translated to ${targetLang}]: ${text}`;
+  showTranslatedText(placeholder);
+}
+
+function showTranslatedText(text) {
+  const area = document.getElementById("translated-display");
+  if (!area) return;
+  area.textContent = text;
+  area.classList.add("translated-flash");
+  setTimeout(() => area.classList.remove("translated-flash"), 500);
+}
+
+function previewTranslationSelection() {
+  const selection = window.getSelection().toString();
+  if (selection.trim()) {
+    const lang = document.getElementById("translation-lang")?.value || "en";
+    autoTranslate(selection, lang);
+  }
+}
+
+document.addEventListener("mouseup", () => {
+  if (document.getElementById("preview-translate-toggle")?.checked) {
+    previewTranslationSelection();
+  }
+});
+
+
+// ==============================
+// 📝 Module 12: Notes & Bookmarks (IndexedDB)
+// ==============================
+function initNotesAndBookmarksDB() {
+  const request = indexedDB.open("neurAloudDB", 1);
+  request.onupgradeneeded = (e) => {
+    const db = e.target.result;
+    if (!db.objectStoreNames.contains("notes")) db.createObjectStore("notes", { keyPath: "id", autoIncrement: true });
+    if (!db.objectStoreNames.contains("bookmarks")) db.createObjectStore("bookmarks", { keyPath: "id", autoIncrement: true });
+  };
+}
+
+function saveNote(fileId, content) {
+  const req = indexedDB.open("neurAloudDB", 1);
+  req.onsuccess = () => {
+    const tx = req.result.transaction("notes", "readwrite");
+    tx.objectStore("notes").add({ fileId, content, timestamp: new Date().toISOString() });
+  };
+}
+
+function saveBookmark(fileId, position, label) {
+  const req = indexedDB.open("neurAloudDB", 1);
+  req.onsuccess = () => {
+    const tx = req.result.transaction("bookmarks", "readwrite");
+    tx.objectStore("bookmarks").add({ fileId, position, label, timestamp: new Date().toISOString() });
+  };
+}
+
+function fetchUserNotesAndBookmarks(fileId, callback) {
+  const req = indexedDB.open("neurAloudDB", 1);
+  req.onsuccess = () => {
+    const db = req.result;
+    const txNotes = db.transaction("notes", "readonly").objectStore("notes").getAll();
+    const txBookmarks = db.transaction("bookmarks", "readonly").objectStore("bookmarks").getAll();
+
+    Promise.all([
+      new Promise(res => txNotes.onsuccess = () => res(txNotes.result.filter(n => n.fileId === fileId))),
+      new Promise(res => txBookmarks.onsuccess = () => res(txBookmarks.result.filter(b => b.fileId === fileId)))
+    ]).then(([notes, bookmarks]) => callback({ notes, bookmarks }));
+  };
+}
+
+document.getElementById("save-note-btn")?.addEventListener("click", () => {
+  const content = prompt("📝 Enter your note:");
+  if (content) saveNote(currentFileId, content);
+});
+
+document.getElementById("add-bookmark-btn")?.addEventListener("click", () => {
+  const label = prompt("🔖 Label for this bookmark?");
+  saveBookmark(currentFileId, currentPosition, label);
+});
+
+initNotesAndBookmarksDB();
+
+
+// ==============================
+// 📘 Module 13: Chapter Summary on Trigger
+// ==============================
+let chapterSummaryTriggered = false;
+
+function monitorChapterEnd() {
+  if (!sentences.length || currentSentenceIndex >= sentences.length) return;
+
+  const current = sentences[currentSentenceIndex].trim().toLowerCase();
+  const triggers = ["end of chapter", "chapter ends", "conclusion of chapter", "chapter complete"];
+  const found = triggers.some(k => current.includes(k));
+
+  if (found && !chapterSummaryTriggered) {
+    chapterSummaryTriggered = true;
+    generateChapterSummary(currentSentenceIndex);
+  } else if (!found) {
+    chapterSummaryTriggered = false;
+  }
+}
+
+function generateChapterSummary(index) {
+  const start = findChapterStart(index);
+  const text = sentences.slice(start, index + 1).join(" ");
+  const summary = summarizeChapter(text);
+  displaySummary(summary);
+  readSummaryAloud(summary);
+}
+
+function findChapterStart(index) {
+  for (let i = index; i >= 0; i--) {
+    if (sentences[i].toLowerCase().includes("chapter")) return i;
+  }
+  return 0;
+}
+
+function summarizeChapter(text) {
+  // Placeholder - replace with LLM backend in future
+  return `🧠 Summary: ${text.split(" ").slice(0, 30).join(" ")}...`;
+}
+
+function displaySummary(summary) {
+  const box = document.createElement("div");
+  box.className = "chapter-summary";
+  box.textContent = summary;
+  Object.assign(box.style, {
+    padding: "10px",
+    background: "#f9f9f9",
+    border: "1px solid #ccc",
+    margin: "10px 0"
+  });
+  (document.getElementById("text-display") || document.body).appendChild(box);
+}
+
+function readSummaryAloud(text) {
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = parseFloat(localStorage.getItem("rate") || 1);
+  utter.pitch = parseFloat(localStorage.getItem("pitch") || 1);
+  speechSynthesis.speak(utter);
+}
+
+
+// ==============================
+// 🌐 Module 14: Saved Summaries & Quick Note Entry
+// ==============================
+function saveQuickSummary(text) {
+  const key = `summary_${Date.now()}`;
+  localStorage.setItem(key, text);
+  alert("📚 Summary saved.");
+}
+
+function listSavedSummaries() {
+  return Object.entries(localStorage)
+    .filter(([k]) => k.startsWith("summary_"))
+    .map(([k, v]) => ({ id: k, text: v }));
+}
+
+document.getElementById("save-summary-btn")?.addEventListener("click", () => {
+  const display = document.getElementById("text-display");
+  if (display?.textContent.trim()) {
+    saveQuickSummary(display.textContent.trim());
+  }
+});
+
+
+// ==============================
+// 🌍 Module 15: Translation Modes & TTS Output
+// ==============================
+function translateWithPreview(text, fromLang = "auto", toLang = "en") {
+  // Replace with cloud API like DeepL, Google Translate, etc.
+  const translated = `[${fromLang} → ${toLang}] ${text}`;
+  showTranslatedText(translated);
+  speakTranslatedText(translated, toLang);
+}
+
+function speakTranslatedText(text, lang) {
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang;
+  utter.rate = parseFloat(localStorage.getItem("rate") || 1);
+  utter.pitch = parseFloat(localStorage.getItem("pitch") || 1);
+  speechSynthesis.speak(utter);
+}
+
+document.getElementById("translate-btn")?.addEventListener("click", () => {
+  const text = document.getElementById("text-display")?.textContent.trim();
+  const toLang = document.getElementById("translation-lang")?.value || "en";
+  if (text) translateWithPreview(text, "auto", toLang);
+});
