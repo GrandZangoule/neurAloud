@@ -328,27 +328,54 @@ function loadTTSEngines(context = "listen") {
 
 
 // ✅ TTS Engine + Voice Loading Setup
-
 function loadVoicesDropdown(engine = "google", context = "listen") {
   const dropdown = document.getElementById(
     context === "capture" ? "voice-select-capture" : "voice-select"
   );
   if (!dropdown) return;
 
-  const allVoices = speechSynthesis.getVoices();
-  if (!allVoices.length) {
-    setTimeout(() => loadVoicesDropdown(engine, context), 250);
-    return;
+  dropdown.innerHTML = ""; // clear before load
+
+  if (engine === "google" || engine === "local") {
+    const allVoices = speechSynthesis.getVoices();
+    if (!allVoices.length) {
+      console.warn("⚠️ Google voices not ready — retrying...");
+      setTimeout(() => loadVoicesDropdown(engine, context), 300);
+      return;
+    }
+
+    allVoices.forEach(voice => {
+      const opt = document.createElement("option");
+      opt.value = voice.name;
+      opt.textContent = `${voice.name} (${voice.lang})`;
+      dropdown.appendChild(opt);
+    });
+
+  } else if (engine === "responsivevoice" && typeof responsiveVoice !== "undefined") {
+    const voices = responsiveVoice.getVoices();
+    voices.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v.name;
+      opt.textContent = `${v.name} (${v.lang})`;
+      dropdown.appendChild(opt);
+    });
+
+  } else if (engine === "ibm") {
+    // Simulated voice list — replace with real API pull if needed
+    const ibmVoices = [
+      { name: "en-US_MichaelV3Voice", lang: "en-US" },
+      { name: "fr-FR_ReneeV3Voice", lang: "fr-FR" },
+      { name: "es-ES_EnriqueV3Voice", lang: "es-ES" },
+    ];
+    ibmVoices.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v.name;
+      opt.textContent = `${v.name} (${v.lang})`;
+      dropdown.appendChild(opt);
+    });
   }
 
-  dropdown.innerHTML = "";
-  allVoices.forEach((voice) => {
-    const option = document.createElement("option");
-    option.value = voice.name;
-    option.textContent = `${voice.name} (${voice.lang})`;
-    dropdown.appendChild(option);
-  });
-
+  // Auto-select first voice if nothing stored
   const key = context === "capture" ? "selectedVoiceCapture" : "selectedVoice";
   const saved = localStorage.getItem(key);
   if (saved && [...dropdown.options].some(o => o.value === saved)) {
@@ -357,6 +384,8 @@ function loadVoicesDropdown(engine = "google", context = "listen") {
     dropdown.selectedIndex = 0;
     localStorage.setItem(key, dropdown.value);
   }
+
+  console.log(`✅ Loaded ${dropdown.options.length} voices for ${engine} → ${context}`);
 }
 
 function loadTTSEngines(context = "listen") {
