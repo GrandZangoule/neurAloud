@@ -372,8 +372,7 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
 
   } else if (engine === "ibm") {
     try {
-      // 🔄 Fetch dynamically from IBM setup if available
-      const ibmVoices = await fetchIBMVoices(context); // Must return voice array [{name, lang}]
+      const ibmVoices = await fetchIBMVoices(context);
       if (!ibmVoices || ibmVoices.length === 0) throw new Error("Empty voice list");
 
       ibmVoices.forEach(v => {
@@ -399,7 +398,6 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
     }
 
   } else {
-    // 🧪 Fallback voices for unsupported engines
     const mockVoices = [
       { name: "Test Voice 1", lang: "en" },
       { name: "Test Voice 2", lang: "en" }
@@ -411,9 +409,8 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
       dropdown.appendChild(opt);
     });
   }
-}
 
-  // Auto-select first voice if nothing stored
+  // ✅ Auto-select stored voice or default to first
   const key = context === "capture" ? "selectedVoiceCapture" : "selectedVoice";
   const saved = localStorage.getItem(key);
   if (saved && [...dropdown.options].some(o => o.value === saved)) {
@@ -424,6 +421,7 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
   }
 
   console.log(`✅ Loaded ${dropdown.options.length} voices for ${engine} → ${context}`);
+}
 
 function loadTTSEngines(context = "listen") {
   const engineDropdown = document.getElementById(`tts-engine-${context}`);
