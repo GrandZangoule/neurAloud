@@ -1278,12 +1278,6 @@ function updateTimer(ms) {
   document.getElementById("panel-timer").textContent = `${min}:${remaining.toString().padStart(2, "0")}`;
 }
 
-let isLooping = false;
-function toggleLoop() {
-  isLooping = !isLooping;
-  document.getElementById("panel-loop").classList.toggle("active", isLooping);
-}
-
 function enableDrag(el) {
   el.onmousedown = function (e) {
     e.preventDefault();
