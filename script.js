@@ -374,9 +374,9 @@ async function loadTTSEngines(context = "listen") {
   const engineDropdown = document.getElementById(`tts-engine-${context}`);
   if (!engineDropdown) return;
 
-  engineDropdown.innerHTML = "";
+  // Populate Engine Options
   const engines = ["Google", "IBM", "ResponsiveVoice", "Local"];
-
+  engineDropdown.innerHTML = "";
   engines.forEach(engine => {
     const opt = document.createElement("option");
     opt.value = engine.toLowerCase();
@@ -384,19 +384,57 @@ async function loadTTSEngines(context = "listen") {
     engineDropdown.appendChild(opt);
   });
 
-  const key = `selectedEngine-${context}`;
-  const saved = localStorage.getItem(key) || "google";
-  engineDropdown.value = saved;
-  localStorage.setItem(key, saved);
+  // Load saved engine for context
+  const engineKey = `ttsEngine-${context}`;
+  const savedEngine = localStorage.getItem(engineKey) || "google";
+  engineDropdown.value = savedEngine;
+  localStorage.setItem(engineKey, savedEngine);
 
-  // ✅ Dynamically load voices based on engine type
-  await loadVoicesDropdown(saved, context);
+  // Load voices for engine
+  const voices = await fetchVoicesByEngine(savedEngine, context);
+  updateVoiceDropdown(savedEngine, voices, context);
 
+  // Listen for engine changes
   engineDropdown.addEventListener("change", async () => {
     const selected = engineDropdown.value;
-    localStorage.setItem(key, selected);
-    await loadVoicesDropdown(selected, context);
+    localStorage.setItem(engineKey, selected);
+
+    const voices = await fetchVoicesByEngine(selected, context);
+    updateVoiceDropdown(selected, voices, context);
   });
+}
+
+
+async function fetchVoicesByEngine(engine, context) {
+  switch (engine.toLowerCase()) {
+    case "google":
+    case "local":
+      return new Promise(resolve => {
+        const localVoices = speechSynthesis.getVoices();
+        if (localVoices.length) return resolve(localVoices);
+        speechSynthesis.onvoiceschanged = () => resolve(speechSynthesis.getVoices());
+      });
+
+    case "responsivevoice":
+      return typeof responsiveVoice !== "undefined" ? responsiveVoice.getVoices() : [];
+
+    case "ibm":
+      try {
+        return await fetchIBMVoices(context); // your custom function
+      } catch (err) {
+        console.warn("❌ IBM voice fallback:", err);
+        return [
+          { name: "en-US_MichaelV3Voice", lang: "en-US" },
+          { name: "fr-FR_ReneeV3Voice", lang: "fr-FR" }
+        ];
+      }
+
+    default:
+      return [
+        { name: "Test Voice 1", lang: "en" },
+        { name: "Test Voice 2", lang: "en" }
+      ];
+  }
 }
 
 
@@ -563,7 +601,10 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
   const dropdown = document.getElementById(
     context === "capture" ? "voice-select-capture" : "voice-select"
   );
-  if (!dropdown) return;
+  if (!dropdown || !Array.isArray(voices)) {
+    console.warn(`❌ Invalid voices for ${engine} → ${context}`);
+    return;
+  }
 
   dropdown.innerHTML = "";
 
@@ -574,16 +615,22 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
     dropdown.appendChild(opt);
   });
 
-  const key = `selectedVoice-${context}`;
-  const saved = localStorage.getItem(key);
-  if (saved && [...dropdown.options].some(o => o.value === saved)) {
-    dropdown.value = saved;
-  } else if (dropdown.options.length) {
+  const voiceKey = `selectedVoice-${context}`;
+  const savedVoice = localStorage.getItem(voiceKey);
+
+  if (savedVoice && [...dropdown.options].some(o => o.value === savedVoice)) {
+    dropdown.value = savedVoice;
+  } else if (dropdown.options.length > 0) {
     dropdown.selectedIndex = 0;
-    localStorage.setItem(key, dropdown.value);
+    localStorage.setItem(voiceKey, dropdown.value);
   }
 
-  console.log(`✅ Loaded ${voices.length} voices for ${engine} → ${context}`);
+  // Save on change
+  dropdown.addEventListener("change", () => {
+    localStorage.setItem(voiceKey, dropdown.value);
+  });
+
+  console.log(`✅ Loaded ${dropdown.options.length} voices for ${engine} → ${context}`);
 }
 
 // ===========================
@@ -1030,15 +1077,21 @@ function speakWithResponsiveVoice(text, target = "listen") {
 // 🚀 Load TTS on DOM Ready
 // ===========================
 document.addEventListener("DOMContentLoaded", async () => {
-  bindTTSSelectors();
-  loadLocalVoices();
+  await loadTTSEngines("listen");
+  await loadTTSEngines("capture");
 
-  for (const context of ["listen", "capture"]) {
-    await loadTTSEngines(context);  // await this so async voice loading doesn't get skipped
+  const langDropdowns = ["listen", "capture"];
+  langDropdowns.forEach(context => {
     const langDropdown = document.getElementById(`language-select-${context}`);
     const savedLang = localStorage.getItem(`selectedLanguage-${context}`) || "en-US";
     if (langDropdown) langDropdown.value = savedLang;
-  }
+
+    if (langDropdown) {
+      langDropdown.addEventListener("change", (e) => {
+        localStorage.setItem(`selectedLanguage-${context}`, e.target.value);
+      });
+    }
+  });
 });
 
 
