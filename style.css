@@ -993,3 +993,14 @@ body[data-theme='dark'] #profile-settings select {
   border: 1px solid #ccc;
   min-width: 160px;
 }
+
+.dropdown-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.dropdown-group label {
+  margin-right: 5px;
+  font-weight: bold;
+}
