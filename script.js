@@ -485,10 +485,28 @@ function restoreLibraryItems(type) {
 // 🔁 Load All Voice Engines
 // ===============================
 function initializeTTS() {
-  loadLocalVoices();
-  setupResponsiveVoice();
-  bindTTSSelectors();
+  const tryLoad = () => {
+    const voices = speechSynthesis.getVoices();
+    if (!voices.length) {
+      console.warn("⏳ Voices not ready, retrying...");
+      setTimeout(tryLoad, 300);
+      return;
+    }
+
+    ["listen", "capture"].forEach(context => {
+      const savedEngine = localStorage.getItem(`selectedEngine-${context}`) || "google";
+      const dropdown = document.getElementById(`tts-engine-${context}`);
+      if (dropdown) dropdown.value = savedEngine;
+
+      loadVoicesDropdown(savedEngine, context);
+    });
+  };
+
+  // Try right now and fallback to event
+  tryLoad();
+  speechSynthesis.onvoiceschanged = tryLoad;
 }
+
 
 // 🔊 Load local voices (Google/OS) for both Listen & Capture
 function loadLocalVoices() {
@@ -619,26 +637,6 @@ function fetchResponsiveVoices() {
       script.onload = () => resolve(responsiveVoice.getVoices());
       document.head.appendChild(script);
     }
-  });
-}
-
-// ===========================
-// 🧩 Populate Voice Dropdowns
-// ===========================
-
-function updateVoiceDropdown(engine, voices) {
-  const listenSelect = document.getElementById("voice-select");
-  const captureSelect = document.getElementById("voice-select-capture");
-  [listenSelect, captureSelect].forEach(select => {
-    if (!select) return;
-    select.innerHTML = "";
-    voices.forEach(v => {
-      const name = v.name || v.voice || v.voiceName || v;
-      const option = document.createElement("option");
-      option.value = name;
-      option.textContent = name;
-      select.appendChild(option);
-    });
   });
 }
 
@@ -842,22 +840,6 @@ function incrementQuota(engine) {
   localStorage.setItem(usageKey, usage.toString());
 }
 
-
-// 🧩 Populate voice dropdowns
-function updateVoiceDropdown(engine, voices) {
-  const listenSelect = document.getElementById("voice-select");
-  const captureSelect = document.getElementById("voice-select-capture");
-  [listenSelect, captureSelect].forEach(select => {
-    if (!select) return;
-    select.innerHTML = "";
-    voices.forEach(v => {
-      const option = document.createElement("option");
-      option.value = v.name || v.voice || v.voiceName || v;
-      option.textContent = v.name || v.voice || v.voiceName || v;
-      select.appendChild(option);
-    });
-  });
-}
 
 // ===========================
 // 🌍 Unified Voice Engine Switcher & Real Voice Loader
@@ -1190,13 +1172,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 document.addEventListener("DOMContentLoaded", () => {
-  bindTTSSelectors();               // Binds dropdown change events
-  loadLocalVoices();               // Fallback loading for Google/local voices
-
+  bindTTSSelectors();
+  initializeTTS();                      // ← Add this
   ["listen", "capture"].forEach(ctx => {
-    loadTTSEngines(ctx);           // Populates each TTS engine dropdown and sets voices
+    loadTTSEngines(ctx);
   });
 });
+
 
 // MODULE 4A: Bulk Delete for Listen and Capture Libraries + Tooltips
 
