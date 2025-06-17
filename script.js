@@ -1274,6 +1274,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// Setup for both Listen and Capture contexts
+["listen", "capture"].forEach(context => {
+  populateLanguageDropdown(`language-select-${context}`);
+  bindLanguageDropdown(
+    `language-select-${context}`,
+    `speak-btn-${context}`,
+    `tts-input-${context}`
+  );
+});
+
 // MODULE 4A: Bulk Delete for Listen and Capture Libraries + Tooltips
 
 function addCheckboxesToLibraryItems() {
