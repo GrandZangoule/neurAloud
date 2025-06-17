@@ -291,20 +291,39 @@ async function loadLastSessionFile() {
 
 
 // Load available TTS engines for Listen & Capture
-function loadTTSEngines(context) {
+function loadTTSEngines(context = "listen") {
   const engineDropdown = document.getElementById(`tts-engine-${context}`);
+  if (!engineDropdown) {
+    console.warn(`⚠️ Engine dropdown for ${context} not found`);
+    return;
+  }
+
   engineDropdown.innerHTML = "";
+
   const engines = ["Google", "IBM", "ResponsiveVoice", "Local"];
   engines.forEach(engine => {
     const option = document.createElement("option");
-    option.value = engine;
+    option.value = engine.toLowerCase(); // lower for consistency
     option.textContent = engine;
     engineDropdown.appendChild(option);
   });
 
-  // Restore selection
-  const saved = localStorage.getItem("ttsEngine");
-  if (saved) engineDropdown.value = saved;
+  const savedKey = context === "capture" ? "ttsEngineCapture" : "ttsEngine";
+  const savedEngine = localStorage.getItem(savedKey) || "google";
+
+  // Restore saved or default
+  engineDropdown.value = savedEngine.toLowerCase();
+  localStorage.setItem(savedKey, savedEngine.toLowerCase());
+
+  // Load voices for default engine
+  loadVoicesDropdown(savedEngine.toLowerCase(), context);
+
+  // On change: update storage and reload voices
+  engineDropdown.addEventListener("change", () => {
+    const selectedEngine = engineDropdown.value;
+    localStorage.setItem(savedKey, selectedEngine);
+    loadVoicesDropdown(selectedEngine, context);
+  });
 }
 
 // Render & Restore Listen and Capture Library items
