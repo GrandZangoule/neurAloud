@@ -300,7 +300,7 @@ async function loadLastSessionFile() {
 
 
 // ✅ Dynamically load TTS voices per engine and context
-aasync function loadVoicesDropdown(engine = "google", context = "listen") {
+async function loadVoicesDropdown(engine = "google", context = "listen") {
   const dropdown = document.getElementById(
     context === "capture" ? "voice-select-capture" : "voice-select"
   );
