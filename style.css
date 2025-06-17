@@ -974,3 +974,22 @@ body[data-theme='dark'] #profile-settings select {
   color: #fff;
   border: 1px solid #555;
 }
+
+.tts-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.tts-controls label {
+  font-weight: bold;
+}
+
+.tts-controls select {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  min-width: 160px;
+}
