@@ -1,53 +1,50 @@
 {
   "en-US": {
-    "coqui": [
-      "coqui-tts/en-us-kathleen",
-      "coqui-tts/en-us-ryan"
-    ],
-    "mozilla": [
-      "mozilla/tts-en-us-male1",
-      "mozilla/tts-en-us-female1"
-    ]
+    "engine": "CoquiTTS",
+    "model": "tts_models/en/ljspeech/tacotron2-DDC",
+    "language": "en-US",
+    "name": "en-US - CoquiTTS"
+  },
+  "de-DE": {
+    "engine": "CoquiTTS",
+    "model": "tts_models/de/thorsten/tacotron2-DCA",
+    "language": "de-DE",
+    "name": "de-DE - CoquiTTS"
   },
   "fr-FR": {
-    "coqui": [
-      "coqui-tts/fr-fr-maelle"
-    ],
-    "mozilla": [
-      "mozilla/tts-fr-fr-henri"
-    ]
-  },
-  "sw-KE": {
-    "coqui": [
-      "coqui-tts/sw-ke-nyasha"
-    ]
+    "engine": "CoquiTTS",
+    "model": "tts_models/fr/mai/tacotron2-DDC",
+    "language": "fr-FR",
+    "name": "fr-FR - CoquiTTS"
   },
   "es-ES": {
-    "coqui": [
-      "coqui-tts/es-es-sofia"
-    ],
-    "mozilla": [
-      "mozilla/tts-es-es-manuel"
-    ]
+    "engine": "CoquiTTS",
+    "model": "tts_models/es/mai/tacotron2-DDC",
+    "language": "es-ES",
+    "name": "es-ES - CoquiTTS"
   },
   "hi-IN": {
-    "mozilla": [
-      "mozilla/tts-hi-in-female1"
-    ]
+    "engine": "CoquiTTS",
+    "model": "tts_models/hi/cv/vakyansh",
+    "language": "hi-IN",
+    "name": "hi-IN - CoquiTTS"
   },
-  "ar-SA": {
-    "mozilla": [
-      "mozilla/tts-ar-sa-ali"
-    ]
+  "sw-KE": {
+    "engine": "Placeholder",
+    "model": "local/swahili-mock",
+    "language": "sw-KE",
+    "name": "sw-KE - Placeholder"
   },
   "ln-CD": {
-    "custom": [
-      "manual/tts-ln-cd-baseline"
-    ]
+    "engine": "Placeholder",
+    "model": "local/lingala-mock",
+    "language": "ln-CD",
+    "name": "ln-CD - Placeholder"
   },
   "dou-CM": {
-    "custom": [
-      "manual/tts-dou-cm-alpha"
-    ]
+    "engine": "Placeholder",
+    "model": "local/douala-mock",
+    "language": "dou-CM",
+    "name": "dou-CM - Placeholder"
   }
 }
