@@ -472,11 +472,13 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
   if (!dropdown) return;
 
   dropdown.innerHTML = "";
+
   if (!Array.isArray(voices) || voices.length === 0) {
     console.warn(`⚠️ No voices returned for ${engine} → ${context}`);
     return;
   }
 
+  // Add voices
   voices.forEach(v => {
     const option = document.createElement("option");
     const value = v.name || v.voice || v.id || v;
@@ -486,16 +488,25 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
     dropdown.appendChild(option);
   });
 
-  // Restore persisted selection if available
-  const saved = localStorage.getItem(`voice-${context}`);
-  if (saved) dropdown.value = saved;
+  // Key to track per-engine voice preference
+  const voiceKey = `voice-${engine.toLowerCase()}-${context}`;
+  const savedVoice = localStorage.getItem(voiceKey);
 
+  if (savedVoice && [...dropdown.options].some(opt => opt.value === savedVoice)) {
+    dropdown.value = savedVoice;
+  } else {
+    dropdown.selectedIndex = 0;
+    localStorage.setItem(voiceKey, dropdown.value); // Store default as fallback
+  }
+
+  // Update voice preference on change
   dropdown.addEventListener("change", () => {
-    localStorage.setItem(`voice-${context}`, dropdown.value);
+    localStorage.setItem(voiceKey, dropdown.value);
   });
 
   console.log(`✅ Voice dropdown updated for ${engine} → ${context}`);
 }
+
 
 function loadVoicesForEngine(engine, context = "listen") {
   const e = engine.toLowerCase();
