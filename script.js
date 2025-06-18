@@ -394,34 +394,31 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
 
 
 function updateVoiceDropdown(engine, voices, context = "listen") {
-  const dropdown = document.getElementById(
-    context === "capture" ? "voice-select-capture" : "voice-select"
-  );
-  if (!dropdown || !Array.isArray(voices)) return;
+  const dropdown = document.getElementById(`voice-${context}`);
+  if (!dropdown) return;
 
   dropdown.innerHTML = "";
 
-  voices.forEach(v => {
-    const opt = document.createElement("option");
-    const name = v.name || v.voice || v.voiceName || v;
-    opt.value = name;
-    opt.textContent = `${name} (${v.lang || "?"})`;
-    dropdown.appendChild(opt);
-  });
-
-  const key = `selectedVoice-${context}`;
-  const saved = localStorage.getItem(key);
-
-  if (saved && [...dropdown.options].some(o => o.value === saved)) {
-    dropdown.value = saved;
-  } else if (dropdown.options.length) {
-    dropdown.selectedIndex = 0;
-    localStorage.setItem(key, dropdown.value);
+  if (!voices || voices.length === 0) {
+    console.warn(`⚠️ No voices returned for ${engine} → ${context}`);
+    return;
   }
+
+  voices.forEach(v => {
+    const option = document.createElement("option");
+
+    // Normalize IBM, Google, ResponsiveVoice, etc.
+    const name = v.name || v.voice || v.id || "unknown";
+    const label = v.displayName || v.description || v.name || v.voice || v.id || name;
+
+    option.value = name;
+    option.textContent = label;
+
+    dropdown.appendChild(option);
+  });
 
   console.log(`✅ Voice dropdown updated for ${engine} → ${context}`);
 }
-
 
 
 let responsiveVoiceLoaded = false;
