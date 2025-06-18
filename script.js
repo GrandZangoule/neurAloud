@@ -423,35 +423,52 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
 
 let responsiveVoiceLoaded = false;
 
-function setupResponsiveVoice(context = "listen") {
-  if (responsiveVoiceLoaded && typeof responsiveVoice !== "undefined") {
-    const voices = responsiveVoice.getVoices();
-    updateVoiceDropdown("responsiveVoice", voices, context);
-    return;
-  }
+function setupResponsiveVoice() {
+  if (responsiveVoiceLoaded) return;
+  responsiveVoiceLoaded = true;
 
   const script = document.createElement("script");
   script.src = "https://code.responsivevoice.org/responsivevoice.js?key=4KSLPhgK";
-
   script.onload = () => {
-    if (typeof responsiveVoice === "undefined") {
-      console.warn("❌ ResponsiveVoice loaded, but global object missing.");
-      return;
-    }
-
-    responsiveVoiceLoaded = true;
-    const voices = responsiveVoice.getVoices();
-    updateVoiceDropdown("responsiveVoice", voices, context);
-    console.log(`✅ ResponsiveVoice loaded (${voices.length} voices) for ${context}`);
+    const rvVoices = responsiveVoice.getVoices();
+    updateVoiceDropdown("responsiveVoice", rvVoices, "capture");
+    updateVoiceDropdown("responsiveVoice", rvVoices, "listen");
+    console.log("✅ ResponsiveVoice loaded:", rvVoices.length, "voices");
   };
-
-  script.onerror = () => {
-    console.error("❌ Failed to load ResponsiveVoice SDK.");
-  };
-
   document.body.appendChild(script);
 }
+✅ 2. Fix updateVoiceDropdown() to Handle All Voice Formats
+js
+Copy
+Edit
+function updateVoiceDropdown(engine, voices, context = "listen") {
+  const dropdown = document.getElementById(`voice-${context}`);
+  if (!dropdown) {
+    console.warn(`⚠️ Dropdown not found for ${context}`);
+    return;
+  }
 
+  dropdown.innerHTML = "";
+
+  if (!Array.isArray(voices) || voices.length === 0) {
+    console.warn(`⚠️ No voices returned for ${engine} → ${context}`);
+    return;
+  }
+
+  voices.forEach(v => {
+    const option = document.createElement("option");
+
+    const value = v.name || v.voice || v.id || v; // Fallbacks for IBM, Google, ResponsiveVoice, Local
+    const label = v.description || v.displayName || v.name || v.voice || value;
+
+    option.value = value;
+    option.textContent = label;
+
+    dropdown.appendChild(option);
+  });
+
+  console.log(`✅ Voice dropdown updated for ${engine} → ${context}`);
+}
 // ✅ Setup & persist engine dropdown, then load voices
 async function loadTTSEngines(context = "listen") {
   const engineDropdown = document.getElementById(`tts-engine-${context}`);
