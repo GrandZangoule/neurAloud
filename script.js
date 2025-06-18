@@ -492,16 +492,21 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
   const voiceKey = `voice-${engine.toLowerCase()}-${context}`;
   const savedVoice = localStorage.getItem(voiceKey);
 
+  // Restore saved voice if it's in the current list
   if (savedVoice && [...dropdown.options].some(opt => opt.value === savedVoice)) {
     dropdown.value = savedVoice;
   } else {
     dropdown.selectedIndex = 0;
-    localStorage.setItem(voiceKey, dropdown.value); // Store default as fallback
+    localStorage.setItem(voiceKey, dropdown.value); // fallback to first
   }
 
-  // Update voice preference on change
-  dropdown.addEventListener("change", () => {
-    localStorage.setItem(voiceKey, dropdown.value);
+  // Prevent multiple event listeners by clearing any existing ones
+  const newDropdown = dropdown.cloneNode(true);
+  dropdown.parentNode.replaceChild(newDropdown, dropdown);
+
+  // Save preference on change
+  newDropdown.addEventListener("change", () => {
+    localStorage.setItem(voiceKey, newDropdown.value);
   });
 
   console.log(`✅ Voice dropdown updated for ${engine} → ${context}`);
@@ -1161,29 +1166,6 @@ function speakWithResponsiveVoice(text, target = "listen") {
   responsiveVoice.speak(text, selectedVoice);
 }
 
-// Always keep this below all the above functions.
-// ===========================
-// 🚀 Load TTS on DOM Ready
-// ===========================
-document.addEventListener("DOMContentLoaded", async () => {
-  await loadTTSEngines("listen");
-  await loadTTSEngines("capture");
-
-  const langDropdowns = ["listen", "capture"];
-  langDropdowns.forEach(context => {
-    const langDropdown = document.getElementById(`language-select-${context}`);
-    const savedLang = localStorage.getItem(`selectedLanguage-${context}`) || "en-US";
-    if (langDropdown) langDropdown.value = savedLang;
-
-    if (langDropdown) {
-      langDropdown.addEventListener("change", (e) => {
-        localStorage.setItem(`selectedLanguage-${context}`, e.target.value);
-      });
-    }
-  });
-});
-
-
 // ===========================
 // 🌍 Dynamic Language Dropdown Setup
 // ===========================
@@ -1333,23 +1315,6 @@ function isValidFile(file) {
   return allowedExtensions.includes(fileExtension);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const uploadFilesInput = document.getElementById("upload-files-btn");
-  if (uploadFilesInput) {
-    uploadFilesInput.addEventListener("change", (event) => {
-      const files = Array.from(event.target.files);
-      const validFiles = files.filter(isValidFile);
-
-      if (validFiles.length !== files.length) {
-        alert("Some files were skipped due to unsupported types.");
-      }
-
-      validFiles.forEach(file => {
-        saveFileToLibrary(file);
-      });
-    });
-  }
-});
 
 // Setup for both Listen and Capture contexts
 ["listen", "capture"].forEach(context => {
@@ -1359,22 +1324,6 @@ document.addEventListener("DOMContentLoaded", () => {
     `speak-btn-${context}`,
     `tts-input-${context}`
   );
-});
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  bindTTSSelectors();
-
-  ["listen", "capture"].forEach(context => {
-    const savedEngine = localStorage.getItem(`selectedEngine-${context}`) || "google";
-    const dropdown = document.getElementById(`tts-engine-${context}`);
-    if (dropdown) dropdown.value = savedEngine;
-    if (savedEngine.toLowerCase() === "responsivevoice") {
-      setupResponsiveVoice(context);
-    } else {
-      loadVoicesDropdown(savedEngine, context);
-    }
-  });
 });
 
 
@@ -1414,12 +1363,6 @@ function setupBulkDeleteButton(btnId, containerId) {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  addCheckboxesToLibraryItems();
-  setupBulkDeleteButton("bulk-delete-listen-btn", "listen-library");
-  setupBulkDeleteButton("bulk-delete-capture-btn", "capture-library");
-});
-
 function applyTooltips() {
   const tooltips = {
     "upload-files-btn": "Upload files (PDF, DOCX, TXT, EPUB, PPTX, XLSX...)",
@@ -1436,7 +1379,6 @@ function applyTooltips() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", applyTooltips);
 
 // ===============================
 // ✅ MODULE 4B: Enhanced 'Choose File' Handling with IndexedDB
@@ -1513,12 +1455,6 @@ function showExtractedText(text) {
   logMessage("✅ Restored file with " + sentences.length + " sentences.");
 }
 
-// 4️⃣ Patch DOMContentLoaded to run restore
-
-document.addEventListener("DOMContentLoaded", () => {
-  if (db) restoreLastFileFromIndexedDB();
-});
-
 // ===============================
 // MODULE 4C – Save to Listen Library with 100 Limit
 // ===============================
@@ -1579,40 +1515,6 @@ async function saveFileToLibrary() {
 // ✅ MODULE 5: Upload Filtering, Bulk Delete, and Tooltips
 // ===========================================================
 
-// 1️⃣ FILE TYPE FILTERING ON UPLOAD (Enhanced)
-document.addEventListener("DOMContentLoaded", async () => {
-  const acceptedTypes = [
-    ".pdf", ".txt", ".docx", ".epub", ".pptx", ".doc",
-    ".xlsx", ".xlsm", ".xls", ".xltx", ".xltm",
-    ".csv", ".rtf", ".msg", ".sql",
-    ".webp", ".png", ".jpeg", ".jpg", ".bmp", ".tif", ".eps", ".tmp"
-  ].join(",");
-
-  const fileInputs = [
-    document.getElementById("file-upload"),
-    document.getElementById("upload-multiple-btn"),
-    document.getElementById("upload-files-btn")
-  ];
-
-  fileInputs.forEach(input => {
-    if (input) {
-      input.setAttribute("accept", acceptedTypes);
-      input.setAttribute("multiple", "multiple");
-    }
-  });
-
-  // ✅ Initialize IndexedDB and restore last file if any
-  await initDB();
-  await loadLastSessionFile();
-
-  // ✅ Wire up Save to Library button AFTER DOM loads
-  const saveBtn = document.getElementById("save-to-library-btn");
-  if (saveBtn) {
-    saveBtn.addEventListener("click", saveFileToLibrary);
-  }
-});
-
-
 // 2️⃣ BULK DELETE FROM LISTEN LIBRARY
 function initializeBulkDeleteFeature() {
       const deleteButton = document.getElementById("delete-selected-listen-btn");
@@ -1654,12 +1556,6 @@ function addCheckboxesToLibrary() {
       });
 }
 
-// Initialize both on DOMContentLoaded
-document.addEventListener("DOMContentLoaded", () => {
-      initializeBulkDeleteFeature();
-      addCheckboxesToLibrary();
-      setupUploadMultipleHandler();
-});
 
 // 3️⃣ TOOLTIP SYSTEM FOR HOVER HINTS
 function addTooltips() {
@@ -1690,7 +1586,6 @@ function addTooltips() {
       });
 }
 
-document.addEventListener("DOMContentLoaded", addTooltips);
 
 // 4️⃣ UPLOAD MULTIPLE HANDLER
 function setupUploadMultipleHandler() {
@@ -2090,9 +1985,6 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 
-// Run after DOM is ready
-//no longer needed      document.addEventListener("DOMContentLoaded", initializeContextMenus);
-
 // =======================
 // 📦 Module 7: Playlist Enhancements and Playback Features
 // =======================
@@ -2331,30 +2223,6 @@ function toggleDeveloperMode() {
   applyProfileSettings(settings);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const settings = loadProfileSettings();
-  applyProfileSettings(settings);
-
-  const saveBtn = document.getElementById("save-profile-btn");
-  if (saveBtn) {
-    saveBtn.addEventListener("click", () => {
-      const settings = {
-        theme: document.querySelector("input[name='theme']:checked")?.value || "light",
-        ttsRate: parseFloat(document.getElementById("rate").value),
-        ttsPitch: parseFloat(document.getElementById("pitch").value),
-        selectedVoice: document.getElementById("voice-select").value,
-        autoResume: document.getElementById("auto-resume-toggle").checked,
-        notificationTime: document.getElementById("notification-time").value || "18:30",
-        language: document.getElementById("language-select").value,
-        translationLanguage: document.getElementById("translation-select").value,
-        developerMode: document.body.dataset.developer === "true"
-      };
-      saveProfileSettings(settings);
-      applyProfileSettings(settings);
-      alert("✅ Profile settings saved.");
-    });
-  }
-});
 
 // ======================
 // 📦 MODULE 9: Ads Integration and Management (Enhanced)
@@ -2382,11 +2250,6 @@ const displayConsentModal = () => {
   }
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  displayConsentModal();
-  initAds();
-});
-
 document.addEventListener("keydown", e => {
   if (e.ctrlKey && e.key === "d") toggleAdDebug();
 });
@@ -2400,11 +2263,6 @@ const toggleAdDebug = () => {
 // ========================
 // 📦 Module 10: Floating Playback Panel (Cleaned)
 // ========================
-
-document.addEventListener("DOMContentLoaded", () => {
-  initFloatingPanel();
-});
-
 function initFloatingPanel() {
   const panel = document.createElement("div");
   panel.id = "floating-panel";
@@ -2691,4 +2549,121 @@ document.getElementById("translate-btn")?.addEventListener("click", () => {
   const text = document.getElementById("text-display")?.textContent.trim();
   const toLang = document.getElementById("translation-lang")?.value || "en";
   if (text) translateWithPreview(text, "auto", toLang);
+});
+
+document.addEventListener("DOMContentLoaded", async () => {
+  // === Init DB and Restore File ===
+  await initDB();
+  await loadLastSessionFile();
+  if (db) restoreLastFileFromIndexedDB();
+
+  // === TTS Engines and Voice Dropdowns ===
+  await loadTTSEngines("listen");
+  await loadTTSEngines("capture");
+
+  bindTTSSelectors();
+  ["listen", "capture"].forEach(context => {
+    const savedEngine = localStorage.getItem(`selectedEngine-${context}`) || "google";
+    const dropdown = document.getElementById(`tts-engine-${context}`);
+    if (dropdown) dropdown.value = savedEngine;
+    if (savedEngine.toLowerCase() === "responsivevoice") {
+      setupResponsiveVoice(context);
+    } else {
+      loadVoicesDropdown(savedEngine, context);
+    }
+  });
+
+  // === Restore Language Selections ===
+  const langDropdowns = ["listen", "capture"];
+  langDropdowns.forEach(context => {
+    const langDropdown = document.getElementById(`language-select-${context}`);
+    const savedLang = localStorage.getItem(`selectedLanguage-${context}`) || "en-US";
+    if (langDropdown) langDropdown.value = savedLang;
+    if (langDropdown) {
+      langDropdown.addEventListener("change", (e) => {
+        localStorage.setItem(`selectedLanguage-${context}`, e.target.value);
+      });
+    }
+  });
+
+  // === Upload Acceptable File Types ===
+  const acceptedTypes = [
+    ".pdf", ".txt", ".docx", ".epub", ".pptx", ".doc",
+    ".xlsx", ".xlsm", ".xls", ".xltx", ".xltm",
+    ".csv", ".rtf", ".msg", ".sql",
+    ".webp", ".png", ".jpeg", ".jpg", ".bmp", ".tif", ".eps", ".tmp"
+  ].join(",");
+
+  const fileInputs = [
+    document.getElementById("file-upload"),
+    document.getElementById("upload-multiple-btn"),
+    document.getElementById("upload-files-btn")
+  ];
+  fileInputs.forEach(input => {
+    if (input) {
+      input.setAttribute("accept", acceptedTypes);
+      input.setAttribute("multiple", "multiple");
+    }
+  });
+
+  // === Upload Handler for #upload-files-btn ===
+  const uploadFilesInput = document.getElementById("upload-files-btn");
+  if (uploadFilesInput) {
+    uploadFilesInput.addEventListener("change", (event) => {
+      const files = Array.from(event.target.files);
+      const validFiles = files.filter(isValidFile);
+      if (validFiles.length !== files.length) {
+        alert("Some files were skipped due to unsupported types.");
+      }
+      validFiles.forEach(file => {
+        saveFileToLibrary(file);
+      });
+    });
+  }
+
+  // === Save to Library button ===
+  const saveBtn = document.getElementById("save-to-library-btn");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", saveFileToLibrary);
+  }
+
+  // === Bulk Delete & Checkbox Setup ===
+  initializeBulkDeleteFeature();
+  addCheckboxesToLibrary();
+  addCheckboxesToLibraryItems();
+  setupUploadMultipleHandler();
+  setupBulkDeleteButton("bulk-delete-listen-btn", "listen-library");
+  setupBulkDeleteButton("bulk-delete-capture-btn", "capture-library");
+
+  // === Tooltips & Floating Panel ===
+  applyTooltips();
+  addTooltips();
+  initFloatingPanel();
+
+  // === Profile Settings ===
+  const settings = loadProfileSettings();
+  applyProfileSettings(settings);
+  const saveProfileBtn = document.getElementById("save-profile-btn");
+  if (saveProfileBtn) {
+    saveProfileBtn.addEventListener("click", () => {
+      const settings = {
+        theme: document.querySelector("input[name='theme']:checked")?.value || "light",
+        ttsRate: parseFloat(document.getElementById("rate").value),
+        ttsPitch: parseFloat(document.getElementById("pitch").value),
+        selectedVoice: document.getElementById("voice-select").value,
+        autoResume: document.getElementById("auto-resume-toggle").checked,
+        notificationTime: document.getElementById("notification-time").value || "18:30",
+        language: document.getElementById("language-select").value,
+        translationLanguage: document.getElementById("translation-select").value,
+        developerMode: document.body.dataset.developer === "true"
+      };
+      saveProfileSettings(settings);
+      applyProfileSettings(settings);
+      alert("✅ Profile settings saved.");
+    });
+  }
+
+  // === Ads Consent & Display ===
+  displayConsentModal();
+  initAds();
 });
