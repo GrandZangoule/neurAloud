@@ -23,6 +23,10 @@ let sentences = [];
 let currentSentenceIndex = 0;
 let lastFileName = "";
 
+let googleVoices = [];
+let ibmVoices = [];
+let localVoices = [];
+let responsiveVoices = [];
 // ===============================
 // 🔊 Voice Engine Globals & Flags
 // ===============================
@@ -138,6 +142,7 @@ const bindings = {
   summaryText: document.getElementById("summary-text") ?? null,
   summaryOutput: document.getElementById("summary-output") ?? null,
 };
+
 
 // Utility logging function
 function logMessage(msg) {
@@ -392,35 +397,6 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
   }
 }
 
-
-function updateVoiceDropdown(engine, voices, context = "listen") {
-  const dropdown = document.getElementById(`voice-${context}`);
-  if (!dropdown) return;
-
-  dropdown.innerHTML = "";
-
-  if (!voices || voices.length === 0) {
-    console.warn(`⚠️ No voices returned for ${engine} → ${context}`);
-    return;
-  }
-
-  voices.forEach(v => {
-    const option = document.createElement("option");
-
-    // Normalize IBM, Google, ResponsiveVoice, etc.
-    const name = v.name || v.voice || v.id || "unknown";
-    const label = v.displayName || v.description || v.name || v.voice || v.id || name;
-
-    option.value = name;
-    option.textContent = label;
-
-    dropdown.appendChild(option);
-  });
-
-  console.log(`✅ Voice dropdown updated for ${engine} → ${context}`);
-}
-
-
 let responsiveVoiceLoaded = false;
 
 function setupResponsiveVoice() {
@@ -466,6 +442,44 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
   });
 
   console.log(`✅ Voice dropdown updated for ${engine} → ${context}`);
+}
+
+// Step 3: Load voices based on selected engine
+function loadVoicesForEngine(engine, context = "listen") {
+  if (engine === "google") {
+    updateVoiceDropdown("google", googleVoices, context);
+  } else if (engine === "ibm") {
+    updateVoiceDropdown("ibm", ibmVoices, context);
+  } else if (engine === "responsiveVoice") {
+    responsiveVoices = responsiveVoice?.getVoices?.() || [];
+    updateVoiceDropdown("responsiveVoice", responsiveVoices, context);
+  } else if (engine === "local") {
+    updateVoiceDropdown("local", localVoices, context);
+  } else {
+    console.warn(`⚠️ Unknown TTS engine: ${engine}`);
+  }
+}
+
+
+function loadInitialVoices() {
+  const engineListen = document.getElementById("tts-engine-listen").value;
+  const engineCapture = document.getElementById("tts-engine-capture").value;
+
+  loadVoicesForEngine(engineListen, "listen");
+  loadVoicesForEngine(engineCapture, "capture");
+
+  setTimeout(() => {
+    const savedVoiceListen = localStorage.getItem("voice-listen");
+    const savedVoiceCapture = localStorage.getItem("voice-capture");
+
+    if (savedVoiceListen) {
+      document.getElementById("voice-listen").value = savedVoiceListen;
+    }
+
+    if (savedVoiceCapture) {
+      document.getElementById("voice-capture").value = savedVoiceCapture;
+    }
+  }, 200); // Delay ensures dropdowns are populated
 }
 
 
@@ -1897,10 +1911,79 @@ function playItem(itemId, onComplete = null) {
 
 
 /* --- Initialization --- */
+// ==============================
+// 🧩 Utility: Persist Any Selection
+// ==============================
+function persistSelection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  // Restore saved value
+  const saved = localStorage.getItem(id);
+  if (saved !== null) {
+    if (el.type === "checkbox") {
+      el.checked = saved === "true";
+    } else {
+      el.value = saved;
+    }
+  }
+
+  // Save on change
+  el.addEventListener("change", () => {
+    const val = el.type === "checkbox" ? el.checked : el.value;
+    localStorage.setItem(id, val);
+  });
+
+  // Also persist on input (for sliders)
+  el.addEventListener("input", () => {
+    if (el.type === "range") {
+      localStorage.setItem(id, el.value);
+    }
+  });
+}
+
+// ==============================
+// 📦 Main Page Load Logic
+// ==============================
 window.addEventListener("DOMContentLoaded", () => {
   favorites = JSON.parse(localStorage.getItem("favorites")) || [];
   renderFavorites();
   loadAutoResumeSetting();
+
+  // Persist all user selections
+  [
+    "tts-engine-listen",
+    "tts-engine-capture",
+    "voice-listen",
+    "voice-capture",
+    "rate-slider",
+    "pitch-slider",
+    "auto-resume-toggle",
+    "loop-toggle",
+    "translation-lang"
+  ].forEach(persistSelection);
+
+  // Engine dropdowns should still update voice list dynamically
+  document.getElementById("tts-engine-listen").addEventListener("change", e => {
+    loadVoicesForEngine(e.target.value, "listen");
+  });
+
+  document.getElementById("tts-engine-capture").addEventListener("change", e => {
+    loadVoicesForEngine(e.target.value, "capture");
+  });
+
+  // Load local voices
+  localVoices = speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged = () => {
+    localVoices = speechSynthesis.getVoices();
+    loadInitialVoices();
+  };
+
+  if (typeof responsiveVoice !== "undefined") {
+    responsiveVoices = responsiveVoice.getVoices() || [];
+  }
+
+  loadInitialVoices();
 });
 
 
