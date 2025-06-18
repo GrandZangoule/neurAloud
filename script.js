@@ -23,10 +23,21 @@ let sentences = [];
 let currentSentenceIndex = 0;
 let lastFileName = "";
 
-let googleVoices = [];
-let ibmVoices = [];
+//let googleVoices = [];
+//let ibmVoices = [];
 let localVoices = [];
 let responsiveVoices = [];
+
+// Example placeholders — replace with actual async voice loading if needed
+googleVoices = [
+  { name: "en-US-Standard-B", description: "Google US Male" },
+  { name: "en-US-Standard-C", description: "Google US Female" }
+];
+
+ibmVoices = [
+  { name: "en-US_AllisonV3Voice", description: "IBM Allison (US Female)" },
+  { name: "en-GB_KateV3Voice", description: "IBM Kate (UK Female)" }
+];
 // ===============================
 // 🔊 Voice Engine Globals & Flags
 // ===============================
@@ -447,9 +458,17 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
 // Step 3: Load voices based on selected engine
 function loadVoicesForEngine(engine, context = "listen") {
   if (engine === "google") {
-    updateVoiceDropdown("google", googleVoices, context);
+    if (googleVoices.length > 0) {
+      updateVoiceDropdown("google", googleVoices, context);
+    } else {
+      console.warn(`⚠️ No voices returned for google → ${context}`);
+    }
   } else if (engine === "ibm") {
-    updateVoiceDropdown("ibm", ibmVoices, context);
+    if (ibmVoices.length > 0) {
+      updateVoiceDropdown("ibm", ibmVoices, context);
+    } else {
+      console.warn(`⚠️ No voices returned for ibm → ${context}`);
+    }
   } else if (engine === "responsiveVoice") {
     responsiveVoices = responsiveVoice?.getVoices?.() || [];
     updateVoiceDropdown("responsiveVoice", responsiveVoices, context);
