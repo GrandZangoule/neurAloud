@@ -506,24 +506,29 @@
 </div>
 
 <div id="agent-panel" class="agent-panel-hidden">
+<span onclick="hideAgentPanel()" style="position:absolute; top:6px; right:10px; font-size:16px; cursor:pointer; font-weight:bold;">✖</span>
+
   
   <div class="agent-body">
 
-<div class="agent-close-top"><span class="agent-close-btn" onclick="hideAgentPanel()">×</span></div><div class="agent-top-bar"><div class="agent-avatar-wrapper"><img alt="Agent Avatar" class="agent-avatar" src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png"/></div><div class="agent-controls-wrapper">
-  <span class="agent-close-btn" onclick="hideAgentPanel()">×</span>
+<div class="agent-close-top"></div><div class="agent-top-bar"><div class="agent-avatar-wrapper"><img alt="Agent Avatar" class="agent-avatar" src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png"/></div><div class="agent-controls-wrapper">
+  
 </div>
 
     
 
   <button onclick="startListening()">🎤 Speak</button>
-  <button onclick="playLastResponse()">▶️ Play Last Response</button>
+  <button onclick="playLastResponse()">▶️ Play</button>
   <label style="font-size: 13px; margin-left: 8px;">
     <input type="checkbox" id="autoplay-response" />
-    🔊 Auto Play Response
+    🔊 Autoplay
   </label>
 </div>
     <div id="agent-chat-log" class="agent-chat-log"></div>
-    <input id="agent-input" type="text" placeholder="Ask something..." onkeydown="if(event.key==='Enter') sendAgentQuery()"/>
+    
+<div id="agent-response-box" style="border: 1px solid #ccc; background: #f2f2f2; padding: 6px; min-height: 150px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; text-align: left;"></div>
+<input id="agent-input"
+ type="text" placeholder="Ask something..." onkeydown="if(event.key==='Enter') sendAgentQuery()"/>
     <button onclick="sendAgentQuery()">Send</button>
 
 
@@ -588,6 +593,17 @@
     text-align: center;
   }
   .agent-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin: 0;
+}
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -620,6 +636,10 @@
 }
 
 .agent-close-top {
+  padding-top: 2px;
+  margin-top: 0;
+}
+  padding-top: 4px;
   text-align: right;
   margin-top: 5px;
   margin-right: 8px;
@@ -629,12 +649,35 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+}
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 6px 0;
+  gap: 10px;
+}
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin: 4px 0 10px 0;
 }
 .agent-avatar-wrapper {
   flex: 0 0 auto;
 }
 .agent-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin: 0;
+}
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -668,7 +711,7 @@
 
     const response = getAgentResponse(question);
     lastAgentResponse = response;
-    log.innerHTML += `<div><strong>Agent:</strong> ${response}</div>`;
+    document.getElementById('agent-response-box').innerText = response;
     log.scrollTop = log.scrollHeight;
     input.value = "";
   }
@@ -747,7 +790,7 @@ function speakResponse(text) {
     log.innerHTML += `<div><strong>You:</strong> ${question}</div>`;
     const response = getAgentResponse(question);
     lastAgentResponse = response;
-    log.innerHTML += `<div><strong>Agent:</strong> ${response}</div>`;
+    document.getElementById('agent-response-box').innerText = response;
     log.scrollTop = log.scrollHeight;
     input.value = "";
 
@@ -756,5 +799,508 @@ function speakResponse(text) {
     }
   };
 </script>
+
+
+
+
+<!-- 🎧 Advanced Vertical Floating Panel -->
+<button class="floating-button" id="panel-play">▶️</button>
+  <hr/>
+  <button class="floating-button" title="Capture" onclick="navigate('capture')">📸</button>
+  <button class="floating-button" title="Bookmark" onclick="alert('Bookmark saved!')">🔖</button>
+</div>
+
+<style>
+  .vertical-panel {
+    position: fixed;
+    top: 40%;
+    right: 10px;
+    width: 60px;
+    background-color: #1e1e1e;
+    border-radius: 30px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    transition: width 0.3s ease, height 0.3s ease;
+    color: white;
+  }
+
+  .vertical-panel.expanded {
+    width: 220px;
+    height: auto;
+    padding: 12px;
+  }
+
+  .floating-timer {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  .floating-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    margin: 8px 0;
+    cursor: pointer;
+  }
+
+  .floating-button:hover {
+    color: #8faaff;
+  }
+
+  .vertical-panel hr {
+    width: 40%;
+    border: 0.5px solid #444;
+  }
+</style>
+
+<script>
+  function expandFloatingPanel() {
+    const panel = document.getElementById("floating-panel");
+    panel.classList.toggle("expanded");
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById('floating-panel').classList.add('collapsed');
+  });
+</script>
+
+
+<!-- 🎧 Fully Enhanced Vertical Floating Panel -->
+<button class="floating-button" onclick="document.getElementById('play-btn').click()">▶️</button>
+  <hr/>
+  <button class="floating-button" title="Capture" onclick="navigate('capture')">📸</button>
+  <button class="floating-button" title="Bookmark" onclick="alert('Bookmark saved!')">🔖</button>
+</div>
+
+<!-- 🔘 Minimized Panel -->
+<div id="floating-minimized" class="floating-minimized" onclick="restoreFloatingPanel()" title="Undock">
+  🎧
+</div>
+
+<style>
+  .vertical-panel {
+    position: fixed;
+    top: 40%;
+    right: 10px;
+    width: 60px;
+    background-color: #1e1e1e;
+    border-radius: 30px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    transition: width 0.3s ease, height 0.3s ease;
+    color: white;
+  }
+
+  .vertical-panel.expanded {
+    width: 220px;
+    padding: 12px;
+  }
+
+  .floating-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 10px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .floating-timer {
+    font-size: 16px;
+  }
+
+  .floating-minimize {
+    font-size: 18px;
+    cursor: pointer;
+    color: white;
+  }
+
+  .floating-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    margin: 8px 0;
+    cursor: pointer;
+  }
+
+  .floating-button:hover {
+    color: #8faaff;
+  }
+
+  .vertical-panel hr {
+    width: 40%;
+    border: 0.5px solid #444;
+  }
+
+  .floating-minimized {
+    display: none;
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    width: 60px;
+    height: 40px;
+    background-color: #333;
+    border-radius: 20px;
+    text-align: center;
+    line-height: 40px;
+    font-size: 20px;
+    color: white;
+    box-shadow: 0 0 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 9998;
+    transition: transform 0.3s ease;
+  }
+
+  .floating-minimized:hover::after {
+    content: "Undock";
+    position: absolute;
+    top: -28px;
+    right: 0;
+    background: #444;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+</style>
+
+<script>
+  function minimizeFloatingPanel() {
+    document.getElementById("floating-panel").style.display = "none";
+    document.getElementById("floating-minimized").style.display = "block";
+  }
+
+  function restoreFloatingPanel() {
+    document.getElementById("floating-panel").style.display = "flex";
+    document.getElementById("floating-minimized").style.display = "none";
+  }
+
+  function hoverDock(show) {
+    const minimized = document.getElementById("floating-minimized");
+    minimized.title = show ? "Undock" : "";
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById('floating-panel').style.display = 'flex';
+    document.getElementById('floating-minimized').style.display = 'none';
+  });
+</script>
+
+
+<!-- 🎧 Unified Floating Playback Station -->
+<div id="floating-station" class="station-mode-normal" onmouseenter="hoverDock(true)" onmouseleave="hoverDock(false)">
+  <div class="station-header">
+    <span id="station-timer">4:12</span>
+    <span class="station-close" onclick="toggleStationMode()">✖</span>
+  </div>
+  <div class="station-controls">
+    <button onclick="document.getElementById('play-btn').click()">▶️</button>
+    <button onclick="navigate('capture')" title="Capture">📸</button>
+    <button onclick="alert('Bookmark saved!')" title="Bookmark">🔖</button>
+  </div>
+</div>
+
+<style>
+  /* 🎛 Base Styling */
+  #floating-station {
+    position: fixed;
+    right: 16px;
+    z-index: 9999;
+    background: #1e1e1e;
+    color: white;
+    font-family: Arial, sans-serif;
+    transition: all 0.3s ease;
+  }
+
+  .station-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+  }
+
+  #station-timer {
+    font-size: 14px;
+  }
+
+  .station-close {
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .station-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 8px;
+    gap: 10px;
+  }
+
+  .station-controls button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .station-controls button:hover {
+    transform: scale(1.15);
+    color: #8faaff;
+  }
+
+  /* 🧊 Normal Mode */
+  .station-mode-normal {
+    top: 40%;
+    width: 60px;
+    border-radius: 30px;
+    text-align: center;
+    padding: 8px 0;
+    height: auto;
+  }
+
+  /* 🧩 Expanded Mode */
+  .station-mode-expanded {
+    top: 30%;
+    width: 220px;
+    border-radius: 20px;
+    padding: 10px 0;
+  }
+
+  /* 🪶 Minimized Mode */
+  .station-mode-minimized {
+    bottom: 90px;
+    width: 60px;
+    height: 40px;
+    border-radius: 20px;
+    text-align: center;
+    line-height: 40px;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .station-mode-minimized:hover::after {
+    content: "Undock";
+    position: absolute;
+    top: -28px;
+    background: #444;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+</style>
+
+<script>
+  let stationState = "normal"; // "normal", "expanded", or "minimized"
+
+  function toggleStationMode() {
+    const station = document.getElementById("floating-station");
+
+    if (stationState === "normal") {
+      station.className = "station-mode-expanded";
+      stationState = "expanded";
+    } else if (stationState === "expanded") {
+      station.className = "station-mode-minimized";
+      stationState = "minimized";
+    } else {
+      station.className = "station-mode-normal";
+      stationState = "normal";
+    }
+  }
+
+  function hoverDock(show) {
+    const station = document.getElementById("floating-station");
+    if (stationState === "minimized") {
+      station.title = show ? "Undock" : "";
+    } else {
+      station.title = "";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("floating-station").className = "station-mode-normal";
+  });
+</script>
+
+
+<!-- 🎧 Cleaned Unified Floating Station -->
+<div id="floating-station" class="station-mode-normal">
+  <div class="station-header">
+    <span id="station-timer">4:12</span>
+    <div>
+      <button class="station-icon" onclick="dockStation()" title="Dock">🧲</button>
+      <button class="station-icon" onclick="expandStation()" title="Expand">🔍</button>
+    </div>
+  </div>
+  <div class="station-controls">
+    <button onclick="document.getElementById('play-btn').click()">▶️</button>
+    <button onclick="navigate('capture')" title="Capture">📸</button>
+    <button onclick="alert('Bookmark saved!')" title="Bookmark">🔖</button>
+  </div>
+</div>
+
+<style>
+  /* 📦 Station Container */
+  #floating-station {
+    position: fixed;
+    right: 16px;
+    z-index: 9999;
+    background: #1e1e1e;
+    color: white;
+    font-family: Arial, sans-serif;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .station-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+  }
+
+  #station-timer {
+    font-size: 14px;
+  }
+
+  .station-icon {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin-left: 6px;
+  }
+
+  /* Controls */
+  .station-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0;
+    gap: 10px;
+  }
+
+  .station-controls button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .station-controls button:hover {
+    transform: scale(1.15);
+    color: #8faaff;
+  }
+
+  /* Normal mode */
+  .station-mode-normal {
+    top: 40%;
+    width: 60px;
+    border-radius: 30px;
+    text-align: center;
+    padding: 8px 0;
+  }
+
+  /* Expanded mode */
+  .station-mode-expanded {
+    top: 30%;
+    width: 220px;
+    border-radius: 20px;
+    padding: 10px 0;
+  }
+
+  /* Docked/minimized */
+  .station-mode-docked {
+    top: auto !important;
+    bottom: 108px;
+    right: 20px;
+    width: 60px;
+    height: 40px;
+    border-radius: 20px;
+    text-align: center;
+    line-height: 40px;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .station-mode-docked:hover::after {
+    content: "Undock";
+    position: absolute;
+    top: -28px;
+    background: #444;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+</style>
+
+<script>
+  function expandStation() {
+    const station = document.getElementById("floating-station");
+    station.className = "station-mode-expanded";
+    station.innerHTML = `
+      <div class="station-header">
+        <span id="station-timer">4:12</span>
+        <button class="station-icon" onclick="restoreToNormal()" title="Close">✖</button>
+      </div>
+      <div class="station-controls">
+        <button onclick="document.getElementById('play-btn').click()">▶️</button>
+        <button onclick="navigate('capture')" title="Capture">📸</button>
+        <button onclick="alert('Bookmark saved!')" title="Bookmark">🔖</button>
+      </div>`;
+  }
+
+  function restoreToNormal() {
+    const station = document.getElementById("floating-station");
+    station.className = "station-mode-normal";
+    station.innerHTML = `
+      <div class="station-header">
+        <span id="station-timer">4:12</span>
+        <div>
+          <button class="station-icon" onclick="dockStation()" title="Dock">🧲</button>
+          <button class="station-icon" onclick="expandStation()" title="Expand">🔍</button>
+        </div>
+      </div>
+      <div class="station-controls">
+        <button onclick="document.getElementById('play-btn').click()">▶️</button>
+        <button onclick="navigate('capture')" title="Capture">📸</button>
+        <button onclick="alert('Bookmark saved!')" title="Bookmark">🔖</button>
+      </div>`;
+  }
+
+  function dockStation() {
+    const station = document.getElementById("floating-station");
+    station.className = "station-mode-docked";
+    station.innerHTML = `🎧`;
+    station.title = "Undock";
+    station.onclick = () => restoreToNormal();
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    restoreToNormal();
+  });
+</script>
+
 </body>
 </html>
