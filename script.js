@@ -226,47 +226,60 @@ fileInput.addEventListener("change", async (event) => {
 // Global database reference
 let db;
 
-// Initialize IndexedDB
 function initDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open("neurAloudDB", 1);
-    request.onerror = () => reject("❌ Failed to open IndexedDB");
+
+    request.onerror = () => {
+      console.error("❌ Failed to open IndexedDB.");
+      reject("Failed to open DB");
+    };
+
+    request.onupgradeneeded = (e) => {
+      db = e.target.result;
+      console.log("⚙️ Upgrading DB structure...");
+
+      if (!db.objectStoreNames.contains("files")) {
+        db.createObjectStore("files", { keyPath: "id", autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains("settings")) {
+        db.createObjectStore("settings", { keyPath: "key" });
+      }
+    };
 
     request.onsuccess = () => {
       db = request.result;
-      log("✅ IndexedDB ready.");
+      console.log("✅ IndexedDB ready.");
 
-      // Check if there are any saved files before attempting load logic
+      // Now safely count the files
+      if (!db.objectStoreNames.contains("files")) {
+        console.warn("⚠️ 'files' store not found even after success.");
+        resolve();
+        return;
+      }
+
       const transaction = db.transaction("files", "readonly");
       const store = transaction.objectStore("files");
       const countRequest = store.count();
 
       countRequest.onsuccess = () => {
-        if (countRequest.result === 0) {
-          log("ℹ️ No files found in IndexedDB — skipping file load.");
+        const count = countRequest.result;
+        if (count === 0) {
+          console.log("📂 No files found in IndexedDB – skipping file load.");
         } else {
-          // You can optionally call `restoreLastFile()` or similar here
-          log(`📄 Found ${countRequest.result} file(s) in IndexedDB.`);
-          restoreLastFile(); // Only call this if files exist
+          console.log(`📂 Found ${count} file(s) in IndexedDB`);
+          restoreLastSessionFile(); // Only call if files exist
         }
         resolve();
       };
 
       countRequest.onerror = () => {
-        log("⚠️ Could not count files in IndexedDB.");
-        resolve(); // Still resolve to proceed with app load
+        console.warn("⚠️ Could not count files in IndexedDB.");
+        resolve(); // Still resolve to avoid blocking app
       };
-    };
-
-    request.onupgradeneeded = event => {
-      db = event.target.result;
-      db.createObjectStore("files", { keyPath: "id", autoIncrement: true });
-      db.createObjectStore("settings", { keyPath: "key" });
-      log("📁 Object stores created.");
     };
   });
 }
-
 // Load user settings from DB
 function loadSettings() {
   const tx = db.transaction("settings", "readonly");
