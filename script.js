@@ -693,7 +693,8 @@ function fetchIBMVoices(context = "listen") {
         language: v.language,
         gender: v.gender
       }));
-      updateVoiceDropdown("ibm", voices);
+      updateVoiceDropdown("ibm", voices, "listen");
+      updateVoiceDropdown("ibm", voices, "capture");
       console.log(`✅ IBM voices (${voices.length}) loaded for ${context}`);
     } else {
       console.warn("⚠️ IBM returned no voices:", data);
