@@ -238,6 +238,47 @@ fileInput.addEventListener("change", async (event) => {
 /***************************
  * MODULE 2: INIT + SETTINGS RESTORE
  ***************************/
+async function fetchGoogleVoices() {
+  try {
+    const res = await fetch("https://texttospeech.googleapis.com/v1/voices?key=YOUR_GOOGLE_API_KEY");
+    const data = await res.json();
+    googleVoices = data.voices.map(v => ({
+      name: v.name,
+      description: `${v.name} (${v.languageCodes?.[0] || ""})`
+    }));
+    console.log(`✅ Google voices loaded: ${googleVoices.length}`);
+  } catch (err) {
+    console.error("❌ Google TTS load error:", err);
+  }
+}
+
+async function fetchIBMVoces() {
+  try {
+    const res = await fetch("https://YOUR_REGION.api.text-to-speech.watson.cloud.ibm.com/v1/voices", {
+      headers: {
+        Authorization: "Basic " + btoa("apikey:YOUR_IBM_API_KEY")
+      }
+    });
+    const data = await res.json();
+    ibmVoices = data.voices.map(v => ({
+      name: v.name,
+      description: `${v.name} (${v.language})`
+    }));
+    console.log(`✅ IBM voices loaded: ${ibmVoices.length}`);
+  } catch (err) {
+    console.error("❌ IBM TTS load error:", err);
+  }
+}
+
+function setupResponsiveVoice() {
+  if (window._responsiveVoiceLoaded) return;
+  window._responsiveVoiceLoaded = true;
+
+  const script = document.createElement("script");
+  script.src = "https://code.responsivevoice.org/responsivevoice.js?key=YOUR_KEY";
+  document.body.appendChild(script);
+}
+
 
 // Global database reference
 let db;
@@ -428,13 +469,9 @@ function setupResponsiveVoice() {
 
 function updateVoiceDropdown(engine, voices, context = "listen") {
   const dropdown = document.getElementById(`voice-${context}`);
-  if (!dropdown) {
-    console.warn(`⚠️ Dropdown not found for ${context}`);
-    return;
-  }
+  if (!dropdown) return;
 
   dropdown.innerHTML = "";
-
   if (!Array.isArray(voices) || voices.length === 0) {
     console.warn(`⚠️ No voices returned for ${engine} → ${context}`);
     return;
@@ -442,18 +479,37 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
 
   voices.forEach(v => {
     const option = document.createElement("option");
-
-    const value = v.name || v.voice || v.id || v; // Fallbacks for IBM, Google, ResponsiveVoice, Local
-    const label = v.description || v.displayName || v.name || v.voice || value;
-
+    const value = v.name || v.voice || v.id || v;
+    const label = v.description || v.displayName || value;
     option.value = value;
     option.textContent = label;
-
     dropdown.appendChild(option);
+  });
+
+  // Restore persisted selection if available
+  const saved = localStorage.getItem(`voice-${context}`);
+  if (saved) dropdown.value = saved;
+
+  dropdown.addEventListener("change", () => {
+    localStorage.setItem(`voice-${context}`, dropdown.value);
   });
 
   console.log(`✅ Voice dropdown updated for ${engine} → ${context}`);
 }
+
+function loadVoicesForEngine(engine, context = "listen") {
+  const e = engine.toLowerCase();
+  if (e === "google") updateVoiceDropdown("google", googleVoices, context);
+  else if (e === "ibm") updateVoiceDropdown("ibm", ibmVoices, context);
+  else if (e === "local") updateVoiceDropdown("local", localVoices, context);
+  else if (e === "responsivevoice") {
+    responsiveVoices = responsiveVoice?.getVoices?.() || [];
+    updateVoiceDropdown("responsiveVoice", responsiveVoices, context);
+  } else {
+    console.warn(`⚠️ Unknown TTS engine: ${engine}`);
+  }
+}
+
 
 // Step 3: Load voices based on selected engine
 function loadVoicesForEngine(engine, context = "listen") {
@@ -1965,44 +2021,61 @@ function persistSelection(id) {
 // 📦 Main Page Load Logic
 // ==============================
 window.addEventListener("DOMContentLoaded", () => {
-  favorites = JSON.parse(localStorage.getItem("favorites")) || [];
-  renderFavorites();
-  loadAutoResumeSetting();
-
-  // Persist all user selections
+  // Persist UI selections
   [
-    "tts-engine-listen",
-    "tts-engine-capture",
-    "voice-listen",
-    "voice-capture",
-    "rate-slider",
-    "pitch-slider",
-    "auto-resume-toggle",
-    "loop-toggle",
+    "tts-engine-listen", "voice-listen",
+    "tts-engine-capture", "voice-capture",
+    "rate-slider", "pitch-slider",
+    "loop-toggle", "auto-resume-toggle",
     "translation-lang"
   ].forEach(persistSelection);
 
-  // Engine dropdowns should still update voice list dynamically
-  document.getElementById("tts-engine-listen").addEventListener("change", e => {
-    loadVoicesForEngine(e.target.value, "listen");
+  // Hook up engine switch → load voices
+  ["listen", "capture"].forEach(context => {
+    const sel = document.getElementById(`tts-engine-${context}`);
+    if (sel) {
+      sel.addEventListener("change", () => {
+        localStorage.setItem(`tts-engine-${context}`, sel.value);
+        loadVoicesForEngine(sel.value, context);
+      });
+    }
   });
 
-  document.getElementById("tts-engine-capture").addEventListener("change", e => {
-    loadVoicesForEngine(e.target.value, "capture");
-  });
-
-  // Load local voices
+  // Load Web Speech local voices
   localVoices = speechSynthesis.getVoices();
   speechSynthesis.onvoiceschanged = () => {
     localVoices = speechSynthesis.getVoices();
-    loadInitialVoices();
+    ["listen", "capture"].forEach(context => {
+      const engine = document.getElementById(`tts-engine-${context}`).value;
+      if (engine === "local") loadVoicesForEngine(engine, context);
+    });
   };
 
-  if (typeof responsiveVoice !== "undefined") {
-    responsiveVoices = responsiveVoice.getVoices() || [];
-  }
+  // Load ResponsiveVoice (once)
+  setupResponsiveVoice();
 
-  loadInitialVoices();
+  // Load Google & IBM and then update if selected
+  fetchGoogleVoices().then(() => {
+    ["listen", "capture"].forEach(context => {
+      if (document.getElementById(`tts-engine-${context}`).value === "google") {
+        loadVoicesForEngine("google", context);
+      }
+    });
+  });
+
+  fetchIBMVoces().then(() => {
+    ["listen", "capture"].forEach(context => {
+      if (document.getElementById(`tts-engine-${context}`).value === "ibm") {
+        loadVoicesForEngine("ibm", context);
+      }
+    });
+  });
+
+  // Trigger initial engine-based voice population
+  ["listen", "capture"].forEach(context => {
+    const engine = document.getElementById(`tts-engine-${context}`).value;
+    loadVoicesForEngine(engine, context);
+  });
 });
 
 
