@@ -1004,3 +1004,43 @@ body[data-theme='dark'] #profile-settings select {
   margin-right: 5px;
   font-weight: bold;
 }
+
+
+/* ========================
+   🧠 Agent + Floating Panel
+   ======================== */
+#agent-panel {
+  position: fixed;
+  bottom: 80px;
+  left: 20px;
+  width: 280px;
+  background: white;
+  border: 2px solid #6a11cb;
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: none;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+.agent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  color: #6a11cb;
+}
+.agent-close-btn {
+  cursor: pointer;
+  font-size: 20px;
+}
+.agent-body {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.agent-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}

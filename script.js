@@ -1,3 +1,11 @@
+// =========================
+// 📦 Merged Module 25: neurAloud_consolidated_script__to_24.js
+// =========================
+
+// =========================
+// 📦 Merged Module 1: script.js
+// =========================
+
 // === Navigation Fix ===
 window.navigate = function(id) {
   console.log("Navigating to:", id);
@@ -2684,3 +2692,3852 @@ function restoreSection() {
   const last = localStorage.getItem("lastSection") || "home";
   navigate(last);
 }
+
+
+
+// =========================
+// 📦 Merged Module 2: module_16_capture_system (1).js
+// =========================
+
+// 📦 Module 16: Capture Tab – Live Audio Transcription & Description
+// --------------------------------------------------------------
+// Handles the real-time audio transcription, translation, and description
+// from microphone input, including music/sound detection and saving.
+
+let captureRecorder;
+let captureChunks = [];
+let isCapturing = false;
+let captureLanguage = "en";
+let translateCapture = false;
+let captureTranslatedLang = "fr";
+
+async function startCapture() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    captureRecorder = new MediaRecorder(stream);
+    captureChunks = [];
+    captureRecorder.ondataavailable = e => captureChunks.push(e.data);
+    captureRecorder.onstop = async () => {
+      const blob = new Blob(captureChunks, { type: 'audio/webm' });
+      const text = await transcribeAudio(blob);
+      let finalText = text;
+      if (translateCapture) {
+        finalText = await translateText(text, captureTranslatedLang);
+      }
+      displayCaptureText(finalText);
+      saveCaptureItem(finalText);
+    };
+    captureRecorder.start();
+    isCapturing = true;
+    updateCaptureUI(true);
+  } catch (e) {
+    console.error("🎙️ Capture failed:", e);
+    alert("Failed to start capture.");
+  }
+}
+
+function stopCapture() {
+  if (captureRecorder && isCapturing) {
+    captureRecorder.stop();
+    isCapturing = false;
+    updateCaptureUI(false);
+  }
+}
+
+async function transcribeAudio(blob) {
+  // Placeholder: In production, send to external speech API
+  return "Transcribed text from captured audio.";
+}
+
+function updateCaptureUI(active) {
+  const btn = document.getElementById("captureToggleBtn");
+  btn.textContent = active ? "🛑 Stop Capture" : "🎙️ Start Capture";
+  document.getElementById("captureStatus").textContent = active ? "Capturing..." : "Idle";
+}
+
+function displayCaptureText(text) {
+  const container = document.getElementById("captureOutput");
+  const p = document.createElement("p");
+  p.textContent = text;
+  container.appendChild(p);
+}
+
+function saveCaptureItem(text) {
+  const entry = {
+    id: Date.now(),
+    content: text,
+    lang: captureLanguage,
+    translated: translateCapture ? captureTranslatedLang : null
+  };
+  const store = getDBStore("captureStore", "readwrite");
+  store.add(entry);
+}
+
+function loadCaptureSettings() {
+  captureLanguage = localStorage.getItem("captureLanguage") || "en";
+  captureTranslatedLang = localStorage.getItem("captureTranslatedLang") || "fr";
+  translateCapture = localStorage.getItem("translateCapture") === "true";
+}
+
+function saveCaptureSettings() {
+  localStorage.setItem("captureLanguage", captureLanguage);
+  localStorage.setItem("captureTranslatedLang", captureTranslatedLang);
+  localStorage.setItem("translateCapture", translateCapture);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadCaptureSettings();
+  document.getElementById("captureToggleBtn").addEventListener("click", () => {
+    if (isCapturing) stopCapture();
+    else startCapture();
+  });
+
+  document.getElementById("captureLangSelect").addEventListener("change", e => {
+    captureLanguage = e.target.value;
+    saveCaptureSettings();
+  });
+
+  document.getElementById("translateCaptureToggle").addEventListener("change", e => {
+    translateCapture = e.target.checked;
+    saveCaptureSettings();
+  });
+
+  document.getElementById("captureTranslateLangSelect").addEventListener("change", e => {
+    captureTranslatedLang = e.target.value;
+    saveCaptureSettings();
+  });
+});
+
+
+
+// =========================
+// 📦 Merged Module 3: module_17_stream_integration (1).js
+// =========================
+
+// ✅ Module 17 – Stream Integration & Live Reading Queue
+// Description: Enable real-time stream-based reading (news, web articles, live feeds)
+
+let streamReader = null;
+let isStreaming = false;
+let streamQueue = [];
+let currentStreamIndex = 0;
+let streamInterval = null;
+
+// ✅ Start stream reading (simulate live content every X seconds)
+function startStreamReading() {
+  if (isStreaming || streamQueue.length === 0) return;
+  isStreaming = true;
+  updateStreamStatus("Streaming...");
+
+  streamInterval = setInterval(() => {
+    if (currentStreamIndex >= streamQueue.length) {
+      stopStreamReading();
+      return;
+    }
+    const currentText = streamQueue[currentStreamIndex];
+    speakText(currentText, "stream");
+    highlightStreamText(currentText);
+    currentStreamIndex++;
+  }, 7000); // Simulate new content every 7 seconds
+}
+
+// ✅ Stop streaming
+function stopStreamReading() {
+  isStreaming = false;
+  clearInterval(streamInterval);
+  updateStreamStatus("Stream Paused");
+}
+
+// ✅ Populate the stream queue with simulated live entries
+function loadStreamQueue(mockArticles) {
+  streamQueue = mockArticles;
+  currentStreamIndex = 0;
+  updateStreamStatus(`Loaded ${mockArticles.length} items`);
+}
+
+// ✅ Highlight the streamed text on the UI
+function highlightStreamText(text) {
+  const streamContainer = document.getElementById("stream-output");
+  if (!streamContainer) return;
+  streamContainer.innerText = text;
+}
+
+// ✅ Update status banner
+function updateStreamStatus(msg) {
+  const banner = document.getElementById("stream-status");
+  if (banner) banner.innerText = msg;
+}
+
+// ✅ Simulated API Fetch (Replace with real RSS/News/Article Feed fetch)
+function fetchLiveArticles() {
+  const dummyArticles = [
+    "Breaking: New discovery in quantum computing accelerates AI research.",
+    "Live Update: Global leaders meet to discuss climate initiatives.",
+    "Market Alert: Tech stocks rally after strong quarterly earnings.",
+    "Event Stream: SpaceX prepares for another satellite launch.",
+    "Trending Now: AI-generated films win accolades at international festival."
+  ];
+  loadStreamQueue(dummyArticles);
+}
+
+// ✅ Button Handlers
+document.getElementById("start-stream-btn").addEventListener("click", startStreamReading);
+document.getElementById("stop-stream-btn").addEventListener("click", stopStreamReading);
+document.getElementById("fetch-stream-btn").addEventListener("click", fetchLiveArticles);
+
+// ✅ Initialization
+updateStreamStatus("Idle. Load stream to begin.");
+
+// Required DOM elements assumed:
+// - <div id="stream-output"></div>
+// - <div id="stream-status"></div>
+// - <button id="start-stream-btn">▶️ Start Stream</button>
+// - <button id="stop-stream-btn">⏹ Stop</button>
+// - <button id="fetch-stream-btn">📡 Load Stream</button>
+
+
+
+// =========================
+// 📦 Merged Module 4: module_18_translation_support (1).js
+// =========================
+
+// 📦 Module 18: Translation Support and Multilingual Playback
+
+// 🌐 Planned Features:
+// ✅ Translation Language Selector
+// ✅ Toggle Translation On/Off
+// ✅ Integration with TTS for Translated Output
+// ✅ Persistence of Translation Settings
+// ✅ Inline UI Integration in Listen & Capture Modes
+// ✅ Fallback if Translation Fails
+
+// 📘 Implemented Features Overview:
+// Feature                             | Status | Description
+// ---------------------------------- | ------ | ------------------------------------------------------------
+// ✅ Translation Language Selector   | ✔️     | Dropdown to pick target translation language.
+// ✅ Toggle Translation              | ✔️     | Button to enable/disable translation mode.
+// ✅ Integrated with TTS             | ✔️     | Translated text passed to TTS engine for reading.
+// ✅ Settings Persistence            | ✔️     | Saves translation toggle and language across sessions.
+// ✅ UI Integration                  | ✔️     | Shows above text display area in Listen & Capture.
+// ✅ Fallback Handling               | ✔️     | Shows error and reverts to original text if translation fails.
+
+let translationEnabled = false;
+let targetLanguage = "fr"; // default to French
+
+// 🌐 Initialize translation settings
+function initTranslationSettings() {
+    const savedEnabled = localStorage.getItem("translationEnabled");
+    const savedLang = localStorage.getItem("targetLanguage");
+    if (savedEnabled !== null) translationEnabled = savedEnabled === "true";
+    if (savedLang) targetLanguage = savedLang;
+    updateTranslationUI();
+}
+
+// 🌐 Toggle translation on/off
+function toggleTranslation() {
+    translationEnabled = !translationEnabled;
+    localStorage.setItem("translationEnabled", translationEnabled);
+    updateTranslationUI();
+}
+
+// 🌐 Set new target translation language
+function setTranslationLanguage(lang) {
+    targetLanguage = lang;
+    localStorage.setItem("targetLanguage", lang);
+}
+
+// 🌐 Update UI elements to reflect translation state
+function updateTranslationUI() {
+    const toggleBtn = document.getElementById("toggle-translation");
+    if (toggleBtn) {
+        toggleBtn.textContent = translationEnabled ? "🌐 Translation: ON" : "🌐 Translation: OFF";
+        toggleBtn.classList.toggle("active", translationEnabled);
+    }
+    const langSelect = document.getElementById("translation-language");
+    if (langSelect) langSelect.value = targetLanguage;
+}
+
+// 🌐 Translate a sentence before reading
+async function translateAndRead(sentence) {
+    if (!translationEnabled || !targetLanguage || targetLanguage === "none") {
+        speakSentence(sentence);
+        return;
+    }
+    try {
+        const translated = await translateText(sentence, targetLanguage);
+        speakSentence(translated || sentence);
+    } catch (err) {
+        console.warn("Translation failed, reverting to original sentence:", err);
+        speakSentence(sentence);
+    }
+}
+
+// 🌐 Translation API logic
+async function translateText(text, targetLang) {
+    const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto"
+              + `&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to fetch translation");
+    const data = await res.json();
+    return data[0]?.map(t => t[0]).join("") || null;
+}
+
+// 📦 UI Setup
+window.addEventListener("DOMContentLoaded", () => {
+    initTranslationSettings();
+
+    const langSelector = document.getElementById("translation-language");
+    if (langSelector) {
+        langSelector.addEventListener("change", e => {
+            setTranslationLanguage(e.target.value);
+        });
+    }
+
+    const toggleBtn = document.getElementById("toggle-translation");
+    if (toggleBtn) {
+        toggleBtn.addEventListener("click", toggleTranslation);
+    }
+});
+
+
+
+// =========================
+// 📦 Merged Module 5: module_19_chapter_summary (1).js
+// =========================
+
+// 📦 Module 19: End-of-Chapter Summary and Smart Cue
+// Description: Automatically detects end of sections/chapters and reads out summaries.
+
+let chapterEndRegex = /(Chapter|CHAPTER|Section|SECTION)\s+\d+\b|\b(Conclusion|Summary)\b/gi;
+let autoSummarizeEnabled = true;
+
+// 📌 Toggle switch to enable/disable chapter summary
+function toggleAutoSummarize(enabled) {
+  autoSummarizeEnabled = enabled;
+  localStorage.setItem("autoSummarizeEnabled", enabled);
+}
+
+// 📌 Resume setting from storage
+if (localStorage.getItem("autoSummarizeEnabled") === "false") {
+  autoSummarizeEnabled = false;
+}
+
+// 📌 Detect chapter endings and summarize
+function checkForChapterEndAndSummarize(currentSentence) {
+  if (!autoSummarizeEnabled) return;
+
+  if (chapterEndRegex.test(currentSentence)) {
+    console.log("📘 End of chapter detected!");
+    summarizeLastSection().then(summary => {
+      if (summary) {
+        readAloud(summary);
+      }
+    });
+  }
+}
+
+// 📌 Summarize the last section
+async function summarizeLastSection() {
+  const sectionText = extractLastSectionText();
+  if (!sectionText || sectionText.length < 100) return null;
+
+  try {
+    const response = await fetch("/api/summarize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: sectionText }),
+    });
+    const data = await response.json();
+    return "🔍 Summary: " + data.summary;
+  } catch (error) {
+    console.error("❌ Summarization failed:", error);
+    return null;
+  }
+}
+
+// 📌 Dummy extract function (replace with real logic)
+function extractLastSectionText() {
+  const history = document.getElementById("text-display").innerText;
+  const sentences = history.split(/(?<=[.?!])\s+/);
+  return sentences.slice(-10).join(" ");
+}
+
+
+
+// =========================
+// 📦 Merged Module 6: module_20_bookmark_resume (1).js
+// =========================
+
+// 📌 Module 20: Advanced Auto Bookmarking + Resume Location Sync
+
+let bookmarkStore;
+
+function initBookmarkDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("neurAloudDB", 1);
+
+    request.onsuccess = () => {
+      bookmarkStore = request.result;
+      resolve();
+    };
+
+    request.onerror = () => {
+      reject("Bookmark DB failed to open.");
+    };
+
+    request.onupgradeneeded = (e) => {
+      bookmarkStore = e.target.result;
+      if (!bookmarkStore.objectStoreNames.contains("bookmarksStore")) {
+        bookmarkStore.createObjectStore("bookmarksStore", { keyPath: "fileId" });
+      }
+    };
+  });
+}
+
+function saveBookmark(fileId, sentenceIndex) {
+  const transaction = bookmarkStore.transaction("bookmarksStore", "readwrite");
+  const store = transaction.objectStore("bookmarksStore");
+  store.put({ fileId, sentenceIndex });
+}
+
+function loadBookmark(fileId) {
+  return new Promise((resolve) => {
+    const transaction = bookmarkStore.transaction("bookmarksStore", "readonly");
+    const store = transaction.objectStore("bookmarksStore");
+    const request = store.get(fileId);
+
+    request.onsuccess = () => {
+      resolve(request.result ? request.result.sentenceIndex : 0);
+    };
+
+    request.onerror = () => {
+      resolve(0);
+    };
+  });
+}
+
+function resumeFromBookmark(fileId) {
+  loadBookmark(fileId).then((index) => {
+    currentSentenceIndex = index || 0;
+    if (sentences.length > 0 && currentSentenceIndex < sentences.length) {
+      speakCurrentSentence();
+      announce("🔁 Resuming from last location.");
+    }
+  });
+}
+
+function announce(text) {
+  const speech = new SpeechSynthesisUtterance(text);
+  window.speechSynthesis.speak(speech);
+}
+
+function onPauseOrStop(fileId) {
+  if (typeof currentSentenceIndex !== "undefined") {
+    saveBookmark(fileId, currentSentenceIndex);
+  }
+}
+
+// Dev-only: Test resume manually
+function testManualResume(fileId) {
+  resumeFromBookmark(fileId);
+}
+
+
+
+// =========================
+// 📦 Merged Module 7: module_21_multi_voice_dual_lang.js
+// =========================
+
+/* =====================================
+   📦 Module 21 – Multi-Voice & Dual Language Playback
+   ===================================== */
+
+// ✅ Character-based voice playback
+// ✔️ Assign different characters (Narrator, Person A, Person B) to distinct TTS voices.
+const characterVoices = {
+  narrator: { engine: "Google", voice: "en-US-Wavenet-D" },
+  personA: { engine: "Google", voice: "en-US-Wavenet-F" },
+  personB: { engine: "Google", voice: "en-GB-Wavenet-B" }
+};
+
+// ✅ Language toggling and dual narration
+// ✔️ Allows user to toggle dual language read-aloud (e.g. English + Spanish).
+let dualLanguageMode = false;
+let secondaryLanguage = "es"; // e.g., Spanish
+let dualVoice = { engine: "Google", voice: "es-ES-Standard-A" };
+
+// ✅ Language mapping for phrase translation
+const languagePairs = {
+  en: {
+    es: async (text) => await translateText(text, "es"),
+    fr: async (text) => await translateText(text, "fr")
+  }
+};
+
+// ✅ Translation and dual narration playback
+async function playWithDualNarration(text, character = "narrator") {
+  const primary = { text, ...characterVoices[character] };
+  if (dualLanguageMode) {
+    const translated = await languagePairs["en"][secondaryLanguage](text);
+    const secondary = { text: translated, ...dualVoice };
+    await playTTS(primary);
+    await playTTS(secondary);
+  } else {
+    await playTTS(primary);
+  }
+}
+
+// ✅ Simulated character-assigned dialog playback
+async function simulateDialog(lines) {
+  for (const line of lines) {
+    await playWithDualNarration(line.text, line.character);
+  }
+}
+
+// ✅ Sample structured input for dialogue
+const sampleScript = [
+  { character: "narrator", text: "Once upon a time in NeurAloud..." },
+  { character: "personA", text: "Hey, have you tried this new voice feature?" },
+  { character: "personB", text: "Yes! It's amazing. You can even switch languages." }
+];
+
+// ✅ Trigger demo dialog playback
+document.getElementById("playDialogBtn")?.addEventListener("click", () => {
+  simulateDialog(sampleScript);
+});
+
+// ✅ Update UI toggles
+document.getElementById("toggleDualLang")?.addEventListener("change", (e) => {
+  dualLanguageMode = e.target.checked;
+});
+
+document.getElementById("languageSelect")?.addEventListener("change", (e) => {
+  secondaryLanguage = e.target.value;
+});
+
+// ✅ Reuse TTS and translate logic from previous modules
+async function playTTS({ text, engine, voice }) {
+  console.log(`Playing [${engine}] ${voice}:`, text);
+  // Hook into specific TTS API logic here
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.voice = speechSynthesis.getVoices().find(v => v.name === voice);
+  speechSynthesis.speak(utterance);
+}
+
+async function translateText(text, lang) {
+  console.log(`Translating to ${lang}:`, text);
+  // Simulate translation (actual API calls should be done in backend/proxy)
+  return `[${lang}] ${text}`;
+}
+
+
+
+// =========================
+// 📦 Merged Module 8: module_22_rewards_notifications.js
+// =========================
+
+// 📦 Module 22 – Notification, Reward System, & Streak Tracker
+// Total Lines: 112
+
+let streakCount = 0;
+let lastActiveDate = null;
+let currentStreak = 0;
+let rewardPoints = 0;
+
+// 🕓 Load streak and reward data
+function loadStreakData() {
+  streakCount = parseInt(localStorage.getItem("streakCount")) || 0;
+  rewardPoints = parseInt(localStorage.getItem("rewardPoints")) || 0;
+  lastActiveDate = localStorage.getItem("lastActiveDate");
+  if (lastActiveDate && isToday(lastActiveDate)) {
+    currentStreak = streakCount;
+  } else if (lastActiveDate && isYesterday(lastActiveDate)) {
+    currentStreak = streakCount + 1;
+    updateStreak();
+  } else {
+    currentStreak = 1;
+    resetStreak();
+  }
+  updateStreakUI();
+}
+
+// 🧠 Check if same day
+function isToday(dateStr) {
+  const today = new Date().toDateString();
+  return new Date(dateStr).toDateString() === today;
+}
+
+// ⏳ Check if yesterday
+function isYesterday(dateStr) {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  return new Date(dateStr).toDateString() === yesterday.toDateString();
+}
+
+// 🔁 Update streak
+function updateStreak() {
+  streakCount = currentStreak;
+  localStorage.setItem("streakCount", streakCount);
+  localStorage.setItem("lastActiveDate", new Date().toISOString());
+  rewardPoints += 10; // +10 points per day
+  localStorage.setItem("rewardPoints", rewardPoints);
+  showRewardPopup("+10 reward points earned!");
+}
+
+// 🧹 Reset streak
+function resetStreak() {
+  streakCount = 1;
+  localStorage.setItem("streakCount", streakCount);
+  localStorage.setItem("lastActiveDate", new Date().toISOString());
+  rewardPoints += 5; // fallback reward
+  localStorage.setItem("rewardPoints", rewardPoints);
+  showRewardPopup("Streak restarted. +5 points");
+}
+
+// 📤 Update UI
+function updateStreakUI() {
+  const streakEl = document.getElementById("streak-count");
+  const rewardEl = document.getElementById("reward-points");
+  if (streakEl) streakEl.textContent = currentStreak;
+  if (rewardEl) rewardEl.textContent = rewardPoints;
+}
+
+// 🎉 Show reward message
+function showRewardPopup(message) {
+  const popup = document.createElement("div");
+  popup.className = "reward-popup";
+  popup.textContent = message;
+  document.body.appendChild(popup);
+  setTimeout(() => popup.remove(), 4000);
+}
+
+// 🔔 Daily Notification
+function triggerDailyReminder() {
+  if (Notification.permission === "granted") {
+    new Notification("🧠 NeurAloud Reminder", {
+      body: "Don’t forget to listen and boost your streak today!",
+      icon: "icon.png"
+    });
+  } else if (Notification.permission !== "denied") {
+    Notification.requestPermission().then((permission) => {
+      if (permission === "granted") {
+        triggerDailyReminder();
+      }
+    });
+  }
+}
+
+// 🧭 Hook into app load
+window.addEventListener("DOMContentLoaded", () => {
+  loadStreakData();
+  setTimeout(triggerDailyReminder, 3000);
+});
+
+
+
+// =========================
+// 📦 Merged Module 9: module_23_analytics_insights.js
+// =========================
+
+// 📊 Module 23: Statistics, Analytics & Advanced Insights
+
+// ✅ Initialize statistics data structure
+const statisticsStore = "analyticsStats";
+const defaultStats = {
+  totalTimeListened: 0,     // in seconds
+  totalFilesPlayed: 0,
+  topFiles: {},             // filename -> count
+  dailyListening: {},       // date -> seconds
+  peakHour: null,
+  favoriteVoice: null,
+  preferredLanguage: null,
+};
+
+// ✅ Save stats to IndexedDB
+function saveStats(stats) {
+  const transaction = db.transaction([statisticsStore], "readwrite");
+  const store = transaction.objectStore(statisticsStore);
+  store.put({ key: "stats", value: stats });
+}
+
+// ✅ Load stats from IndexedDB
+function loadStats(callback) {
+  const transaction = db.transaction([statisticsStore], "readonly");
+  const store = transaction.objectStore(statisticsStore);
+  const request = store.get("stats");
+  request.onsuccess = function () {
+    callback(request.result ? request.result.value : defaultStats);
+  };
+}
+
+// ✅ Update statistics after playback
+function updatePlaybackStats(fileName, duration, voice, language) {
+  loadStats(stats => {
+    stats.totalTimeListened += duration;
+    stats.totalFilesPlayed += 1;
+
+    stats.topFiles[fileName] = (stats.topFiles[fileName] || 0) + 1;
+
+    const today = new Date().toISOString().split("T")[0];
+    stats.dailyListening[today] = (stats.dailyListening[today] || 0) + duration;
+
+    const hour = new Date().getHours();
+    stats.peakHour = (stats.peakHourCounts || {})[hour] = ((stats.peakHourCounts || {})[hour] || 0) + 1;
+    stats.peakHour = Object.entries(stats.peakHourCounts).reduce((a, b) => (a[1] > b[1] ? a : b))[0];
+
+    stats.favoriteVoice = voice;
+    stats.preferredLanguage = language;
+
+    saveStats(stats);
+  });
+}
+
+// ✅ Display stats in Profile section
+function displayUserStats() {
+  loadStats(stats => {
+    const statDiv = document.getElementById("stats-display");
+    statDiv.innerHTML = `
+      <h3>📈 Usage Statistics</h3>
+      <p>🕒 Total Time Listened: ${Math.floor(stats.totalTimeListened / 60)} minutes</p>
+      <p>📁 Files Played: ${stats.totalFilesPlayed}</p>
+      <p>🏆 Most Played File: ${Object.entries(stats.topFiles).sort((a,b)=>b[1]-a[1])[0]?.[0] || "N/A"}</p>
+      <p>📆 Top Listening Day: ${Object.entries(stats.dailyListening).sort((a,b)=>b[1]-a[1])[0]?.[0] || "N/A"}</p>
+      <p>⏰ Peak Listening Hour: ${stats.peakHour || "N/A"}:00</p>
+      <p>🎤 Favorite Voice: ${stats.favoriteVoice || "N/A"}</p>
+      <p>🌍 Preferred Language: ${stats.preferredLanguage || "N/A"}</p>
+    `;
+  });
+}
+
+
+
+// =========================
+// 📦 Merged Module 10: module_24_voice_preview.js
+// =========================
+
+// 📦 Module 24 – Voice Preview Functionality
+
+// Voice Preview Dropdown Integration
+function loadVoicePreviewDropdown(ttsEngineId) {
+  const voiceSelect = document.getElementById("voice-preview-select");
+  voiceSelect.innerHTML = "";
+
+  const voices = allVoices.filter(v => v.engine === ttsEngineId);
+  for (const voice of voices) {
+    const option = document.createElement("option");
+    option.value = voice.name;
+    option.textContent = `${voice.name} (${voice.language})`;
+    voiceSelect.appendChild(option);
+  }
+
+  // Persist last selected preview voice
+  const savedVoice = localStorage.getItem("previewVoice");
+  if (savedVoice && voices.find(v => v.name === savedVoice)) {
+    voiceSelect.value = savedVoice;
+  }
+}
+
+// Voice Preview Playback
+function previewVoice() {
+  const selectedVoice = document.getElementById("voice-preview-select").value;
+  const sampleText = document.getElementById("preview-sample").value.trim();
+  if (!sampleText) {
+    logMessage("⛔ Enter sample text to preview.");
+    return;
+  }
+
+  const engine = localStorage.getItem("selectedEngine") || "Google";
+  const voiceObj = allVoices.find(v => v.name === selectedVoice && v.engine === engine);
+  if (!voiceObj) {
+    logMessage("⚠️ Voice not available.");
+    return;
+  }
+
+  const utter = new SpeechSynthesisUtterance(sampleText);
+  utter.voice = speechSynthesis.getVoices().find(v => v.name === selectedVoice);
+  speechSynthesis.speak(utter);
+
+  localStorage.setItem("previewVoice", selectedVoice);
+  logMessage(`🔊 Previewing with ${selectedVoice}`);
+}
+
+// UI Hookup
+function setupVoicePreviewUI() {
+  const previewBox = document.getElementById("voice-preview-box");
+  const previewBtn = document.getElementById("preview-button");
+  const voiceDropdown = document.getElementById("voice-preview-select");
+
+  previewBtn.addEventListener("click", previewVoice);
+  voiceDropdown.addEventListener("change", e =>
+    localStorage.setItem("previewVoice", e.target.value)
+  );
+
+  loadVoicePreviewDropdown(localStorage.getItem("selectedEngine") || "Google");
+}
+
+
+
+// =========================
+// 📦 Merged Module 26: module_25_developer_mode2.js
+// =========================
+
+// ==========================
+// Module 25 – Developer Mode & Admin Tools
+// ==========================
+
+let developerMode = false;
+let simulatedUserRole = "free"; // Options: free, trial, premium
+let devWhitelist = ["admin@neurAloud.com", "oscar.eta.jr@gmail.com"]; // Editable list
+
+// Developer Dashboard UI
+function createDevDashboard() {
+  const dash = document.createElement("div");
+  dash.id = "dev-dashboard";
+  dash.style = \`
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #1e1e1e;
+    color: #f0f0f0;
+    padding: 12px;
+    border-radius: 6px;
+    z-index: 9999;
+    width: 320px;
+    font-family: monospace;
+    box-shadow: 0 0 10px #000;
+  \`;
+  dash.innerHTML = \`
+    <div style="margin-bottom: 8px;"><strong>🛠️ Developer Dashboard</strong></div>
+    <label><input type="checkbox" id="dev-toggle" /> Enable Developer Mode</label><br><br>
+    <label>User Role:
+      <select id="dev-user-role">
+        <option value="free">Free</option>
+        <option value="trial">Trial</option>
+        <option value="premium">Premium</option>
+      </select>
+    </label><br><br>
+    <label><input type="checkbox" id="ab-switcher" /> A/B Test Group B</label><br><br>
+    <button onclick="clearLogs()">🧹 Clear Logs</button>
+    <button onclick="printLogs()">📋 Show Logs</button>
+    <div id="dev-log-box" style="margin-top: 8px; font-size: 12px; max-height: 120px; overflow-y: auto; border: 1px solid #444; padding: 4px;"></div>
+  \`;
+  document.body.appendChild(dash);
+
+  // Hook up events
+  document.getElementById("dev-toggle").onchange = (e) => {
+    developerMode = e.target.checked;
+    localStorage.setItem("developerMode", developerMode);
+    devLog("Developer mode: " + (developerMode ? "ON" : "OFF"));
+  };
+  document.getElementById("dev-user-role").onchange = (e) => {
+    simulatedUserRole = e.target.value;
+    localStorage.setItem("simulatedRole", simulatedUserRole);
+    devLog("User role set to: " + simulatedUserRole);
+  };
+  document.getElementById("ab-switcher").onchange = (e) => {
+    localStorage.setItem("abGroup", e.target.checked ? "B" : "A");
+    devLog("A/B Group set to: " + (e.target.checked ? "B" : "A"));
+  };
+}
+
+// Logging
+let devLogs = [];
+
+function devLog(message) {
+  const timestamp = new Date().toLocaleTimeString();
+  devLogs.push(\`[\${timestamp}] \${message}\`);
+  const box = document.getElementById("dev-log-box");
+  if (box) {
+    box.innerText = devLogs.slice(-10).join("\n");
+  }
+}
+
+function clearLogs() {
+  devLogs = [];
+  devLog("Logs cleared");
+}
+
+function printLogs() {
+  console.clear();
+  console.log("=== Developer Logs ===");
+  devLogs.forEach((log) => console.log(log));
+}
+
+// Latency Tracker
+function trackLatency(action, fn) {
+  const start = performance.now();
+  const result = fn();
+  const end = performance.now();
+  const duration = end - start;
+  devLog(\`⏱️ \${action} took \${duration.toFixed(2)} ms\`);
+  return result;
+}
+
+// Developer-only Access
+function checkDeveloperAccess() {
+  const user = localStorage.getItem("userEmail") || "";
+  return devWhitelist.includes(user);
+}
+
+// Override Usage Limits
+function getEffectiveUserRole() {
+  if (developerMode) return "developer";
+  return simulatedUserRole || "free";
+}
+
+// Hook into Init
+window.addEventListener("DOMContentLoaded", () => {
+  const savedDev = localStorage.getItem("developerMode") === "true";
+  const savedRole = localStorage.getItem("simulatedRole") || "free";
+  const savedAB = localStorage.getItem("abGroup") || "A";
+
+  if (checkDeveloperAccess() || savedDev) {
+    developerMode = savedDev;
+    simulatedUserRole = savedRole;
+    createDevDashboard();
+
+    document.getElementById("dev-toggle").checked = developerMode;
+    document.getElementById("dev-user-role").value = simulatedUserRole;
+    document.getElementById("ab-switcher").checked = savedAB === "B";
+    devLog("Dashboard loaded");
+  }
+});
+
+// Override Function Example
+function overrideQuotaIfDev(originalValue) {
+  return developerMode ? Infinity : originalValue;
+}
+
+// Example use of simulated role
+function isPremiumUser() {
+  const role = getEffectiveUserRole();
+  return role === "premium" || role === "developer";
+}
+
+// Usage hook
+function canAccessFeature(featureName) {
+  if (developerMode) return true;
+  const role = getEffectiveUserRole();
+  if (featureName === "upload") return role !== "free";
+  if (featureName === "priorityTTS") return role === "premium";
+  return false;
+}
+
+// Example Integration
+function testAdminFeature() {
+  if (!checkDeveloperAccess()) {
+    alert("Access denied: Admins only.");
+    return;
+  }
+  devLog("Admin-only feature executed.");
+  alert("✅ Admin Feature Accessed.");
+}
+
+
+
+// =========================
+// 📦 Merged Module 27: module_26_auto_scroll_centering.js
+// =========================
+
+// Module 26: Auto Scroll Highlight & Centering Enhancements
+
+// Constants
+const SCROLL_OFFSET_PERCENT = 0.8; // 80% from top
+
+// Utility function to scroll sentence into view
+function scrollSentenceIntoView(element) {
+  if (!element) return;
+  try {
+    const container = document.getElementById('text-display');
+    const rect = element.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const offsetTop = element.offsetTop;
+    const containerScrollTop = container.scrollTop;
+    const newScrollTop = offsetTop - container.clientHeight * SCROLL_OFFSET_PERCENT;
+
+    container.scrollTo({
+      top: newScrollTop,
+      behavior: 'smooth'
+    });
+  } catch (err) {
+    console.warn('Auto-scroll failed:', err);
+  }
+}
+
+// Highlight and scroll the current sentence
+function highlightCurrentSentence(index) {
+  const allSpans = document.querySelectorAll('#text-display span');
+  allSpans.forEach(span => span.classList.remove('highlight'));
+
+  const current = allSpans[index];
+  if (current) {
+    current.classList.add('highlight');
+    scrollSentenceIntoView(current);
+  }
+}
+
+// Hook into existing speech synthesis logic
+let utterance;
+let currentSentenceIndex = 0;
+let isPlaying = false;
+
+function playSentences(sentences) {
+  if (!sentences.length) return;
+
+  function speakNext() {
+    if (currentSentenceIndex >= sentences.length) return;
+
+    utterance = new SpeechSynthesisUtterance(sentences[currentSentenceIndex]);
+    highlightCurrentSentence(currentSentenceIndex);
+
+    utterance.onend = () => {
+      currentSentenceIndex++;
+      if (isPlaying) speakNext();
+    };
+
+    speechSynthesis.speak(utterance);
+  }
+
+  isPlaying = true;
+  currentSentenceIndex = 0;
+  speakNext();
+}
+
+function pausePlayback() {
+  speechSynthesis.pause();
+  isPlaying = false;
+}
+
+function resumePlayback() {
+  speechSynthesis.resume();
+  isPlaying = true;
+}
+
+function stopPlayback() {
+  speechSynthesis.cancel();
+  isPlaying = false;
+}
+
+// Sample setup for testing
+function prepareSampleText() {
+  const container = document.getElementById('text-display');
+  const text = "This is sentence one. This is sentence two. This is sentence three. This is sentence four.";
+  const sentences = text.split('.').filter(Boolean).map(s => s.trim() + '.');
+  container.innerHTML = '';
+
+  sentences.forEach((sentence, idx) => {
+    const span = document.createElement('span');
+    span.textContent = sentence + ' ';
+    span.setAttribute('data-index', idx);
+    container.appendChild(span);
+  });
+
+  return sentences;
+}
+
+// Sample run
+document.addEventListener('DOMContentLoaded', () => {
+  const sentences = prepareSampleText();
+  playSentences(sentences);
+});
+
+
+
+// =========================
+// 📦 Merged Module 28: module_27_voice_control.js
+// =========================
+
+// ==========================
+// Module 27 – Voice Navigation & Command Control
+// ==========================
+
+// User Settings
+let voiceControlEnabled = true;
+let wakeWord = "neur aloud";
+let isListening = false;
+let recognition, micIndicator, feedbackBox;
+
+// Command Mapping
+const commandActions = {
+  play: () => playCurrentFile(),
+  pause: () => pauseCurrentPlayback(),
+  stop: () => stopPlayback(),
+  resume: () => playCurrentFile(),
+  next: () => loadNextFile(),
+  back: () => loadPreviousFile(),
+  "increase speed": () => adjustSpeed(0.1),
+  "decrease speed": () => adjustSpeed(-0.1),
+  "go to library": () => navigate("library"),
+  "go home": () => navigate("home"),
+  "show profile": () => navigate("profile"),
+};
+
+// Initialize Voice Recognition
+function setupVoiceRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    console.warn("SpeechRecognition not supported");
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+
+  recognition.onresult = handleSpeechResult;
+  recognition.onerror = (e) => console.warn("Voice Error:", e);
+  recognition.onend = () => {
+    if (voiceControlEnabled) {
+      setTimeout(() => recognition.start(), 500);
+    }
+  };
+}
+
+// Start Listening
+function startVoiceControl() {
+  if (!recognition) return;
+  isListening = true;
+  recognition.start();
+  showMicIndicator(true);
+  showVoiceFeedback("🎙️ Voice control activated. Say “Neur Aloud” to start.");
+}
+
+// Stop Listening
+function stopVoiceControl() {
+  if (!recognition) return;
+  isListening = false;
+  recognition.stop();
+  showMicIndicator(false);
+  showVoiceFeedback("🔇 Voice control deactivated.");
+}
+
+// Handle Speech Result
+function handleSpeechResult(event) {
+  let transcript = "";
+  for (let i = event.resultIndex; i < event.results.length; ++i) {
+    if (event.results[i].isFinal) {
+      transcript += event.results[i][0].transcript.toLowerCase();
+    }
+  }
+
+  if (!transcript.includes(wakeWord)) return;
+
+  const cleaned = transcript.replace(wakeWord, "").trim();
+  executeVoiceCommand(cleaned);
+}
+
+// Execute Matching Command
+function executeVoiceCommand(phrase) {
+  for (const command in commandActions) {
+    if (phrase.includes(command)) {
+      commandActions[command]();
+      showVoiceFeedback(`🗣️ “${phrase}” → ✅ Executing: ${command}`);
+      return;
+    }
+  }
+  showVoiceFeedback(`⚠️ “${phrase}” → Unknown command.`);
+}
+
+// Speed Adjustment
+function adjustSpeed(delta) {
+  let newRate = parseFloat(document.getElementById("rateSlider")?.value || "1.0") + delta;
+  newRate = Math.min(Math.max(newRate, 0.5), 2.0);
+  document.getElementById("rateSlider").value = newRate.toFixed(2);
+  saveSetting("rate", newRate);
+  showVoiceFeedback(`⚙️ Rate adjusted to ${newRate.toFixed(2)}`);
+}
+
+// UI: Microphone Indicator
+function showMicIndicator(active) {
+  if (!micIndicator) {
+    micIndicator = document.createElement("div");
+    micIndicator.id = "mic-indicator";
+    micIndicator.style = "position:fixed;bottom:16px;right:16px;width:40px;height:40px;border-radius:50%;background:#ff3c3c88;z-index:9999;box-shadow:0 0 8px red;";
+    document.body.appendChild(micIndicator);
+  }
+  micIndicator.style.display = active ? "block" : "none";
+}
+
+// UI: Feedback Panel
+function showVoiceFeedback(msg) {
+  if (!feedbackBox) {
+    feedbackBox = document.createElement("div");
+    feedbackBox.id = "voice-feedback";
+    feedbackBox.style = `
+      position: fixed;
+      bottom: 70px;
+      right: 16px;
+      background: #fff;
+      color: #000;
+      border: 1px solid #999;
+      padding: 6px 10px;
+      border-radius: 4px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
+      font-family: sans-serif;
+      font-size: 14px;
+      z-index: 9999;
+      max-width: 250px;
+    `;
+    document.body.appendChild(feedbackBox);
+  }
+  feedbackBox.textContent = msg;
+  clearTimeout(feedbackBox.timer);
+  feedbackBox.timer = setTimeout(() => (feedbackBox.textContent = ""), 4000);
+}
+
+// Integration Hooks
+function toggleVoiceControl(setting) {
+  voiceControlEnabled = setting;
+  saveSetting("voiceControl", setting);
+  if (setting) startVoiceControl();
+  else stopVoiceControl();
+}
+
+// Load Setting on Init
+window.addEventListener("DOMContentLoaded", () => {
+  setupVoiceRecognition();
+  const setting = loadSetting("voiceControl");
+  if (setting === true) {
+    toggleVoiceControl(true);
+  }
+});
+
+// Voice Commands Help
+function printAvailableCommands() {
+  console.log("🧠 Available Voice Commands:");
+  for (let cmd in commandActions) {
+    console.log(`→ "${cmd}"`);
+  }
+}
+
+
+
+// =========================
+// 📦 Merged Module 29: module_28_audio_enhancements.js
+// =========================
+
+// ==========================
+// Module 28 – Audio Enhancements & Waveform Visuals
+// ==========================
+
+let audioContext, analyser, waveformCanvas, waveformCtx, dataArray, bufferLength, animationId;
+
+// Setup Audio Visualization
+function initAudioVisualizer(audioElementId = "tts-audio") {
+  const audio = document.getElementById(audioElementId);
+  if (!audio) return;
+
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  const source = audioContext.createMediaElementSource(audio);
+  analyser = audioContext.createAnalyser();
+  source.connect(analyser);
+  analyser.connect(audioContext.destination);
+  analyser.fftSize = 2048;
+
+  bufferLength = analyser.frequencyBinCount;
+  dataArray = new Uint8Array(bufferLength);
+
+  // Create Canvas
+  if (!waveformCanvas) {
+    waveformCanvas = document.createElement("canvas");
+    waveformCanvas.id = "waveform-canvas";
+    waveformCanvas.width = 500;
+    waveformCanvas.height = 100;
+    waveformCanvas.style = "width: 100%; height: 100px; display: block; background: #111; border-radius: 4px; margin-top: 10px;";
+    document.body.appendChild(waveformCanvas);
+  }
+
+  waveformCtx = waveformCanvas.getContext("2d");
+
+  drawWaveform();
+}
+
+function drawWaveform() {
+  animationId = requestAnimationFrame(drawWaveform);
+
+  analyser.getByteTimeDomainData(dataArray);
+
+  waveformCtx.fillStyle = "#111";
+  waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+
+  waveformCtx.lineWidth = 2;
+  waveformCtx.strokeStyle = "#33ff33";
+
+  waveformCtx.beginPath();
+
+  const sliceWidth = waveformCanvas.width * 1.0 / bufferLength;
+  let x = 0;
+
+  for (let i = 0; i < bufferLength; i++) {
+    const v = dataArray[i] / 128.0;
+    const y = v * waveformCanvas.height / 2;
+
+    if (i === 0) {
+      waveformCtx.moveTo(x, y);
+    } else {
+      waveformCtx.lineTo(x, y);
+    }
+
+    x += sliceWidth;
+  }
+
+  waveformCtx.lineTo(waveformCanvas.width, waveformCanvas.height / 2);
+  waveformCtx.stroke();
+}
+
+function stopWaveform() {
+  cancelAnimationFrame(animationId);
+  if (waveformCanvas) waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const audioEl = document.getElementById("tts-audio");
+  if (audioEl) {
+    audioEl.addEventListener("play", () => {
+      initAudioVisualizer("tts-audio");
+    });
+    audioEl.addEventListener("pause", stopWaveform);
+    audioEl.addEventListener("ended", stopWaveform);
+  }
+});
+
+
+
+// =========================
+// 📦 Merged Module 30: module_30_session_analytics.js
+// =========================
+
+// ==========================
+// Module 30 – Session Analytics & Smart Recommendations
+// ==========================
+
+let sessionData = [];
+let recommendations = [];
+
+function trackSessionEvent(eventType, details = {}) {
+  const timestamp = new Date().toISOString();
+  sessionData.push({ eventType, timestamp, ...details });
+
+  if (sessionData.length > 1000) sessionData.shift(); // Prevent memory overflow
+  saveSessionData();
+}
+
+function saveSessionData() {
+  localStorage.setItem("sessionData", JSON.stringify(sessionData));
+}
+
+function loadSessionData() {
+  const stored = localStorage.getItem("sessionData");
+  if (stored) sessionData = JSON.parse(stored);
+}
+
+function analyzeUsagePatterns() {
+  const usage = sessionData.reduce((acc, item) => {
+    acc[item.eventType] = (acc[item.eventType] || 0) + 1;
+    return acc;
+  }, {});
+  return usage;
+}
+
+function generateSmartRecommendations() {
+  const usage = analyzeUsagePatterns();
+  recommendations = [];
+
+  if ((usage["play"] || 0) > 50 && !(usage["capture"] > 5)) {
+    recommendations.push("Try capturing your own notes using the Capture feature!");
+  }
+  if ((usage["pause"] || 0) > (usage["play"] || 1)) {
+    recommendations.push("Enable Auto Resume for smoother playback.");
+  }
+  if ((usage["upload"] || 0) > 30 && (usage["library"] || 0) < 10) {
+    recommendations.push("Organize your uploads into playlists for quick access.");
+  }
+
+  localStorage.setItem("recommendations", JSON.stringify(recommendations));
+}
+
+function showRecommendations() {
+  const box = document.getElementById("smart-recommend-box") || createRecommendBox();
+  box.innerHTML = "<h4>🔍 Smart Recommendations</h4><ul>" + 
+    recommendations.map(r => `<li>${r}</li>`).join("") + "</ul>";
+}
+
+function createRecommendBox() {
+  const box = document.createElement("div");
+  box.id = "smart-recommend-box";
+  box.style = "position:fixed; bottom:20px; left:20px; background:#fff; color:#000; border-radius:8px; padding:12px; box-shadow:0 0 10px rgba(0,0,0,0.2); z-index:9999; max-width:300px;";
+  document.body.appendChild(box);
+  return box;
+}
+
+// Restore and analyze on startup
+window.addEventListener("DOMContentLoaded", () => {
+  loadSessionData();
+  generateSmartRecommendations();
+  showRecommendations();
+});
+
+
+
+// =========================
+// 📦 Merged Module 31: module_31_sentence_navigation.js
+// =========================
+
+// ==========================
+// Module 31 – Interactive Visual Sentence & Paragraph Navigation
+// ==========================
+
+let currentHighlightIndex = 0;
+let sentencePositions = [];
+
+function highlightSentence(index) {
+  const all = document.querySelectorAll(".highlighted-sentence");
+  all.forEach(el => el.classList.remove("active-highlight"));
+
+  const target = all[index];
+  if (target) {
+    target.classList.add("active-highlight");
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+function jumpToSentence(index) {
+  currentHighlightIndex = index;
+  highlightSentence(currentHighlightIndex);
+}
+
+function nextSentence() {
+  if (currentHighlightIndex < sentencePositions.length - 1) {
+    currentHighlightIndex++;
+    highlightSentence(currentHighlightIndex);
+  }
+}
+
+function previousSentence() {
+  if (currentHighlightIndex > 0) {
+    currentHighlightIndex--;
+    highlightSentence(currentHighlightIndex);
+  }
+}
+
+function extractSentencesFromText() {
+  const textContainer = document.getElementById("text-display");
+  const content = textContainer.innerText;
+  const splitSentences = content.match(/[^.!?]+[.!?]+/g) || [content];
+
+  textContainer.innerHTML = "";
+  splitSentences.forEach((sentence, i) => {
+    const span = document.createElement("span");
+    span.innerText = sentence + " ";
+    span.classList.add("highlighted-sentence");
+    span.onclick = () => jumpToSentence(i);
+    textContainer.appendChild(span);
+    sentencePositions.push(span);
+  });
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  extractSentencesFromText();
+  highlightSentence(currentHighlightIndex);
+
+  const nav = document.createElement("div");
+  nav.style = "position:fixed;top:10px;right:10px;z-index:9999;";
+  nav.innerHTML = \`
+    <button onclick="previousSentence()">⬅️ Previous</button>
+    <button onclick="nextSentence()">Next ➡️</button>
+  \`;
+  document.body.appendChild(nav);
+});
+
+
+
+// =========================
+// 📦 Merged Module 32: module_33_notification_streaks.js
+// =========================
+
+// ==========================
+// Module 33 – Notification & Streak Reminders
+// ==========================
+
+let reminderTime = "18:30"; // Default daily reminder time
+let streakCount = 0;
+let lastUsedDate = null;
+
+// Check & update streak
+function updateStreak() {
+  const today = new Date().toDateString();
+  const last = localStorage.getItem("lastUsedDate");
+  if (last !== today) {
+    if (new Date(today) - new Date(last) === 86400000) {
+      streakCount++;
+    } else {
+      streakCount = 1;
+    }
+    localStorage.setItem("lastUsedDate", today);
+    localStorage.setItem("streakCount", streakCount);
+    showNotification("🔥 Streak Updated!", `You're on a ${streakCount}-day streak!`);
+  }
+}
+
+// Show local notification
+function showNotification(title, message) {
+  if (Notification.permission === "granted") {
+    new Notification(title, { body: message });
+  }
+}
+
+// Ask for permission
+function requestNotificationPermission() {
+  if (Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
+}
+
+// Set daily reminder
+function scheduleDailyReminder() {
+  if ("serviceWorker" in navigator && "showTrigger" in Notification) {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification("📚 Time to read with NeurAloud!", {
+        body: "Keep your streak alive. Tap to resume.",
+        tag: "daily-reminder",
+      });
+    });
+  }
+}
+
+// Load streak on start
+window.addEventListener("DOMContentLoaded", () => {
+  requestNotificationPermission();
+  updateStreak();
+});
+
+// ================================
+// MODULE 35
+// ================================
+
+//==========================
+//Module35–SocialSharing&PromotionPanel
+//==========================
+letshareLog=[];
+functioncreateSharePanel(){
+constpanel=document.createElement("div");
+panel.id="share-panel";
+panel.style=`
+position:fixed;
+top:20px;
+right:20px;
+background:var(--panel-bg,#f8f8f8);
+border:1pxsolidvar(--panel-border,#ccc);
+padding:10px;
+border-radius:6px;
+box-shadow:02px8pxrgba(0,0,0,0.2);
+z-index:9999;
+width:260px;
+font-family:sans-serif;
+font-size:14px;
+transition:opacity0.3sease;
+`;
+panel.innerHTML=`
+<strong>📣ShareNeurAloud</strong>
+<divstyle="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">
+${createShareButtonHTML("📘","Facebook")}
+${createShareButtonHTML("🐦","Twitter")}
+${createShareButtonHTML("💼","LinkedIn")}
+${createShareButtonHTML("💬","WhatsApp")}
+${createShareButtonHTML("✉️","Email")}
+${createShareButtonHTML("🔗","CopyLink")}
+</div>
+<divid="share-log"style="margin-top:10px;font-size:12px;color:#444;"></div>
+<divstyle="text-align:right;margin-top:8px;">
+<buttononclick="hideSharePanel()"style="font-size:12px;">❌Close</button>
+</div>
+`;
+document.body.appendChild(panel);
+updateShareLog();
+}
+functioncreateShareButtonHTML(icon,label){
+return`<buttononclick="handleShare('${label}')"title="${label}"style="
+flex:1030%;
+padding:6px;
+font-size:16px;
+cursor:pointer;
+border:1pxsolid#ccc;
+border-radius:4px;
+background:var(--btn-bg,#fff);
+color:#333;
+">${icon}</button>`;
+}
+functionhandleShare(platform){
+consturl=generateShareLink();
+letshareURL="";
+switch(platform.toLowerCase()){
+case"facebook":
+shareURL=`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+break;
+case"twitter":
+shareURL=`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=Try+NeurAloud!`;
+break;
+case"linkedin":
+shareURL=`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+break;
+case"whatsapp":
+shareURL=`https://api.whatsapp.com/send?text=TryNeurAloud!${encodeURIComponent(url)}`;
+break;
+case"email":
+shareURL=`mailto:?subject=CheckoutNeurAloud&body=Here'sthelink:${url}`;
+break;
+case"copylink":
+navigator.clipboard.writeText(url).then(()=>{
+logShare(platform+"(copied)");
+alert("🔗Linkcopiedtoclipboard!");
+});
+return;
+default:
+return;
+}
+window.open(shareURL,"_blank");
+logShare(platform);
+}
+functiongenerateShareLink(){
+letbase=window.location.href.split("?")[0];
+constfileName=localStorage.getItem("lastFileName")||"neurAloud";
+return`${base}?file=${encodeURIComponent(fileName)}&utm_source=NeurAloud&utm_medium=share&utm_campaign=organic`;
+}
+functionlogShare(platform){
+consttimestamp=newDate().toLocaleTimeString();
+shareLog.unshift(`[${timestamp}]${platform}`);
+if(shareLog.length>5)shareLog.pop();
+updateShareLog();
+}
+functionupdateShareLog(){
+constbox=document.getElementById("share-log");
+if(!box)return;
+box.innerHTML=`<strong>RecentShares:</strong><br>${shareLog.join("<br>")}`;
+}
+functionhideSharePanel(){
+constpanel=document.getElementById("share-panel");
+if(panel)panel.style.display="none";
+}
+//Optionalauto-hideonscroll
+letscrollTimeout;
+window.addEventListener("scroll",()=>{
+constpanel=document.getElementById("share-panel");
+if(panel){
+panel.style.opacity="0.3";
+clearTimeout(scrollTimeout);
+scrollTimeout=setTimeout(()=>(panel.style.opacity="1"),1500);
+}
+});
+//Loadoninit
+window.addEventListener("DOMContentLoaded",()=>{
+setTimeout(()=>{
+createSharePanel();
+},300);
+});
+
+// ================================
+// MODULE 36
+// ================================
+
+// ==========================
+// Module 36 – Audiobook Mode & Chapter Navigation
+// ==========================
+let audiobookMode = false;
+let chapters = [];
+let currentChapterIndex = 0;
+// Toggle Audiobook Mode
+function toggleAudiobookMode(enable) {
+  audiobookMode = enable;
+  document.body.classList.toggle("audiobook-mode", enable);
+  saveSetting("audiobookMode", enable);
+  if (enable) {
+    detectChapters();
+    showChapterSidebar();
+    resumeLastChapter();
+  } else {
+    removeChapterSidebar();
+  }
+}
+// Detect Chapters from Visible Text
+function detectChapters() {
+  const fullText = document.getElementById("text-display")?.innerText || "";
+  const chapterRegex = /(?:chapter\s+(\d+)[\s:\-]*(.*))|(?:^CHAPTER\s+(\d+).*)/gi;
+  chapters = [];
+  let match;
+  while ((match = chapterRegex.exec(fullText))) {
+    const index = match.index;
+    const num = match[1] || match[3] || "";
+    const title = match[2]?.trim() || "";
+    const cleanTitle = `Chapter ${num}${title ? ` – ${title}` : ""}`;
+    chapters.push({ index, title: cleanTitle });
+  }
+}
+// Show Chapter Sidebar
+function showChapterSidebar() {
+  removeChapterSidebar();
+  const sidebar = document.createElement("div");
+  sidebar.id = "chapter-sidebar";
+  sidebar.style = `
+    position: fixed;
+    top: 60px;
+    left: 0;
+    width: 220px;
+    height: 100%;
+    background: #202020;
+    color: #fff;
+    z-index: 9998;
+    overflow-y: auto;
+    border-right: 2px solid #444;
+    font-family: sans-serif;
+    font-size: 14px;
+    padding: 10px;
+  `;
+  const title = document.createElement("div");
+  title.textContent = "📖 Chapters";
+  title.style = "font-weight: bold; margin-bottom: 10px;";
+  sidebar.appendChild(title);
+  chapters.forEach((ch, i) => {
+    const item = document.createElement("div");
+    item.textContent = ch.title;
+    item.style = "margin: 6px 0; cursor: pointer;";
+    item.onclick = () => scrollToChapter(i);
+    sidebar.appendChild(item);
+  });
+  document.body.appendChild(sidebar);
+}
+// Remove Chapter Sidebar
+function removeChapterSidebar() {
+  const existing = document.getElementById("chapter-sidebar");
+  if (existing) existing.remove();
+}
+// Scroll to Chapter
+function scrollToChapter(index) {
+  const container = document.getElementById("text-display");
+  const content = container?.innerText || "";
+  const targetIndex = chapters[index]?.index || 0;
+  const preText = content.slice(0, targetIndex);
+  const lines = preText.split("\n").length;
+  const lineHeight = 20; // Approximate
+  container.scrollTop = lines * lineHeight;
+  currentChapterIndex = index;
+  saveSetting("lastChapterIndex", index);
+}
+// Resume to Last Chapter
+function resumeLastChapter() {
+  const savedIndex = parseInt(loadSetting("lastChapterIndex") || 0);
+  if (chapters[savedIndex]) {
+    setTimeout(() => scrollToChapter(savedIndex), 1000);
+  }
+}
+// Track Chapter Progress (optional enhancement)
+function trackChapterProgress() {
+  const container = document.getElementById("text-display");
+  const progress = chapters.map((_, i) => {
+    const pos = getScrollPositionForChapter(i);
+    return pos;
+  });
+  localStorage.setItem("chapterProgress", JSON.stringify(progress));
+}
+function getScrollPositionForChapter(index) {
+  const container = document.getElementById("text-display");
+  return container?.scrollTop || 0;
+}
+// Mobile View: Chapter Dropdown
+function showChapterDropdown() {
+  const select = document.createElement("select");
+  select.id = "chapter-dropdown";
+  select.style = `
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 9999;
+    padding: 6px;
+    font-size: 14px;
+  `;
+  chapters.forEach((ch, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = ch.title;
+    select.appendChild(opt);
+  });
+  select.onchange = (e) => scrollToChapter(parseInt(e.target.value));
+  document.body.appendChild(select);
+}
+// Optional: Improve Chapter Titles
+function improveChapterTitles() {
+  chapters = chapters.map((ch, i) => {
+    if (/chapter\s+\d+$/i.test(ch.title)) {
+      return { ...ch, title: `${ch.title} – Untitled` };
+    }
+    return ch;
+  });
+}
+// Init Hook
+window.addEventListener("DOMContentLoaded", () => {
+  const enabled = loadSetting("audiobookMode") === "true";
+  if (enabled) toggleAudiobookMode(true);
+});
+
+// ================================
+// MODULE 37
+// ================================
+
+// ==========================
+// Module 37 – Auto Summary + Translation Memory
+// ==========================
+// GLOBALS
+let summaryDB = {};
+let translationMemory = {};
+let lastSummaryText = "";
+let summaryPanel;
+// Setup
+window.addEventListener("DOMContentLoaded", () => {
+  initSummaryDB();
+  createSummaryPanel();
+  attachSummaryButton();
+});
+// INIT STORAGE
+function initSummaryDB() {
+  const saved = localStorage.getItem("summaryDB");
+  const translations = localStorage.getItem("translationMemory");
+  summaryDB = saved ? JSON.parse(saved) : {};
+  translationMemory = translations ? JSON.parse(translations) : {};
+}
+// SAVE STORAGE
+function saveSummaryData() {
+  localStorage.setItem("summaryDB", JSON.stringify(summaryDB));
+  localStorage.setItem("translationMemory", JSON.stringify(translationMemory));
+}
+// CREATE PANEL
+function createSummaryPanel() {
+  summaryPanel = document.createElement("div");
+  summaryPanel.id = "summary-panel";
+  summaryPanel.style = `
+    background: #f5f5f5;
+    padding: 14px;
+    border-radius: 6px;
+    margin-top: 12px;
+    border: 1px solid #ccc;
+    font-family: sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    display: none;
+  `;
+  const container = document.getElementById("text-display") || document.body;
+  container.appendChild(summaryPanel);
+}
+// BUTTON UI
+function attachSummaryButton() {
+  const btn = document.createElement("button");
+  btn.textContent = "🧠 Auto-Summarize";
+  btn.style = `
+    margin-top: 12px;
+    padding: 8px 14px;
+    font-size: 14px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  `;
+  btn.onclick = generateSummary;
+  const target = document.getElementById("text-display") || document.body;
+  target.appendChild(btn);
+}
+// SUMMARY GENERATOR
+async function generateSummary() {
+  const text = getTextForSummary();
+  if (!text) return alert("No text available for summary.");
+  if (summaryDB[text]) {
+    showSummary(summaryDB[text]);
+    return;
+  }
+  const summary = await mockSummarizeAPI(text);
+  summaryDB[text] = summary;
+  lastSummaryText = text;
+  saveSummaryData();
+  showSummary(summary);
+}
+// MOCK SUMMARIZER (Replace with real API)
+async function mockSummarizeAPI(text) {
+  const sentences = text.split(/[.!?]\s/).filter(s => s.length > 40);
+  const summary = sentences.slice(0, 3).join(". ") + ".";
+  await delay(1000);
+  return summary;
+}
+// UI Display
+function showSummary(summary) {
+  summaryPanel.innerHTML = `
+    <strong>📋 Summary:</strong><br>
+    ${summary}
+    <br><br>
+    <label>Translate to:
+      <select id="summary-lang-select">
+        <option value="">(None)</option>
+        <option value="fr">French</option>
+        <option value="es">Spanish</option>
+        <option value="pt">Portuguese</option>
+        <option value="sw">Swahili</option>
+        <option value="zh">Chinese</option>
+        <option value="ar">Arabic</option>
+      </select>
+    </label>
+    <button onclick="translateSummary()">🌍 Translate</button>
+  `;
+  summaryPanel.style.display = "block";
+}
+// TRANSLATE
+async function translateSummary() {
+  const lang = document.getElementById("summary-lang-select").value;
+  if (!lang) return;
+  if (translationMemory[lastSummaryText]?.[lang]) {
+    showTranslatedSummary(translationMemory[lastSummaryText][lang], lang);
+    return;
+  }
+  const translated = await mockTranslateAPI(lastSummaryText, lang);
+  if (!translationMemory[lastSummaryText]) {
+    translationMemory[lastSummaryText] = {};
+  }
+  translationMemory[lastSummaryText][lang] = translated;
+  saveSummaryData();
+  showTranslatedSummary(translated, lang);
+}
+// MOCK TRANSLATOR (Replace with real API)
+async function mockTranslateAPI(text, lang) {
+  await delay(1000);
+  return `[${lang.toUpperCase()}] ${text.slice(0, 120)}...`;
+}
+// DISPLAY TRANSLATED TEXT
+function showTranslatedSummary(translatedText, lang) {
+  const langLabel = {
+    fr: "French",
+    es: "Spanish",
+    pt: "Portuguese",
+    sw: "Swahili",
+    zh: "Chinese",
+    ar: "Arabic"
+  }[lang] || lang;
+  summaryPanel.innerHTML += `
+    <hr><strong>🔁 ${langLabel}:</strong><br>${translatedText}
+  `;
+}
+// Helper
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+function getTextForSummary() {
+  const area = document.getElementById("text-display");
+  return area?.innerText || "";
+}
+// ADMIN VIEW
+function showSummaryDB() {
+  console.clear();
+  console.log("=== Summary DB ===");
+  console.log(summaryDB);
+  console.log("=== Translation Memory ===");
+  console.log(translationMemory);
+}
+
+// ================================
+// MODULE 38
+// ================================
+
+// ==========================
+// Module 39 – Bookmarking System & Smart Resume
+// ==========================
+let bookmarks = [];
+let currentFileId = null;
+// Load bookmarks from IndexedDB
+async function loadBookmarks(fileId) {
+  const tx = db.transaction("bookmarks", "readonly");
+  const store = tx.objectStore("bookmarks");
+  const request = store.get(fileId);
+  return new Promise((resolve) => {
+    request.onsuccess = () => {
+      bookmarks = request.result?.data || [];
+      renderBookmarkList();
+      resolve(bookmarks);
+    };
+    request.onerror = () => resolve([]);
+  });
+}
+// Save bookmarks to IndexedDB
+async function saveBookmarks(fileId) {
+  const tx = db.transaction("bookmarks", "readwrite");
+  const store = tx.objectStore("bookmarks");
+  store.put({ id: fileId, data: bookmarks });
+}
+// Add new bookmark
+function addBookmark(sentenceIndex, textPreview) {
+  if (!currentFileId) return;
+  const timestamp = Date.now();
+  bookmarks.push({ index: sentenceIndex, preview: textPreview, time: timestamp });
+  saveBookmarks(currentFileId);
+  renderBookmarkList();
+  console.log(`🔖 Bookmark added at index ${sentenceIndex}`);
+}
+// Render bookmarks in UI
+function renderBookmarkList() {
+  const container = document.getElementById("bookmark-list");
+  if (!container) return;
+  container.innerHTML = "";
+  if (bookmarks.length === 0) {
+    container.innerHTML = "<p>No bookmarks yet.</p>";
+    return;
+  }
+  bookmarks.forEach((bm, idx) => {
+    const div = document.createElement("div");
+    div.className = "bookmark-item";
+    div.innerHTML = `
+      <strong>#${idx + 1}</strong>: ${bm.preview.slice(0, 100)}<br>
+      <button onclick="goToBookmark(${bm.index})">📌 Go</button>
+      <button onclick="removeBookmark(${idx})">❌ Delete</button>
+    `;
+    container.appendChild(div);
+  });
+}
+// Remove a bookmark
+function removeBookmark(index) {
+  bookmarks.splice(index, 1);
+  saveBookmarks(currentFileId);
+  renderBookmarkList();
+}
+// Jump to bookmarked sentence
+function goToBookmark(index) {
+  if (sentences.length === 0) return;
+  currentSentenceIndex = index;
+  highlightSentence(index);
+  scrollSentenceIntoView(index);
+  console.log(`🎯 Jumped to bookmarked sentence ${index}`);
+}
+// Smart resume: Auto-jump to last bookmark
+function resumeFromLastBookmark() {
+  if (bookmarks.length === 0) return;
+  const last = bookmarks[bookmarks.length - 1];
+  goToBookmark(last.index);
+}
+// Update current reading progress as “smart resume point”
+function updateResumePoint(index) {
+  if (!currentFileId) return;
+  localStorage.setItem(`resume_${currentFileId}`, index);
+}
+// Restore last resume point
+function restoreResumePoint(fileId) {
+  const idx = parseInt(localStorage.getItem(`resume_${fileId}`) || "0");
+  currentSentenceIndex = isNaN(idx) ? 0 : idx;
+  highlightSentence(currentSentenceIndex);
+  scrollSentenceIntoView(currentSentenceIndex);
+  console.log(`⏪ Resumed from index ${currentSentenceIndex}`);
+}
+// UI: Attach buttons
+function setupBookmarkButtons() {
+  const panel = document.getElementById("bookmark-panel");
+  if (!panel) return;
+  const addBtn = document.createElement("button");
+  addBtn.textContent = "🔖 Add Bookmark";
+  addBtn.onclick = () => {
+    const idx = currentSentenceIndex;
+    const preview = sentences[idx] || "";
+    addBookmark(idx, preview);
+  };
+  panel.appendChild(addBtn);
+}
+// Hook into file load
+async function onDocumentLoadWithBookmarks(fileId) {
+  currentFileId = fileId;
+  await loadBookmarks(fileId);
+  restoreResumePoint(fileId);
+}
+// Hook into sentence advance
+function onSentenceAdvance(index) {
+  updateResumePoint(index);
+}
+// HTML Setup (for demo/testing)
+window.addEventListener("DOMContentLoaded", () => {
+  const bPanel = document.createElement("div");
+  bPanel.id = "bookmark-panel";
+  bPanel.style = "position:fixed;top:70px;left:10px;background:#fff;padding:8px;border:1px solid #ccc;";
+  bPanel.innerHTML = "<h4>Bookmarks</h4><div id='bookmark-list'></div>";
+  document.body.appendChild(bPanel);
+  setupBookmarkButtons();
+});
+
+// ================================
+// MODULE 39
+// ================================
+
+// ==============================
+// Module 40 – End-of-Chapter Summaries & Playback Triggers
+// ==============================
+let chapterSummaries = {};
+let lastChapter = "";
+let autoSummaryEnabled = true;
+let autoPlaySummary = true;
+// Helper: Detect end of chapter by sentence patterns
+function detectEndOfChapter(text) {
+  const patterns = [/^CHAPTER\s+\w+/i, /^###+/, /^[-=]{3,}$/];
+  return patterns.some(p => p.test(text.trim()));
+}
+// Generate summary from previous sentences
+function generateSummary(sentences, currentIdx, windowSize = 10) {
+  const start = Math.max(0, currentIdx - windowSize);
+  const segment = sentences.slice(start, currentIdx).join(" ");
+  return summarizeText(segment);
+}
+// Placeholder for future LLM or backend
+function summarizeText(text) {
+  const words = text.split(" ");
+  const brief = words.slice(0, 40).join(" ");
+  return `📝 Summary: ${brief}...`;
+}
+// Handle end-of-chapter event
+function handleEndOfChapter(sentenceIndex) {
+  const chapterId = `Chapter_${Object.keys(chapterSummaries).length + 1}`;
+  const summary = generateSummary(sentences, sentenceIndex);
+  chapterSummaries[chapterId] = {
+    id: chapterId,
+    summary: summary,
+    idx: sentenceIndex
+  };
+  console.log(`📘 ${chapterId} summary generated.`);
+  renderSummaryUI();
+  if (autoPlaySummary) {
+    speak(summary);
+  }
+}
+// Hook into sentence reading loop
+function monitorForChapterEnds(index) {
+  const sentence = sentences[index] || "";
+  if (detectEndOfChapter(sentence)) {
+    if (lastChapter !== sentence) {
+      lastChapter = sentence;
+      setTimeout(() => {
+        handleEndOfChapter(index);
+      }, 1000);
+    }
+  }
+}
+// Speak the text aloud using current TTS
+function speak(text) {
+  if (!text || !window.speechSynthesis) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = parseFloat(localStorage.getItem("ttsRate") || 1);
+  utter.pitch = parseFloat(localStorage.getItem("ttsPitch") || 1);
+  speechSynthesis.speak(utter);
+}
+// Show summaries in side panel
+function renderSummaryUI() {
+  let container = document.getElementById("summary-panel");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "summary-panel";
+    container.style = `
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      width: 300px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: #fefefe;
+      border: 1px solid #aaa;
+      padding: 10px;
+      font-size: 13px;
+      box-shadow: 0 0 10px #888;
+      z-index: 9999;
+    `;
+    document.body.appendChild(container);
+  }
+  container.innerHTML = `<h4>🧠 Chapter Summaries</h4>`;
+  Object.values(chapterSummaries).forEach(s => {
+    const btn = document.createElement("button");
+    btn.textContent = s.id;
+    btn.onclick = () => {
+      highlightSentence(s.idx);
+      scrollSentenceIntoView(s.idx);
+      speak(s.summary);
+    };
+    container.appendChild(btn);
+    container.appendChild(document.createTextNode(" "));
+  });
+}
+// Toggle options
+function setupSummarySettings() {
+  const bar = document.getElementById("summary-settings");
+  if (!bar) {
+    const newBar = document.createElement("div");
+    newBar.id = "summary-settings";
+    newBar.style = `
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: #eee;
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-size: 12px;
+      z-index: 9999;
+    `;
+    newBar.innerHTML = `
+      <label><input type="checkbox" id="auto-summary-toggle" checked /> Auto Summaries</label><br>
+      <label><input type="checkbox" id="auto-play-toggle" checked /> Auto Play</label>
+    `;
+    document.body.appendChild(newBar);
+    document.getElementById("auto-summary-toggle").onchange = e => {
+      autoSummaryEnabled = e.target.checked;
+    };
+    document.getElementById("auto-play-toggle").onchange = e => {
+      autoPlaySummary = e.target.checked;
+    };
+  }
+}
+// Hook into document load
+window.addEventListener("DOMContentLoaded", () => {
+  setupSummarySettings();
+});
+// Hook this into your playback loop
+function onSentenceChangeHook(index) {
+  if (autoSummaryEnabled) monitorForChapterEnds(index);
+}
+
+// ================================
+// MODULE 40
+// ================================
+
+// ==============================
+// Module 41 – Looping Modes & Sentence Repeat
+// ==============================
+let loopMode = "none"; // "none", "sentence", "paragraph", "range"
+let loopActive = false;
+let loopStart = 0;
+let loopEnd = 0;
+let lastSentenceIndex = 0;
+function repeatSentence() {
+  if (sentences[lastSentenceIndex]) {
+    speak(sentences[lastSentenceIndex]);
+  }
+}
+function getParagraph(index) {
+  let para = [sentences[index]];
+  let i = index - 1;
+  while (i >= 0 && !sentences[i].match(/^\s*$/)) {
+    para.unshift(sentences[i]);
+    i--;
+  }
+  i = index + 1;
+  while (i < sentences.length && !sentences[i].match(/^\s*$/)) {
+    para.push(sentences[i]);
+    i++;
+  }
+  return para.join(" ");
+}
+function loopPlayback(index) {
+  if (!loopActive || loopMode === "none") return;
+  if (loopMode === "sentence") {
+    speak(sentences[index]);
+  } else if (loopMode === "paragraph") {
+    const paraText = getParagraph(index);
+    speak(paraText);
+  } else if (loopMode === "range") {
+    if (index >= loopEnd) {
+      currentSentenceIndex = loopStart - 1;
+    }
+  }
+}
+function setLoopRange(start, end) {
+  loopStart = start;
+  loopEnd = end;
+  localStorage.setItem("loopStart", loopStart);
+  localStorage.setItem("loopEnd", loopEnd);
+  devLog(`Custom loop set: ${loopStart} to ${loopEnd}`);
+}
+function toggleLoopMode(mode) {
+  loopMode = mode;
+  loopActive = mode !== "none";
+  localStorage.setItem("loopMode", loopMode);
+  devLog(`Loop mode set: ${loopMode}`);
+  updateLoopPanel();
+}
+function restoreLoopSettings() {
+  loopMode = localStorage.getItem("loopMode") || "none";
+  loopStart = parseInt(localStorage.getItem("loopStart") || "0");
+  loopEnd = parseInt(localStorage.getItem("loopEnd") || "0");
+  loopActive = loopMode !== "none";
+}
+function updateLoopPanel() {
+  const panel = document.getElementById("loop-panel");
+  if (panel) {
+    panel.querySelector("#loop-status").innerText = `Mode: ${loopMode}`;
+  }
+}
+function createLoopPanel() {
+  if (document.getElementById("loop-panel")) return;
+  const panel = document.createElement("div");
+  panel.id = "loop-panel";
+  panel.style = `
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background: #f1f1f1;
+    border: 1px solid #888;
+    padding: 10px;
+    font-size: 13px;
+    z-index: 9999;
+    box-shadow: 0 0 5px #aaa;
+  `;
+  panel.innerHTML = `
+    <div><strong>🔁 Loop Control</strong></div>
+    <div id="loop-status">Mode: ${loopMode}</div>
+    <button onclick="toggleLoopMode('none')">❌ Off</button>
+    <button onclick="toggleLoopMode('sentence')">🔂 Sentence</button>
+    <button onclick="toggleLoopMode('paragraph')">📄 Paragraph</button>
+    <button onclick="toggleLoopMode('range')">📌 Range</button>
+    <button onclick="repeatSentence()">Repeat 🔁</button>
+    <br><br>
+    <input type="number" id="loop-start" placeholder="Start ID" style="width: 60px" />
+    <input type="number" id="loop-end" placeholder="End ID" style="width: 60px" />
+    <button onclick="setLoopFromInputs()">Set Range</button>
+  `;
+  document.body.appendChild(panel);
+}
+function setLoopFromInputs() {
+  const start = parseInt(document.getElementById("loop-start").value || "0");
+  const end = parseInt(document.getElementById("loop-end").value || "0");
+  if (start < end) {
+    setLoopRange(start, end);
+  } else {
+    alert("Start must be less than end");
+  }
+}
+function onSentenceChangeLoopHook(index) {
+  lastSentenceIndex = index;
+  if (loopActive) {
+    loopPlayback(index);
+  }
+}
+window.addEventListener("DOMContentLoaded", () => {
+  restoreLoopSettings();
+  createLoopPanel();
+});
+
+// ================================
+// MODULE 41
+// ================================
+
+// ==========================
+// Module 42 – Sleep Timer, Idle Timeout & Auto Pause
+// ==========================
+let sleepTimer = null;
+let idleTimer = null;
+let idleTimeoutMs = 2 * 60 * 1000;
+let sleepCountdown = 0;
+let sleepInterval = null;
+let autoPauseOnBlur = true;
+// Create Sleep/Idle Panel
+function createSleepPanel() {
+  const panel = document.createElement("div");
+  panel.id = "sleep-panel";
+  panel.style = `
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: #fff7e6;
+    border: 1px solid #888;
+    padding: 10px;
+    font-size: 13px;
+    z-index: 9999;
+    box-shadow: 0 0 5px #aaa;
+  `;
+  panel.innerHTML = `
+    <div><strong>⏰ Sleep/Idle Controls</strong></div>
+    <label>Sleep Timer (min):
+      <select id="sleep-time">
+        ${[5,10,15,30,45,60,90].map(min => `<option value="${min}">${min}</option>`).join("")}
+      </select>
+    </label>
+    <button onclick="startSleepTimer()">Start</button>
+    <button onclick="cancelSleepTimer()">Cancel</button>
+    <br><br>
+    <label><input type="checkbox" id="pause-on-blur" checked /> Pause on Tab Blur</label>
+    <div id="sleep-status" style="margin-top: 6px; font-size: 12px;">Idle...</div>
+  `;
+  document.body.appendChild(panel);
+  document.getElementById("pause-on-blur").onchange = (e) => {
+    autoPauseOnBlur = e.target.checked;
+    localStorage.setItem("pauseOnBlur", autoPauseOnBlur ? "true" : "false");
+  };
+}
+// Start Sleep Timer
+function startSleepTimer() {
+  const mins = parseInt(document.getElementById("sleep-time").value || "15");
+  sleepCountdown = mins * 60;
+  if (sleepInterval) clearInterval(sleepInterval);
+  sleepInterval = setInterval(() => {
+    sleepCountdown--;
+    updateSleepStatus();
+    if (sleepCountdown <= 0) {
+      clearInterval(sleepInterval);
+      pausePlayback();
+      updateSleepStatus("🔕 Sleep Timer Finished");
+    }
+  }, 1000);
+  updateSleepStatus();
+}
+// Cancel Sleep Timer
+function cancelSleepTimer() {
+  clearInterval(sleepInterval);
+  sleepCountdown = 0;
+  updateSleepStatus("🛑 Sleep Timer Cancelled");
+}
+// Update Status Display
+function updateSleepStatus(msg) {
+  const box = document.getElementById("sleep-status");
+  if (msg) {
+    box.innerText = msg;
+  } else {
+    box.innerText = `⏳ Sleep in ${Math.floor(sleepCountdown / 60)}m ${sleepCountdown % 60}s`;
+  }
+}
+// Auto Pause on Blur
+window.addEventListener("blur", () => {
+  if (autoPauseOnBlur) {
+    pausePlayback();
+    updateSleepStatus("🛑 Auto Paused on Blur");
+  }
+});
+// Idle Timeout Trigger
+function resetIdleTimer() {
+  if (idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    pausePlayback();
+    updateSleepStatus("🛑 Paused due to Inactivity");
+  }, idleTimeoutMs);
+}
+["click", "keydown", "mousemove", "scroll"].forEach(evt => {
+  window.addEventListener(evt, resetIdleTimer);
+});
+window.addEventListener("DOMContentLoaded", () => {
+  createSleepPanel();
+  autoPauseOnBlur = localStorage.getItem("pauseOnBlur") !== "false";
+  document.getElementById("pause-on-blur").checked = autoPauseOnBlur;
+  resetIdleTimer();
+});
+
+// ================================
+// MODULE 42
+// ================================
+
+// ==========================
+// Module 43 – Keyboard Shortcuts & Gesture Control
+// ==========================
+let shortcutsEnabled = true;
+let gestureLog = [];
+// ✅ Toggle UI
+function createShortcutTogglePanel() {
+  const panel = document.createElement("div");
+  panel.style = `
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: #f1f1f1;
+    padding: 8px;
+    font-size: 13px;
+    z-index: 9999;
+    border: 1px solid #aaa;
+    box-shadow: 0 0 4px #ccc;
+  `;
+  panel.innerHTML = `
+    <label><input type="checkbox" id="shortcut-enable" checked /> Enable Keyboard & Gesture Control</label>
+    <div id="key-log" style="margin-top: 6px; font-size: 12px; color: #555;"></div>
+  `;
+  document.body.appendChild(panel);
+  document.getElementById("shortcut-enable").onchange = (e) => {
+    shortcutsEnabled = e.target.checked;
+    localStorage.setItem("shortcutsEnabled", shortcutsEnabled ? "true" : "false");
+  };
+}
+// ✅ Keyboard Shortcuts
+function handleKeyShortcuts(e) {
+  if (!shortcutsEnabled) return;
+  const key = e.key.toLowerCase();
+  const log = [];
+  if (e.ctrlKey || e.shiftKey || e.altKey) {
+    log.push("Modifiers: ");
+    if (e.ctrlKey) log.push("Ctrl ");
+    if (e.shiftKey) log.push("Shift ");
+    if (e.altKey) log.push("Alt ");
+  }
+  log.push(`Key: ${key}`);
+  document.getElementById("key-log").innerText = log.join("");
+  // Shortcut mapping
+  if (e.ctrlKey && key === "p") {
+    playWithPriority();
+  } else if (key === "p") {
+    togglePlayPause();
+  } else if (key === "arrowleft") {
+    previousSentence();
+  } else if (key === "arrowright") {
+    nextSentence();
+  } else if (key === "+") {
+    increaseSpeed();
+  } else if (key === "-") {
+    decreaseSpeed();
+  } else if (key === "s") {
+    saveToLibrary();
+  } else if (e.shiftKey && key === "s") {
+    saveToFavorites();
+  } else if (key === "q") {
+    addToQueue();
+  }
+}
+// Example action bindings
+function togglePlayPause() { console.log("🔁 Play/Pause triggered"); }
+function previousSentence() { console.log("⬅️ Prev Sentence"); }
+function nextSentence() { console.log("➡️ Next Sentence"); }
+function increaseSpeed() { console.log("⏩ Speed +"); }
+function decreaseSpeed() { console.log("⏪ Speed -"); }
+function saveToLibrary() { console.log("💾 Saved to Library"); }
+function saveToFavorites() { console.log("⭐ Saved to Favorites"); }
+function addToQueue() { console.log("🧺 Added to Queue"); }
+function playWithPriority() { console.log("🔥 Priority Playback"); }
+// ✅ Gesture Handling
+let touchStartX = 0;
+let touchStartY = 0;
+function handleTouchStart(e) {
+  if (!shortcutsEnabled) return;
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+}
+function handleTouchEnd(e) {
+  if (!shortcutsEnabled) return;
+  const touch = e.changedTouches[0];
+  const dx = touch.clientX - touchStartX;
+  const dy = touch.clientY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    if (dx > 30) {
+      nextSentence();
+      logGesture("Swipe →");
+    } else if (dx < -30) {
+      previousSentence();
+      logGesture("Swipe ←");
+    }
+  } else {
+    if (dy < -30) {
+      increaseSpeed();
+      logGesture("Swipe ↑");
+    } else if (dy > 30) {
+      decreaseSpeed();
+      logGesture("Swipe ↓");
+    }
+  }
+}
+function logGesture(msg) {
+  gestureLog.push(msg);
+  if (gestureLog.length > 5) gestureLog.shift();
+  document.getElementById("key-log").innerText = "Gestures: " + gestureLog.join(", ");
+}
+// ✅ Init
+window.addEventListener("DOMContentLoaded", () => {
+  shortcutsEnabled = localStorage.getItem("shortcutsEnabled") !== "false";
+  createShortcutTogglePanel();
+  document.getElementById("shortcut-enable").checked = shortcutsEnabled;
+  window.addEventListener("keydown", handleKeyShortcuts);
+  window.addEventListener("touchstart", handleTouchStart);
+  window.addEventListener("touchend", handleTouchEnd);
+});
+
+// ================================
+// MODULE 43
+// ================================
+
+function detectSmartTitle(fileName, fileContent) {
+  const titleTag = document.title.trim();
+  const firstHeader = document.querySelector("h1, h2");
+  const firstLine = fileContent.split("\n").find(line => line.trim().length > 5);
+  let title = fileName.replace(/\.[^/.]+$/, ""); // default
+  if (titleTag && titleTag.length > 3) title = titleTag;
+  else if (firstHeader && firstHeader.textContent.length > 3) title = firstHeader.textContent.trim();
+  else if (firstLine) title = firstLine.trim();
+  return title;
+}
+
+// ======== Modules 45 to 51 ========
+
+
+
+// ========== Module 45.docx ==========
+
+// ==========================
+// Module 45 – Voice Avatar Customization
+// ==========================
+const voiceAvatars = [
+  { id: "avatar1", name: "Alex", voice: "en-US-GuyNeural", image: "👨‍💼" },
+  { id: "avatar2", name: "Sophia", voice: "en-US-JennyNeural", image: "👩‍💼" },
+  { id: "avatar3", name: "Liam", voice: "en-GB-RyanNeural", image: "🧑‍🎤" },
+  { id: "avatar4", name: "Emma", voice: "en-GB-SoniaNeural", image: "🧑‍🏫" },
+  { id: "avatar5", name: "Zane", voice: "en-US-DavisNeural", image: "🧑‍🚀" }
+];
+// Save avatar selection
+function saveSelectedAvatar(id) {
+  localStorage.setItem("selectedAvatarId", id);
+}
+// Get current selection
+function getSelectedAvatarId() {
+  return localStorage.getItem("selectedAvatarId") || "avatar1";
+}
+// Get full avatar object
+function getSelectedAvatar() {
+  const id = getSelectedAvatarId();
+  return voiceAvatars.find((a) => a.id === id) || voiceAvatars[0];
+}
+// Apply avatar’s voice to utterance
+function applyAvatarToTTS(utterance) {
+  const avatar = getSelectedAvatar();
+  utterance.voice = speechSynthesis
+    .getVoices()
+    .find((v) => v.name === avatar.voice);
+  utterance.name = avatar.name;
+}
+// Export avatar choice
+function exportAvatarChoice() {
+  const avatar = getSelectedAvatar();
+  return {
+    id: avatar.id,
+    name: avatar.name,
+    voice: avatar.voice,
+    image: avatar.image
+  };
+}
+// Add avatar info to profile object
+function appendAvatarToProfile(profile) {
+  const avatar = exportAvatarChoice();
+  return { ...profile, avatar };
+}
+// Render avatar picker UI
+function renderAvatarPicker() {
+  const container = document.createElement("div");
+  container.id = "avatar-picker";
+  container.style = "margin: 1em 0; padding: 1em; border: 1px dashed #ccc; display: flex; gap: 10px; justify-content: space-around; flex-wrap: wrap;";
+  voiceAvatars.forEach((avatar) => {
+    const btn = document.createElement("button");
+    btn.textContent = `${avatar.image} ${avatar.name}`;
+    btn.style = `
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 2px solid ${getSelectedAvatarId() === avatar.id ? "#007bff" : "#ccc"};
+      background: ${getSelectedAvatarId() === avatar.id ? "#eef7ff" : "#f9f9f9"};
+      cursor: pointer;
+    `;
+    btn.onclick = () => {
+      saveSelectedAvatar(avatar.id);
+      renderAvatarPicker(); // re-render to reflect active choice
+    };
+    container.appendChild(btn);
+  });
+  const existing = document.getElementById("avatar-picker");
+  if (existing) existing.replaceWith(container);
+  else document.body.appendChild(container);
+}
+// Hook to render when page loads
+window.addEventListener("DOMContentLoaded", () => {
+  renderAvatarPicker();
+});
+// Style guide (can be moved to CSS file)
+/*
+#avatar-picker button:hover {
+  background: #dceeff !important;
+}
+#avatar-picker button:focus {
+  outline: none;
+  box-shadow: 0 0 5px #007bff;
+}
+*/
+
+// ========== Module 46.docx ==========
+
+// ==========================
+// Module 46 – Theme & UI Preferences
+// ==========================
+const themes = {
+  light: {
+    primary: "#ffffff",
+    font: "#000000",
+    hover: "yellow",
+  },
+  dark: {
+    primary: "#121212",
+    font: "#f0f0f0",
+    hover: "#916B3D",
+  },
+  blue: {
+    primary: "#001f3f",
+    font: "#ffffff",
+    hover: "#916B3D",
+  },
+  royal: {
+    primary: "#2C2A4A",
+    font: "#ffffff",
+    hover: "#916B3D",
+  },
+  gray: {
+    primary: "#333333",
+    font: "#f0f0f0",
+    hover: "#916B3D",
+  },
+};
+function createThemeDropdown() {
+  const container = document.createElement("div");
+  container.id = "theme-picker";
+  container.style = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: sans-serif;
+    z-index: 9999;
+  `;
+  const label = document.createElement("label");
+  label.innerText = "🎨 Theme: ";
+  const select = document.createElement("select");
+  select.id = "theme-select";
+  Object.keys(themes).forEach((theme) => {
+    const option = document.createElement("option");
+    option.value = theme;
+    option.textContent = theme.charAt(0).toUpperCase() + theme.slice(1) + " Mode";
+    select.appendChild(option);
+  });
+  select.onchange = (e) => {
+    const selected = e.target.value;
+    applyTheme(selected);
+    saveThemePref(selected);
+  };
+  label.appendChild(select);
+  container.appendChild(label);
+  document.body.appendChild(container);
+}
+function applyTheme(themeName) {
+  const theme = themes[themeName];
+  if (!theme) return;
+  document.body.className = "theme-" + themeName;
+  document.body.style.backgroundColor = theme.primary;
+  document.body.style.color = theme.font;
+  document.documentElement.style.setProperty("--hover-color", theme.hover);
+  document.documentElement.style.setProperty("--font-color", theme.font);
+  document.documentElement.style.setProperty("--background-color", theme.primary);
+  const links = document.querySelectorAll("a, button, .highlight");
+  links.forEach((el) => {
+    el.style.color = theme.font;
+    el.onmouseover = () => (el.style.color = theme.hover);
+    el.onmouseout = () => (el.style.color = theme.font);
+  });
+  console.log(`🎨 Applied ${themeName} theme.`);
+}
+function saveThemePref(themeName) {
+  localStorage.setItem("userTheme", themeName);
+}
+function loadSavedTheme() {
+  const saved = localStorage.getItem("userTheme") || "light";
+  applyTheme(saved);
+  const select = document.getElementById("theme-select");
+  if (select) select.value = saved;
+}
+function getCurrentTheme() {
+  return localStorage.getItem("userTheme") || "light";
+}
+window.addEventListener("DOMContentLoaded", () => {
+  createThemeDropdown();
+  loadSavedTheme();
+});
+
+// ========== Module 47.docx ==========
+
+// ==========================
+// Module 47 – Profile Preferences & Saved Settings
+// ==========================
+const defaultProfile = {
+  name: "",
+  language: "en",
+  autoplay: false,
+  voice: "",
+  pitch: 1.0,
+  rate: 1.0,
+};
+function loadProfilePrefs() {
+  const stored = localStorage.getItem("profilePrefs");
+  if (!stored) return { ...defaultProfile };
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return { ...defaultProfile };
+  }
+}
+function saveProfilePrefs(prefs) {
+  localStorage.setItem("profilePrefs", JSON.stringify(prefs));
+  logProfileMessage("✅ Preferences saved.");
+}
+function resetProfilePrefs() {
+  localStorage.removeItem("profilePrefs");
+  setProfileForm(defaultProfile);
+  logProfileMessage("🔄 Preferences cleared.");
+}
+function setProfileForm(profile) {
+  document.getElementById("prof-name").value = profile.name;
+  document.getElementById("prof-lang").value = profile.language;
+  document.getElementById("prof-auto").checked = profile.autoplay;
+  document.getElementById("prof-voice").value = profile.voice || "";
+  document.getElementById("prof-pitch").value = profile.pitch;
+  document.getElementById("prof-rate").value = profile.rate;
+  document.getElementById("val-pitch").innerText = profile.pitch;
+  document.getElementById("val-rate").innerText = profile.rate;
+}
+function getProfileFormValues() {
+  return {
+    name: document.getElementById("prof-name").value.trim(),
+    language: document.getElementById("prof-lang").value,
+    autoplay: document.getElementById("prof-auto").checked,
+    voice: document.getElementById("prof-voice").value,
+    pitch: parseFloat(document.getElementById("prof-pitch").value),
+    rate: parseFloat(document.getElementById("prof-rate").value),
+  };
+}
+function logProfileMessage(msg) {
+  const log = document.getElementById("profile-log");
+  if (log) {
+    log.innerText = msg;
+    setTimeout(() => (log.innerText = ""), 3000);
+  }
+}
+function initProfileUI() {
+  const panel = document.createElement("div");
+  panel.innerHTML = `
+    <h3>👤 Profile Settings</h3>
+    <label>Name: <input id="prof-name" type="text" /></label><br><br>
+    <label>Language: 
+      <select id="prof-lang">
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
+        <option value="pt">Portuguese</option>
+      </select>
+    </label><br><br>
+    <label>Voice: 
+      <select id="prof-voice">
+        <option value="">(default)</option>
+        <!-- Filled dynamically -->
+      </select>
+    </label><br><br>
+    <label><input type="checkbox" id="prof-auto" /> Auto-play on load</label><br><br>
+    <label>Pitch: 
+      <input id="prof-pitch" type="range" min="0.5" max="2.0" step="0.1" value="1.0" />
+      <span id="val-pitch">1.0</span>
+    </label><br><br>
+    <label>Rate: 
+      <input id="prof-rate" type="range" min="0.5" max="2.0" step="0.1" value="1.0" />
+      <span id="val-rate">1.0</span>
+    </label><br><br>
+    <button onclick="saveProfilePrefs(getProfileFormValues())">💾 Save</button>
+    <button onclick="resetProfilePrefs()">🗑️ Clear</button>
+    <div id="profile-log" style="margin-top:10px; font-size:13px;"></div>
+  `;
+  const profileTab = document.getElementById("profile");
+  if (profileTab) profileTab.appendChild(panel);
+  const pitchInput = document.getElementById("prof-pitch");
+  pitchInput.oninput = () => {
+    document.getElementById("val-pitch").innerText = pitchInput.value;
+  };
+  const rateInput = document.getElementById("prof-rate");
+  rateInput.oninput = () => {
+    document.getElementById("val-rate").innerText = rateInput.value;
+  };
+  const voiceSelect = document.getElementById("prof-voice");
+  const voices = window.speechSynthesis.getVoices();
+  voices.forEach((v) => {
+    const opt = document.createElement("option");
+    opt.value = v.name;
+    opt.text = `${v.name} (${v.lang})`;
+    voiceSelect.appendChild(opt);
+  });
+}
+window.addEventListener("DOMContentLoaded", () => {
+  initProfileUI();
+  const prefs = loadProfilePrefs();
+  setProfileForm(prefs);
+});
+
+// ========== Module 48.docx ==========
+
+// ==========================
+// Module 48 – Auto Language Detection & Smart Translation
+// ==========================
+let smartTranslateEnabled = false;
+function detectLanguage(text) {
+  const commonWords = {
+    en: ["the", "and", "is", "of", "to", "in", "that"],
+    es: ["el", "la", "es", "de", "que", "en", "y"],
+    fr: ["le", "la", "est", "de", "et", "en", "que"],
+    pt: ["o", "a", "é", "de", "e", "em", "que"]
+  };
+  const scores = {};
+  const words = text.toLowerCase().split(/\W+/);
+  for (const [lang, keywords] of Object.entries(commonWords)) {
+    scores[lang] = keywords.reduce(
+      (acc, word) => acc + words.filter(w => w === word).length,
+      0
+    );
+  }
+  const detected = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
+  return detected[1] > 0 ? detected[0] : "en";
+}
+async function translateText(text, fromLang, toLang) {
+  if (fromLang === toLang) return text;
+  // TODO: Replace with actual API integration
+  return `[${toLang.toUpperCase()}] ${text}`;
+}
+function loadProfilePrefs() {
+  const lang = localStorage.getItem("preferredLanguage") || "en";
+  return { preferredLanguage: lang };
+}
+async function prepareSentenceForTTS(sentence) {
+  if (!smartTranslateEnabled) return sentence;
+  const profilePrefs = loadProfilePrefs();
+  const fromLang = detectLanguage(sentence);
+  const toLang = profilePrefs.preferredLanguage;
+  const translated = await translateText(sentence, fromLang, toLang);
+  devLog(`🌐 Translated "${sentence}" (${fromLang} ➜ ${toLang})`);
+  return translated;
+}
+function toggleSmartTranslate(section, enabled) {
+  smartTranslateEnabled = enabled;
+  localStorage.setItem("smartTranslateEnabled", enabled);
+  devLog(`🌍 Smart Translate ${enabled ? "enabled" : "disabled"} in ${section}`);
+}
+// Initialize smart translate toggle
+function initSmartTranslateUI(sectionId) {
+  const container = document.querySelector(`#${sectionId} .controls`) || document.getElementById(sectionId);
+  if (!container) return;
+  const label = document.createElement("label");
+  label.style.marginLeft = "8px";
+  const toggle = document.createElement("input");
+  toggle.type = "checkbox";
+  toggle.checked = localStorage.getItem("smartTranslateEnabled") === "true";
+  smartTranslateEnabled = toggle.checked;
+  toggle.addEventListener("change", () => toggleSmartTranslate(sectionId, toggle.checked));
+  label.appendChild(toggle);
+  label.appendChild(document.createTextNode(" Smart Translate"));
+  container.appendChild(label);
+}
+// Inject into DOMContentLoaded
+window.addEventListener("DOMContentLoaded", () => {
+  initSmartTranslateUI("listen");
+  initSmartTranslateUI("capture");
+});
+// Override sentence reading
+async function speakSentence(sentence, voice, rate, pitch) {
+  const translatedSentence = await prepareSentenceForTTS(sentence);
+  const utter = new SpeechSynthesisUtterance(translatedSentence);
+  utter.voice = voice;
+  utter.rate = rate;
+  utter.pitch = pitch;
+  speechSynthesis.speak(utter);
+}
+// Override sentence iterator (if needed)
+async function playSentences(sentences, voice, rate, pitch) {
+  for (let i = 0; i < sentences.length; i++) {
+    if (!isPlaying) break;
+    const sentence = sentences[i];
+    const translated = await prepareSentenceForTTS(sentence);
+    highlightSentence(i);
+    await speakSentence(translated, voice, rate, pitch);
+    await delay(100); // Wait a bit before next
+  }
+}
+// Utility: Log
+function devLog(msg) {
+  if (!window.devLogs) window.devLogs = [];
+  const time = new Date().toLocaleTimeString();
+  window.devLogs.push(`[${time}] ${msg}`);
+  const box = document.getElementById("dev-log-box");
+  if (box) box.innerText = window.devLogs.slice(-10).join("\n");
+}
+// Utility: Delay
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ========== Module 49.docx ==========
+
+// ==========================
+// Module 49 – Smart Skipping of Low-Importance Sentences
+// ==========================
+let smartSkipEnabled = false;
+let importanceThreshold = 0.5;
+function scoreSentence(sentence) {
+  if (!sentence) return 0;
+  const keywords = ["important", "must", "note", "warning", "critical", "essential"];
+  const lenScore = Math.min(sentence.length / 200, 1.0);
+  const keywordScore = keywords.filter(word => sentence.toLowerCase().includes(word)).length * 0.2;
+  const punctScore = /[:;!?]/.test(sentence) ? 0.2 : 0;
+  const score = Math.min(1.0, lenScore + keywordScore + punctScore);
+  return score;
+}
+function shouldPlaySentence(sentence) {
+  const score = scoreSentence(sentence);
+  devLog(`🎯 "${sentence}" scored ${score.toFixed(2)}`);
+  return score >= importanceThreshold;
+}
+function toggleSmartSkip(enabled) {
+  smartSkipEnabled = enabled;
+  localStorage.setItem("smartSkipEnabled", enabled);
+  devLog(`⏩ Smart Skip ${enabled ? "enabled" : "disabled"}`);
+}
+function setImportanceThreshold(value) {
+  importanceThreshold = value;
+  localStorage.setItem("importanceThreshold", value);
+  devLog(`📊 Threshold set to ${value}`);
+}
+function initSmartSkipUI(sectionId) {
+  const container = document.querySelector(`#${sectionId} .controls`) || document.getElementById(sectionId);
+  if (!container) return;
+  const toggleLabel = document.createElement("label");
+  toggleLabel.style.marginLeft = "12px";
+  const toggle = document.createElement("input");
+  toggle.type = "checkbox";
+  toggle.checked = localStorage.getItem("smartSkipEnabled") === "true";
+  smartSkipEnabled = toggle.checked;
+  toggle.addEventListener("change", () => toggleSmartSkip(toggle.checked));
+  toggleLabel.appendChild(toggle);
+  toggleLabel.appendChild(document.createTextNode(" Smart Skip"));
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.min = "0.1";
+  slider.max = "1.0";
+  slider.step = "0.1";
+  slider.value = localStorage.getItem("importanceThreshold") || "0.5";
+  importanceThreshold = parseFloat(slider.value);
+  slider.style.marginLeft = "10px";
+  slider.title = "Importance Threshold";
+  slider.addEventListener("input", () => setImportanceThreshold(parseFloat(slider.value)));
+  container.appendChild(toggleLabel);
+  container.appendChild(slider);
+}
+window.addEventListener("DOMContentLoaded", () => {
+  initSmartSkipUI("listen");
+  initSmartSkipUI("capture");
+});
+// Updated version of playSentences()
+async function playSentences(sentences, voice, rate, pitch) {
+  for (let i = 0; i < sentences.length; i++) {
+    if (!isPlaying) break;
+    const sentence = sentences[i];
+    if (smartSkipEnabled && !shouldPlaySentence(sentence)) {
+      devLog(`🚫 Skipped: "${sentence}"`);
+      continue;
+    }
+    highlightSentence(i);
+    await speakSentence(sentence, voice, rate, pitch);
+    await delay(100);
+  }
+}
+// Utility: Log
+function devLog(msg) {
+  if (!window.devLogs) window.devLogs = [];
+  const time = new Date().toLocaleTimeString();
+  window.devLogs.push(`[${time}] ${msg}`);
+  const box = document.getElementById("dev-log-box");
+  if (box) box.innerText = window.devLogs.slice(-10).join("\n");
+}
+// Utility: Delay
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ========== Module 50.docx ==========
+
+// ==========================
+// Module 50 – Real-Time Translation Overlay
+// ==========================
+let translationEnabled = false;
+let translationLang = "es"; // Default Spanish
+function initTranslationSettings(sectionId) {
+  const container = document.querySelector(`#${sectionId} .controls`) || document.getElementById(sectionId);
+  if (!container) return;
+  const toggleLabel = document.createElement("label");
+  toggleLabel.style.marginLeft = "10px";
+  const toggle = document.createElement("input");
+  toggle.type = "checkbox";
+  toggle.checked = localStorage.getItem("translationEnabled") === "true";
+  translationEnabled = toggle.checked;
+  toggle.addEventListener("change", () => {
+    translationEnabled = toggle.checked;
+    localStorage.setItem("translationEnabled", translationEnabled);
+    devLog(`🌐 Translation ${translationEnabled ? "ON" : "OFF"}`);
+  });
+  toggleLabel.appendChild(toggle);
+  toggleLabel.appendChild(document.createTextNode(" Show Translation"));
+  const langSelect = document.createElement("select");
+  const languages = {
+    es: "Spanish",
+    fr: "French",
+    de: "German",
+    pt: "Portuguese",
+    zh: "Chinese",
+    hi: "Hindi"
+  };
+  for (const [code, name] of Object.entries(languages)) {
+    const option = document.createElement("option");
+    option.value = code;
+    option.text = name;
+    langSelect.appendChild(option);
+  }
+  langSelect.value = localStorage.getItem("translationLang") || "es";
+  translationLang = langSelect.value;
+  langSelect.addEventListener("change", () => {
+    translationLang = langSelect.value;
+    localStorage.setItem("translationLang", translationLang);
+    devLog(`🌐 Translation language set to ${languages[translationLang]}`);
+  });
+  langSelect.style.marginLeft = "10px";
+  container.appendChild(toggleLabel);
+  container.appendChild(langSelect);
+}
+// Fake/mock translator
+async function translateSentence(text, lang) {
+  return `[${lang.toUpperCase()}] ${text}`;
+}
+// Overlay rendering
+function showTranslation(index, translated) {
+  const existing = document.querySelector(`#sentence-${index} .translation-line`);
+  if (existing) existing.remove();
+  const el = document.querySelector(`#sentence-${index}`);
+  if (el) {
+    const transEl = document.createElement("div");
+    transEl.className = "translation-line";
+    transEl.textContent = translated;
+    transEl.style.fontSize = "0.9em";
+    transEl.style.fontStyle = "italic";
+    transEl.style.color = "#777";
+    transEl.style.marginTop = "4px";
+    el.appendChild(transEl);
+  }
+}
+// Updated playback
+async function playSentences(sentences, voice, rate, pitch) {
+  for (let i = 0; i < sentences.length; i++) {
+    if (!isPlaying) break;
+    const sentence = sentences[i];
+    highlightSentence(i);
+    if (translationEnabled) {
+      const translated = await translateSentence(sentence, translationLang);
+      showTranslation(i, translated);
+    }
+    await speakSentence(sentence, voice, rate, pitch);
+    await delay(100);
+  }
+}
+// Initialization
+window.addEventListener("DOMContentLoaded", () => {
+  initTranslationSettings("listen");
+  initTranslationSettings("capture");
+});
+
+// ========== Module 50 b.docx ==========
+
+// ==========================
+// Module 50 – Context-Aware Summary Before Playback
+// ==========================
+function summarizeText(sentences, maxSentences = 4) {
+  if (!sentences || !sentences.length) return "No content to summarize.";
+  const scores = sentences.map((s, idx) => {
+    const lengthScore = Math.min(s.length / 150, 1);
+    const keywordScore = ["important", "note", "summary", "main", "core", "chapter", "purpose"]
+      .filter(w => s.toLowerCase().includes(w)).length * 0.5;
+    const punctuationScore = /[:;!?]/.test(s) ? 0.3 : 0;
+    const positionScore = 1 - idx / sentences.length;
+    return { s, score: lengthScore + keywordScore + punctuationScore + positionScore };
+  });
+  scores.sort((a, b) => b.score - a.score);
+  const topSentences = scores.slice(0, maxSentences).map(item => item.s.trim());
+  return topSentences.join(" ");
+}
+function displaySummary(section, summaryText) {
+  const container = document.querySelector(`#${section} .summary-preview`);
+  if (!container) return;
+  container.innerText = summaryText;
+}
+function saveSummary(fileKey, summaryText) {
+  if (!window.localStorage) return;
+  localStorage.setItem(`summary_${fileKey}`, summaryText);
+}
+function getSavedSummary(fileKey) {
+  return localStorage.getItem(`summary_${fileKey}`) || "";
+}
+function getCurrentFileKey() {
+  const name = localStorage.getItem("lastFileName");
+  return name || "unnamed";
+}
+function initSummaryFeature(section) {
+  const target = document.getElementById(section);
+  if (!target) return;
+  const summaryBox = document.createElement("div");
+  summaryBox.className = "summary-preview";
+  summaryBox.style.border = "1px solid #ccc";
+  summaryBox.style.padding = "10px";
+  summaryBox.style.margin = "10px 0";
+  summaryBox.style.background = "#f9f9f9";
+  summaryBox.style.whiteSpace = "pre-wrap";
+  summaryBox.innerText = getSavedSummary(getCurrentFileKey());
+  target.insertBefore(summaryBox, target.firstChild);
+  const row = document.createElement("div");
+  row.style.display = "flex";
+  row.style.alignItems = "center";
+  row.style.gap = "10px";
+  const summarizeBtn = document.createElement("button");
+  summarizeBtn.innerText = "🧠 Summarize & Preview";
+  summarizeBtn.onclick = () => {
+    const text = sentences.join(" ");
+    const sents = text.split(/(?<=[.!?])\s+/);
+    const summary = summarizeText(sents);
+    displaySummary(section, summary);
+    saveSummary(getCurrentFileKey(), summary);
+    if (document.getElementById(`autoStartAfterSummary_${section}`)?.checked) {
+      startPlayback(section);
+    }
+  };
+  const autoStartToggle = document.createElement("label");
+  autoStartToggle.style.display = "flex";
+  autoStartToggle.style.alignItems = "center";
+  const chk = document.createElement("input");
+  chk.type = "checkbox";
+  chk.id = `autoStartAfterSummary_${section}`;
+  chk.style.marginRight = "5px";
+  chk.checked = localStorage.getItem("autoStartAfterSummary") === "true";
+  chk.addEventListener("change", () => {
+    localStorage.setItem("autoStartAfterSummary", chk.checked);
+  });
+  autoStartToggle.appendChild(chk);
+  autoStartToggle.appendChild(document.createTextNode("Auto-Start After Summary"));
+  row.appendChild(summarizeBtn);
+  row.appendChild(autoStartToggle);
+  target.insertBefore(row, summaryBox);
+}
+function startPlayback(section) {
+  if (typeof playSentences !== "function") return;
+  const voice = getSelectedVoice(section);
+  const rate = getRate(section);
+  const pitch = getPitch(section);
+  playSentences(sentences, voice, rate, pitch);
+}
+function getSelectedVoice(section) {
+  const sel = document.querySelector(`#${section} .voice-dropdown`);
+  return sel?.value || null;
+}
+function getRate(section) {
+  const slider = document.querySelector(`#${section} .rate-slider`);
+  return slider ? parseFloat(slider.value) : 1.0;
+}
+function getPitch(section) {
+  const slider = document.querySelector(`#${section} .pitch-slider`);
+  return slider ? parseFloat(slider.value) : 1.0;
+}
+window.addEventListener("DOMContentLoaded", () => {
+  initSummaryFeature("listen");
+  initSummaryFeature("capture");
+});
+
+// ========== Module 51.docx ==========
+
+// ==========================
+// Module 51 – Auto Language Detection and Suggestion
+// ==========================
+let languageDetectorReady = false;
+let languageData = {};
+let detectedLanguage = null;
+let autoVoiceApplied = false;
+// Load available voices grouped by language
+function mapVoicesByLanguage(voices) {
+  const map = {};
+  voices.forEach((voice) => {
+    const lang = voice.lang || "unknown";
+    if (!map[lang]) map[lang] = [];
+    map[lang].push(voice);
+  });
+  return map;
+}
+// Simple language detector using common heuristics
+function detectLanguageFromText(text) {
+  // Use the 'franc-min' library if available (install via CDN for full version)
+  if (typeof franc !== "undefined") {
+    const langCode = franc(text);
+    return langCode || "und";
+  }
+  // Fallback: very naive frequency approach
+  const lowercase = text.toLowerCase();
+  if (lowercase.includes("el") && lowercase.includes("una")) return "es";
+  if (lowercase.includes("the") && lowercase.includes("and")) return "en";
+  if (lowercase.includes("le") && lowercase.includes("est")) return "fr";
+  return "unknown";
+}
+// Store metadata per file including detected language
+async function storeFileLanguage(fileId, language) {
+  const tx = db.transaction("files", "readwrite");
+  const store = tx.objectStore("files");
+  const file = await store.get(fileId);
+  if (file) {
+    file.detectedLanguage = language;
+    store.put(file);
+  }
+}
+// Load language metadata
+async function loadFileLanguage(fileId) {
+  const tx = db.transaction("files", "readonly");
+  const store = tx.objectStore("files");
+  const file = await store.get(fileId);
+  return file?.detectedLanguage || null;
+}
+// Suggest appropriate voice
+function suggestVoice(languageCode, target = "listen") {
+  const voices = speechSynthesis.getVoices();
+  const voiceMap = mapVoicesByLanguage(voices);
+  const possible = Object.keys(voiceMap).filter((key) =>
+    key.startsWith(languageCode)
+  );
+  if (possible.length > 0) {
+    const suggested = voiceMap[possible[0]][0];
+    const voiceSelect = document.querySelector(`#${target}-voice`);
+    if (voiceSelect) {
+      for (let i = 0; i < voiceSelect.options.length; i++) {
+        if (
+          voiceSelect.options[i].text.includes(suggested.name) ||
+          voiceSelect.options[i].value.includes(suggested.name)
+        ) {
+          voiceSelect.selectedIndex = i;
+          autoVoiceApplied = true;
+          break;
+        }
+      }
+    }
+  }
+}
+// Main detection entry point
+async function runLanguageDetection(text, fileId) {
+  detectedLanguage = detectLanguageFromText(text);
+  console.log("🌍 Detected Language:", detectedLanguage);
+  await storeFileLanguage(fileId, detectedLanguage);
+  suggestVoice(detectedLanguage);
+}
+// Hook during file load
+async function afterFileLoad(textContent, fileId) {
+  const existingLang = await loadFileLanguage(fileId);
+  if (existingLang) {
+    detectedLanguage = existingLang;
+    console.log("🔁 Loaded stored language:", detectedLanguage);
+    suggestVoice(detectedLanguage);
+  } else {
+    runLanguageDetection(textContent, fileId);
+  }
+}
+// Manual override tracker
+function trackLanguageOverride(prevLang, newLang) {
+  if (prevLang !== newLang) {
+    console.log(
+      `📈 User override: from ${prevLang} to ${newLang}. Tracking for feedback.`
+    );
+  }
+}
+// Sample integration with voice dropdown
+function onVoiceChange(target = "listen") {
+  const voiceSelect = document.querySelector(`#${target}-voice`);
+  const selectedOption = voiceSelect.options[voiceSelect.selectedIndex];
+  const newLang = selectedOption.getAttribute("data-lang") || "unknown";
+  if (autoVoiceApplied) {
+    autoVoiceApplied = false;
+    return;
+  }
+  trackLanguageOverride(detectedLanguage, newLang);
+}
+// Add listeners
+function setupVoiceOverrideListener(target = "listen") {
+  const select = document.querySelector(`#${target}-voice`);
+  if (select) {
+    select.addEventListener("change", () => onVoiceChange(target));
+  }
+}
+// Call after file text has been extracted and displayed
+// Example:
+// await afterFileLoad(text, fileId);
+// setupVoiceOverrideListener("listen");
+
+// ========== Module 51 b.docx ==========
+
+// ==============================
+// Module 51 – Embedded Quizzes During Playback
+// ==============================
+let quizModeEnabled = localStorage.getItem("quizModeEnabled") === "true";
+let quizCounter = 0;
+let lastAskedQuestion = "";
+function toggleQuizMode(enabled) {
+  quizModeEnabled = enabled;
+  localStorage.setItem("quizModeEnabled", enabled);
+  devLog(`🧠 Quiz Mode ${enabled ? "enabled" : "disabled"}`);
+}
+function initQuizToggleUI(sectionId) {
+  const container = document.querySelector(`#${sectionId} .controls`) || document.getElementById(sectionId);
+  if (!container) return;
+  const label = document.createElement("label");
+  label.style.marginLeft = "10px";
+  const toggle = document.createElement("input");
+  toggle.type = "checkbox";
+  toggle.checked = quizModeEnabled;
+  toggle.addEventListener("change", () => toggleQuizMode(toggle.checked));
+  label.appendChild(toggle);
+  label.appendChild(document.createTextNode(" Quiz Mode"));
+  container.appendChild(label);
+}
+window.addEventListener("DOMContentLoaded", () => {
+  initQuizToggleUI("listen");
+  initQuizToggleUI("capture");
+});
+// ✅ Quiz question generator from sentence
+function generateQuizQuestion(sentence) {
+  const parts = sentence.split(" ");
+  if (parts.length < 6) return null;
+  const keyword = parts.find(word => word.length > 6 && !["because", "although"].includes(word.toLowerCase()));
+  if (!keyword) return null;
+  const question = `What is the significance of "${keyword}" in this context?`;
+  const options = [
+    "It is a key idea in the paragraph",
+    "It is unrelated",
+    "It is the author's name",
+    "It refers to a location"
+  ];
+  const correctIndex = 0;
+  return { question, options, correctIndex };
+}
+// ✅ Display quiz card
+function showQuizCard({ question, options, correctIndex }) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.id = "quiz-overlay";
+    overlay.style.position = "fixed";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.width = "100%";
+    overlay.style.height = "100%";
+    overlay.style.backgroundColor = "rgba(0,0,0,0.6)";
+    overlay.style.display = "flex";
+    overlay.style.justifyContent = "center";
+    overlay.style.alignItems = "center";
+    overlay.style.zIndex = 9999;
+    const card = document.createElement("div");
+    card.style.background = "#fff";
+    card.style.padding = "20px";
+    card.style.borderRadius = "10px";
+    card.style.width = "400px";
+    card.style.boxShadow = "0 0 10px rgba(0,0,0,0.3)";
+    card.innerHTML = `<h3>🧠 Quick Check</h3><p>${question}</p>`;
+    options.forEach((opt, i) => {
+      const btn = document.createElement("button");
+      btn.textContent = opt;
+      btn.style.display = "block";
+      btn.style.margin = "8px 0";
+      btn.onclick = () => {
+        const correct = i === correctIndex;
+        alert(correct ? "✅ Correct!" : "❌ Incorrect.");
+        overlay.remove();
+        resolve();
+      };
+      card.appendChild(btn);
+    });
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+  });
+}
+// ✅ Enhanced playSentences with quiz logic
+async function playSentences(sentences, voice, rate, pitch) {
+  for (let i = 0; i < sentences.length; i++) {
+    if (!isPlaying) break;
+    const sentence = sentences[i];
+    highlightSentence(i);
+    await speakSentence(sentence, voice, rate, pitch);
+    await delay(100);
+    // 🔹 Show quiz every 5 sentences
+    if (quizModeEnabled && i > 0 && i % 5 === 0) {
+      const quiz = generateQuizQuestion(sentence);
+      if (quiz && quiz.question !== lastAskedQuestion) {
+        lastAskedQuestion = quiz.question;
+        await showQuizCard(quiz);
+      }
+    }
+  }
+}
+// 🔧 Utility
+function delay(ms) {
+  return new Promise((res) => setTimeout(res, ms));
+}
+
+// ========== Module 52: Real-Time Transcription ==========
+
+// ==========================
+// Module 52 – Real-Time Transcription with Confidence Scoring
+// ==========================
+let recognition;
+let transcriptData = [];
+let isListening = false;
+const colors = {
+  high: "#c8f7c5",
+  mid: "#fff3b0",
+  low: "#f9c0c0"
+};
+// UI Setup
+const display = document.createElement("div");
+display.id = "transcription-display";
+display.style = "white-space: pre-wrap; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto;";
+document.body.appendChild(display);
+const statsBox = document.createElement("div");
+statsBox.id = "transcription-stats";
+statsBox.style = "margin-top: 10px;";
+document.body.appendChild(statsBox);
+const buttons = document.createElement("div");
+buttons.innerHTML = `
+  <button onclick="startTranscription()">🎙️ Start</button>
+  <button onclick="stopTranscription()">🛑 Stop</button>
+  <button onclick="exportTranscript()">💾 Export</button>
+  <button onclick="retryLowConfidence()">🔁 Retry</button>
+`;
+document.body.appendChild(buttons);
+// Start Transcription
+function startTranscription() {
+  if (!("webkitSpeechRecognition" in window)) {
+    alert("SpeechRecognition not supported");
+    return;
+  }
+  recognition = new webkitSpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = "en-US";
+  recognition.onresult = (event) => {
+    transcriptData = [];
+    display.innerHTML = "";
+    for (let i = 0; i < event.results.length; i++) {
+      const res = event.results[i];
+      const confidence = res[0].confidence;
+      const words = res[0].transcript.trim().split(/\s+/);
+      words.forEach((word) => {
+        transcriptData.push({ word, confidence });
+        const span = document.createElement("span");
+        span.innerText = word + " ";
+        span.style.backgroundColor = getConfidenceColor(confidence);
+        display.appendChild(span);
+      });
+    }
+    updateStats();
+  };
+  recognition.onerror = (e) => {
+    console.error("Recognition error:", e);
+  };
+  recognition.onend = () => {
+    isListening = false;
+  };
+  recognition.start();
+  isListening = true;
+}
+// Stop Transcription
+function stopTranscription() {
+  if (recognition && isListening) {
+    recognition.stop();
+    isListening = false;
+  }
+}
+// Determine Color by Confidence
+function getConfidenceColor(c) {
+  if (c >= 0.9) return colors.high;
+  if (c >= 0.6) return colors.mid;
+  return colors.low;
+}
+// Update Stats
+function updateStats() {
+  const total = transcriptData.length;
+  const avg = transcriptData.reduce((sum, w) => sum + w.confidence, 0) / total;
+  const low = transcriptData.filter(w => w.confidence < 0.6).length;
+  statsBox.innerHTML = `
+    <strong>📊 Stats:</strong><br>
+    Total Words: ${total}<br>
+    Avg Confidence: ${(avg * 100).toFixed(1)}%<br>
+    Low Confidence Words: ${low}
+  `;
+}
+// Export Transcript
+function exportTranscript() {
+  const data = {
+    timestamp: new Date().toISOString(),
+    transcript: transcriptData
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "transcript_with_confidence.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+// Retry Low Confidence Words
+function retryLowConfidence() {
+  const lowWords = transcriptData.filter(w => w.confidence < 0.6);
+  if (lowWords.length === 0) {
+    alert("No low-confidence words to retry.");
+    return;
+  }
+  const textToRetry = lowWords.map(w => w.word).join(" ");
+  const simulatedBox = document.createElement("div");
+  simulatedBox.innerText = `🔁 Re-record: "${textToRetry}"`;
+  simulatedBox.style = "margin-top: 10px; padding: 8px; background: #eef;";
+  document.body.appendChild(simulatedBox);
+}
+
+// ========== Module 52b: Monospaced, TOC, Readability Enhancements ==========
+
+// ==========================
+// Module 52 – Monospaced Styling + Table of Contents + Readability Boost
+// ==========================
+// Apply monospaced styling to all document content blocks
+function applyMonospaceStyle() {
+  const contentBlocks = document.querySelectorAll(".text-display, .document-content, pre, code");
+  contentBlocks.forEach(block => {
+    block.style.fontFamily = "monospace";
+    block.style.fontSize = "15px";
+    block.style.lineHeight = "1.65";
+    block.style.letterSpacing = "0.4px";
+  });
+}
+// Create Table of Contents dynamically
+function generateTableOfContents() {
+  const content = document.querySelector(".document-content") || document.querySelector(".text-display");
+  const headers = content.querySelectorAll("h1, h2, h3");
+  const toc = document.createElement("div");
+  toc.id = "toc-sidebar";
+  toc.style = `
+    position: fixed;
+    top: 80px;
+    left: 0;
+    width: 260px;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: #f9f9f9;
+    padding: 12px;
+    border-right: 1px solid #ccc;
+    font-family: monospace;
+    font-size: 14px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    z-index: 999;
+  `;
+  let html = "<strong>📚 Table of Contents</strong><br><ul style='padding-left: 16px'>";
+  headers.forEach((header, idx) => {
+    const anchor = `toc-anchor-${idx}`;
+    header.id = anchor;
+    html += `<li><a href="#${anchor}" style="text-decoration:none;">${header.innerText}</a></li>`;
+  });
+  html += "</ul>";
+  toc.innerHTML = html;
+  document.body.appendChild(toc);
+}
+// Add readability toggle
+function addReadabilityToggle() {
+  const toggle = document.createElement("button");
+  toggle.id = "readability-toggle";
+  toggle.textContent = "🌓 Toggle Readability Mode";
+  toggle.style = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    font-family: monospace;
+    padding: 8px 14px;
+    background: #222;
+    color: #f0f0f0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  `;
+  document.body.appendChild(toggle);
+  let isRelaxed = true;
+  toggle.onclick = () => {
+    document.querySelectorAll(".text-display, .document-content").forEach(el => {
+      el.style.lineHeight = isRelaxed ? "1.3" : "1.7";
+      el.style.fontSize = isRelaxed ? "14px" : "16px";
+    });
+    isRelaxed = !isRelaxed;
+  };
+}
+// Observe for content load or switch and apply all enhancements
+const observer = new MutationObserver(() => {
+  applyMonospaceStyle();
+  if (!document.getElementById("toc-sidebar")) {
+    generateTableOfContents();
+  }
+});
+observer.observe(document.body, { childList: true, subtree: true });
+// Run on initial load
+window.addEventListener("DOMContentLoaded", () => {
+  applyMonospaceStyle();
+  generateTableOfContents();
+  addReadabilityToggle();
+});
+
+// ===== Additional Enhancements (Modules 53 & 54) =====
+
+
+
+// ========== Module 53: Shazam-like Speech & Music Recognition ==========
+function recognizeAudioContent() {
+  const simulatedResult = {
+    type: "music",
+    title: "Shape of You",
+    artist: "Ed Sheeran",
+    links: [
+      "https://open.spotify.com/track/7qiZfU4dY1lWllzX7mPBI3",
+      "https://music.apple.com/us/album/shape-of-you/1193701079?i=1193701359",
+      "https://www.youtube.com/watch?v=JGwWNGJdvx8"
+    ]
+  };
+  const resultsBox = document.createElement("div");
+  resultsBox.innerHTML = `
+    <strong>🎵 Recognized:</strong><br>
+    Title: ${simulatedResult.title}<br>
+    Artist: ${simulatedResult.artist}<br>
+    <ul>
+      ${simulatedResult.links.map(link => `<li><a href="${link}" target="_blank">${link}</a></li>`).join("")}
+    </ul>
+  `;
+  resultsBox.style = "margin: 10px; padding: 10px; border: 1px dashed #444;";
+  document.body.appendChild(resultsBox);
+}
+
+// ========== Module 54: Enhanced Speech-to-Text with Auto Playback ==========
+let speechTimeout;
+function enhancedTranscriptionPlayback(text, delay = 4000) {
+  clearTimeout(speechTimeout);
+  speechTimeout = setTimeout(() => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    speechSynthesis.speak(utterance);
+  }, delay);
+}
+
+// Usage simulation for captured text
+function simulateSpeechCapture() {
+  const capturedText = "This is a captured sentence from live audio.";
+  const displayBox = document.createElement("div");
+  displayBox.innerText = `🎧 Captured: ${capturedText}`;
+  displayBox.style = "margin-top: 10px; padding: 8px; background: #eef;";
+  document.body.appendChild(displayBox);
+  enhancedTranscriptionPlayback(capturedText);
+}
+
+// ===============================
+// 🤖 Agentic Enhancements (Hotkey + Floating Panel + Avatar)
+// ===============================
+
+function createAgentPanel() {
+  if (document.getElementById("agent-panel")) return;
+  const panel = document.createElement("div");
+  panel.id = "agent-panel";
+  panel.innerHTML = `
+    <div id="agent-header">
+      <span>🎤 NeurAloud Agent</span>
+      <button onclick="closeAgentPanel()">❌</button>
+    </div>
+    <div id="agent-content">
+      <p>Hello! I’m your reading companion. Click a sentence or press ⌨️ Ctrl+Shift+A to begin.</p>
+      <div class="avatar-container">
+        <img src="agent-avatar.gif" alt="Avatar" class="animated-avatar"/>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(panel);
+}
+
+function toggleAgentPanel() {
+  const existing = document.getElementById("agent-panel");
+  if (existing) existing.remove();
+  else createAgentPanel();
+}
+
+function closeAgentPanel() {
+  const panel = document.getElementById("agent-panel");
+  if (panel) panel.remove();
+}
+
+// Hotkey to toggle Agent Panel (Ctrl+Shift+A)
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.shiftKey && e.code === "KeyA") {
+    e.preventDefault();
+    toggleAgentPanel();
+  }
+});
+
+// ===============================
+// 📦 Queue Playback Floating Panel
+// ===============================
+function createFloatingPlaybackPanel() {
+  if (document.getElementById("floating-playback-panel")) return;
+  const panel = document.createElement("div");
+  panel.id = "floating-playback-panel";
+  panel.innerHTML = `
+    <div id="floating-header" class="draggable">
+      <span>🎧 Now Playing</span>
+      <button onclick="toggleFloatingPanel()">➖</button>
+    </div>
+    <div id="floating-body">
+      <p id="current-sentence">No sentence loaded yet.</p>
+      <div id="panel-controls">
+        <button id="panel-play">▶️</button>
+        <button id="panel-pause">⏸</button>
+        <button id="panel-stop">⏹</button>
+        <button id="panel-loop">🔁</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(panel);
+  makeDraggable(panel);
+}
+
+function toggleFloatingPanel() {
+  const panel = document.getElementById("floating-playback-panel");
+  if (panel) {
+    panel.classList.toggle("collapsed");
+  }
+}
+
+function makeDraggable(element) {
+  const header = element.querySelector(".draggable");
+  let offsetX = 0, offsetY = 0;
+  header.onmousedown = function (e) {
+    offsetX = e.clientX - element.offsetLeft;
+    offsetY = e.clientY - element.offsetTop;
+    document.onmousemove = function (e) {
+      element.style.left = (e.clientX - offsetX) + "px";
+      element.style.top = (e.clientY - offsetY) + "px";
+    };
+    document.onmouseup = () => {
+      document.onmousemove = null;
+      document.onmouseup = null;
+    };
+  };
+}
+
+// Initialize after page loads
+window.addEventListener("DOMContentLoaded", () => {
+  createAgentPanel();
+  createFloatingPlaybackPanel();
+});

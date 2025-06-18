@@ -1,591 +1,760 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NeurAloud</title>
-  <link rel="stylesheet" href="style.css"/>
-  <meta name="description" content="💪📚🎧 = Empowering minds through books and sound"/>
-  <link rel="manifest" href="manifest.json"/>
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
-
-  <!-- ✅ Load ResponsiveVoice first (required for detection to work) -->
-  <script src="https://code.responsivevoice.org/responsivevoice.js"></script>
-  <!-- <script src="https://code.responsivevoice.org/responsivevoice.js?key=YOUR_KEY_HERE"></script>   not using a paid key yet -->
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NeurAloud</title>
+<link href="style.css" rel="stylesheet"/>
+<meta content="💪📚🎧 = Empowering minds through books and sound" name="description"/>
+<link href="manifest.json" rel="manifest"/>
+<link href="favicon.ico" rel="icon" type="image/x-icon"/>
+<!-- ✅ Load ResponsiveVoice first (required for detection to work) -->
+<script src="https://code.responsivevoice.org/responsivevoice.js"></script>
+<!-- <script src="https://code.responsivevoice.org/responsivevoice.js?key=YOUR_KEY_HERE"></script>   not using a paid key yet -->
 </head>
-
 <body>
-  <header>
-    <div class="logo-container">
-      <img src="NeurAloudlogo.png" alt="NeurAloud Logo" class="app-logo" />
-      <span class="logo-title">NeurAloud</span>
-    </div>
-    <nav>
-      <button onclick="navigate('home')">Home</button>
-      <button onclick="navigate('library')">Library</button>
-      <button onclick="navigate('listen')">Listen</button>
-      <button onclick="navigate('capture')">Capture</button>
-      <button onclick="navigate('store')">Store</button>
-      <button onclick="navigate('profile')">⚙</button>
-    </nav>
-  </header>
-
-  <main>
-    <!-- Home Section -->
-    <section id="home" class="active-section">
-          <div class="quad-container">
-               <div class="quad-card">
-                    <h3>📚 Upload a Document</h3>
-                    <p>Bring your own files (PDF, EPUB, DOCX, etc.)</p>
-                    <button onclick="navigate('upload')">Upload Now</button>
-               </div>
-               <div class="quad-card">
-                    <h3>🔊 Listen Instantly</h3>
-                    <p>Start reading any document with your favorite voice</p>
-                    <button onclick="navigate('listen')">Start Listening</button>
-               </div>
-               <div class="quad-card">
-                    <h3>🌍 Live Capture</h3>
-                    <p>Listen to websites, articles, or your environment</p>
-                    <button onclick="navigate('capture')">Capture Audio</button>
-               </div>
-               <div class="quad-card">
-                    <h3>🛍️ Explore Store</h3>
-                    <p>Find premium voices, avatars & add-ons</p>
-                    <button onclick="navigate('store')">Visit Store</button>
-               </div>
-          </div>
-
-          <div class="reward-container">
-               <h2>🏆 Your Rewards</h2>
-               <div class="rewards">
-                    <div class="reward-card">
-                         <h4>5-day Streak</h4>
-                         <p>You've earned 50 XP</p>
-                    </div>
-                    <div class="reward-card">
-                         <h4>Top Listener</h4>
-                         <p>3 hours this week</p>
-                    </div>
-                    <div class="reward-card">
-                         <h4>Explorer</h4>
-                         <p>Tried 4 new voices</p>
-                    </div>
-               </div>
-          </div>
-
-          <div class="continue-listening">
-               <h3>⏯️ Continue Listening</h3>
-               <div class="horizontal-scroll" id="continue-slider">
-                    <div class="doc-card">
-                         <p>📄 Book1.pdf</p>
-                         <button onclick="loadFromLibrary('Book1.pdf')">Resume</button>
-                    </div>
-                    <div class="doc-card">
-                         <p>📄 Research.epub</p>
-                         <button onclick="loadFromLibrary('Research.epub')">Resume</button>
-                    </div>
-               </div>
-          </div>
-
-          <div class="recently-played">
-               <h3>🎧 Recently Played</h3>
-               <ul id="recent-files">
-                    <li>Book1.pdf - 3m ago</li>
-                    <li>Article2.txt - 12m ago</li>
-                    <li>Speech.mp3 - 2h ago</li>
-               </ul>
-          </div>
-
-          <div class="recommended-section">
-               <h3>🌟 Recommended for You</h3>
-               <ul id="recommend-list">
-                    <li>🧠 "7 Habits of Highly Effective People"</li>
-                    <li>📘 "Deep Work" by Cal Newport</li>
-                    <li>🎙️ "Neural Narratives" - Podcast Series</li>
-               </ul>
-          </div>
-
-          <div class="achievement-section">
-               <h3>🏅 Achievements</h3>
-               <ul id="achievement-list">
-                    <li>📅 7-Day Streak Badge</li>
-                    <li>🗣️ 1000 Minutes Listened</li>
-                    <li>📚 10 Books Completed</li>
-               </ul>
-          </div>
-    </section>
-
-    <!-- 📚 Library Section -->
-    <section id="library" class="section">
-
-          <h2>📚 Your Library</h2>
-
-          <div class="library-flex-container">
-               <!-- 📂 LEFT SIDE (60%): Playlist + Listen Library -->
-               <div class="library-left">
-
-                    <!-- 🎵 Playlist (Top Left) -->
-                    <div class="library-subsection">
-                         <h3>🎵 Playback Queue</h3>
-                         <div id="playback-queue" class="horizontal-scroll">
-                              <!-- Playlist items dynamically inserted -->
-                         </div>
-                         <button id="play-all">▶️ Play Playlist</button>
-                         <button id="export-txt">⬇️ Export as TXT</button>
-                         <button id="export-json">⬇️ Export as JSON</button>
-                    </div>
-
-                    <div id="favorites-section">
-                        <h3>⭐ Favorites</h3>
-                        <ul id="favorites-list"></ul>
-                    </div>
-
-                    <!-- 🗂️ Listen Library -->
-                    <div class="library-subsection">
-                         <h3>🗂️ Listen Documents</h3>
-                         <div id="listen-library" class="grid-library">
-                              <!-- Listen items dynamically inserted -->
-                         </div>
-                    </div>
-
-                    <!-- 📤 Upload Multiple -->
-                    <div class="library-subsection">
-                         <h3>📤 Upload Multiple</h3>
-                         <label for="file-input" class="custom-upload-button">
-                              📁 Select & Upload Files
+<header>
+<div class="logo-container">
+<img alt="NeurAloud Logo" class="app-logo" src="NeurAloudlogo.png"/>
+<span class="logo-title">NeurAloud</span>
+</div>
+<nav>
+<button onclick="navigate('home')" title="Home">🏠</button>
+<button onclick="navigate('library')">Library</button>
+<button onclick="navigate('listen')">Listen</button>
+<button onclick="navigate('capture')">Capture</button>
+<button onclick="navigate('store')">Store</button>
+<button onclick="navigate('profile')" title="Settings">⚙️</button>
+</nav>
+</header>
+<main>
+<!-- Home Section -->
+<section class="active-section" id="home">
+<div class="quad-container">
+<div class="quad-card">
+<h3>📚 Upload a Document</h3>
+<p>Bring your own files (PDF, EPUB, DOCX, etc.)</p>
+<button onclick="navigate('upload')">Upload Now</button>
+</div>
+<div class="quad-card">
+<h3>🔊 Listen Instantly</h3>
+<p>Start reading any document with your favorite voice</p>
+<button onclick="navigate('listen')">Start Listening</button>
+</div>
+<div class="quad-card">
+<h3>🌍 Live Capture</h3>
+<p>Listen to websites, articles, or your environment</p>
+<button onclick="navigate('capture')">Capture Audio</button>
+</div>
+<div class="quad-card">
+<h3>🛍️ Explore Store</h3>
+<p>Find premium voices, avatars &amp; add-ons</p>
+<button onclick="navigate('store')">Visit Store</button>
+</div>
+</div>
+<div class="reward-container">
+<h2>🏆 Your Rewards</h2>
+<div class="rewards">
+<div class="reward-card">
+<h4>5-day Streak</h4>
+<p>You've earned 50 XP</p>
+</div>
+<div class="reward-card">
+<h4>Top Listener</h4>
+<p>3 hours this week</p>
+</div>
+<div class="reward-card">
+<h4>Explorer</h4>
+<p>Tried 4 new voices</p>
+</div>
+</div>
+</div>
+<div class="continue-listening">
+<h3>⏯️ Continue Listening</h3>
+<div class="horizontal-scroll" id="continue-slider">
+<div class="doc-card">
+<p>📄 Book1.pdf</p>
+<button onclick="loadFromLibrary('Book1.pdf')">Resume</button>
+</div>
+<div class="doc-card">
+<p>📄 Research.epub</p>
+<button onclick="loadFromLibrary('Research.epub')">Resume</button>
+</div>
+</div>
+</div>
+<div class="recently-played">
+<h3>🎧 Recently Played</h3>
+<ul id="recent-files">
+<li>Book1.pdf - 3m ago</li>
+<li>Article2.txt - 12m ago</li>
+<li>Speech.mp3 - 2h ago</li>
+</ul>
+</div>
+<div class="recommended-section">
+<h3>🌟 Recommended for You</h3>
+<ul id="recommend-list">
+<li>🧠 "7 Habits of Highly Effective People"</li>
+<li>📘 "Deep Work" by Cal Newport</li>
+<li>🎙️ "Neural Narratives" - Podcast Series</li>
+</ul>
+</div>
+<div class="achievement-section">
+<h3>🏅 Achievements</h3>
+<ul id="achievement-list">
+<li>📅 7-Day Streak Badge</li>
+<li>🗣️ 1000 Minutes Listened</li>
+<li>📚 10 Books Completed</li>
+</ul>
+</div>
+</section>
+<!-- 📚 Library Section -->
+<section class="section" id="library">
+<h2>📚 Your Library</h2>
+<div class="library-flex-container">
+<!-- 📂 LEFT SIDE (60%): Playlist + Listen Library -->
+<div class="library-left">
+<!-- 🎵 Playlist (Top Left) -->
+<div class="library-subsection">
+<h3>🎵 Playback Queue</h3>
+<div class="horizontal-scroll" id="playback-queue">
+<!-- Playlist items dynamically inserted -->
+</div>
+<button id="play-all">▶️ Play Playlist</button>
+<button id="export-txt">⬇️ Export as TXT</button>
+<button id="export-json">⬇️ Export as JSON</button>
+</div>
+<div id="favorites-section">
+<h3>⭐ Favorites</h3>
+<ul id="favorites-list"></ul>
+</div>
+<!-- 🗂️ Listen Library -->
+<div class="library-subsection">
+<h3>🗂️ Listen Documents</h3>
+<div class="grid-library" id="listen-library">
+<!-- Listen items dynamically inserted -->
+</div>
+</div>
+<!-- 📤 Upload Multiple -->
+<div class="library-subsection">
+<h3>📤 Upload Multiple</h3>
+<label class="custom-upload-button" for="file-input">
+                              📁 Select &amp; Upload Files
                          </label>
-                         <input 
-                              type="file" 
-                              id="file-input" 
-                              multiple 
-                              accept=".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.xls,.xlsx,.xlsm,.xltx,.xltm,.tif,.eps,.tmp" 
-                              style="display:none;" 
-                         />
-                    </div>
-
-                    <div class="library-subsection">
-                         <h3>📁 Listen Documents</h3>
-                         <div id="listen-library" class="library-list"></div>
-                         <button id="bulk-delete-listen-btn" class="danger-btn">🗑️ Delete Selected</button>
-                    </div>
-               </div>
-
-               <!-- 🧱 VISUAL DIVIDER -->
-               <div class="library-divider"></div>
-
-               <!-- 🎙️ RIGHT SIDE (40%): Captures -->
-               <div class="library-right">
-                    <div class="library-subsection">
-                         <h3>🎙️ Capture Texts</h3>
-                         <div id="capture-library" class="grid-library">
-                              <!-- Capture items dynamically inserted -->
-                         </div>
-                    </div>
-
-                 <!-- ⚙️ Toggle for Capture Overwrite -->
-                    <div id="capture-toggle-container" class="context-toggle">
-                      <label>
-                      <input type="checkbox" id="overwrite-capture-toggle" checked />
+<input accept=".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.xls,.xlsx,.xlsm,.xltx,.xltm,.tif,.eps,.tmp" id="file-input" multiple="" style="display:none;" type="file"/>
+</div>
+<div class="library-subsection">
+<h3>📁 Listen Documents</h3>
+<div class="library-list" id="listen-library"></div>
+<button class="danger-btn" id="bulk-delete-listen-btn">🗑️ Delete Selected</button>
+</div>
+</div>
+<!-- 🧱 VISUAL DIVIDER -->
+<div class="library-divider"></div>
+<!-- 🎙️ RIGHT SIDE (40%): Captures -->
+<div class="library-right">
+<div class="library-subsection">
+<h3>🎙️ Capture Texts</h3>
+<div class="grid-library" id="capture-library">
+<!-- Capture items dynamically inserted -->
+</div>
+</div>
+<!-- ⚙️ Toggle for Capture Overwrite -->
+<div class="context-toggle" id="capture-toggle-container">
+<label>
+<input checked="" id="overwrite-capture-toggle" type="checkbox"/>
                         Auto Overwrite on Capture Play
                       </label>
-                    </div>
-    
-                    <!-- 💾 Save Captured Items -->
-                    <div class="library-subsection">
-                         <h3>💾 Save Captured</h3>
-                         <button id="save-captured-btn">✅ Save Selected</button>
-                    </div>
-
-                    <div class="library-subsection">
-                         <h3>🎙️ Captured Texts</h3>
-                         <div id="capture-library" class="library-list"></div>
-                         <button id="bulk-delete-capture-btn" class="danger-btn">🗑️ Delete Selected</button>
-                    </div>
-                 
-               </div>
-          </div>
-
-          <!-- 🗑️ Clear & Manage All Controls -->
-          <div class="library-controls">
-               <button onclick="confirmClearLibrary()">🗑️ Clear Entire Library</button>
-               <button onclick="confirmClearFavorites()">❌ Remove All Favorites</button>
-               <button onclick="confirmClearPlaylist()">🚫 Clear Playlist</button>
-          </div>
-
-    </section>
-
-    
-    <!-- Listen Section -->
-    <section id="listen" class="section">
-          <h2>🔊 Listen</h2>
-
-          <!-- 🎛 TTS Engine and Voice Dropdowns -->
-          <div class="tts-controls-listen">
-               <label for="tts-engine-listen">🧠 TTS Engine:</label>
-               <select id="tts-engine-listen">
-                    <option value="google">Google</option>
-                    <option value="ibm">IBM</option>
-                    <option value="responsiveVoice">ResponsiveVoice</option>
-               </select>
-
-               <label for="voice-listen">🎤 Voice:</label>
-               <select id="voice-listen"></select>
-
-               <select id="language-select-listen"></select>
-               <input type="text" id="tts-input-listen" placeholder="Type text to speak...">
-               <button id="speak-btn-listen">Speak</button>
-
-          </div>
-
-          <!-- 🎚 Playback Buttons -->
-          <div class="playback-controls">
-               <button id="play-btn">▶️ Play</button>
-               <button id="pause-btn">⏸ Pause</button>
-               <button id="stop-btn">⏹ Stop</button>
-               <button id="loop-btn">🔁 Loop</button>
-          </div>
-
-          <!-- 🎧 Save + Speed + Pitch -->
-          <div class="save-controls">
-               <!-- <button id="save-to-library">💾 Save to Library</button>-->
-               <button id="save-to-library-btn">💾 Save to Library</button>
-
-               <label for="rate-slider">⚡ Speed:</label>
-               <input type="range" id="rate-slider" min="0.5" max="2" step="0.01">
-               <span id="rate-value">1.00</span>
-
-               <label for="pitch-slider">🎚 Pitch:</label>
-               <input type="range" id="pitch-slider" min="0.5" max="2" step="0.01">
-               <span id="pitch-value">1.00</span>
-          </div>
-
-          <!-- 📚 Document Display Area -->
-          <div id="text-display" class="text-display theme-background"></div>
-      
-          <!-- 🎵 Playlist Panel -->
-          <div id="playback-queue-container">
-               <h3>📝 Playback Queue</h3>
-               <ul id="playback-queue"></ul>
-               <button id="play-all">▶️ Play All</button>
-               <button id="export-txt">📄 Export TXT</button>
-               <button id="export-json">🧾 Export JSON</button>
-          </div>
-
-          <!-- 📥 Upload New Document -->
-          <div class="upload-area">
-               <label for="file-input" class="file-label">📤 Choose File</label>
-               <input type="file" id="file-input" accept=".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.xls,.xlsx,.xlsm,.xltx,.xltm,.tif,.eps,.tmp" />
-          </div>
-
-          <!-- 💬 Sentence Navigation -->
-          <div class="sentence-nav">
-               <button id="prev-sentence">⏮ Prev</button>
-               <button id="next-sentence">⏭ Next</button>
-          </div>
-    </section>
-    
-    <!-- Capture Section -->
-    <section id="capture" class="section">
-          <h2>🌍 Live Capture</h2>
-
-          <!-- 🎛 TTS Engine and Voice Selection -->
-          <div class="tts-controls-capture">
-               <label for="tts-engine-capture">🧠 TTS Engine:</label>
-               <select id="tts-engine-capture">
-                    <option value="google">Google</option>
-                    <option value="ibm">IBM</option>
-                    <option value="responsiveVoice">ResponsiveVoice</option>
-               </select>
-
-               <label for="voice-capture">🎤 Voice:</label>
-               <select id="voice-capture"></select>
-
-               <select id="language-select-capture"></select>
-               <input type="text" id="tts-input-capture" placeholder="Type text to speak...">
-               <button id="speak-btn-capture">Speak</button>
-
-          </div>
-
-          <!-- 🎚 Playback Controls -->
-          <div class="playback-controls">
-               <button id="play-capture-btn">▶️ Play</button>
-               <button id="pause-capture-btn">⏸ Pause</button>
-               <button id="stop-capture-btn">⏹ Stop</button>
-               <button id="loop-capture-btn">🔁 Loop</button>
-          </div>
-
-          <!-- 💾 Save & Sliders -->
-          <div class="save-controls">
-               <button id="save-capture">💾 Save to Library</button>
-
-               <label for="rate-capture-slider">⚡ Speed:</label>
-               <input type="range" id="rate-capture-slider" min="0.5" max="2" step="0.01">
-               <span id="rate-capture-value">1.00</span>
-
-               <label for="pitch-capture-slider">🎚 Pitch:</label>
-               <input type="range" id="pitch-capture-slider" min="0.5" max="2" step="0.01">
-               <span id="pitch-capture-value">1.00</span>
-          </div>
-
-          <!-- 🎙️ Captured Text Area -->
-          <div id="capture-display" class="text-display theme-background"></div>
-
-
-          <!-- 🎧 Capture Metadata -->
-          <div class="capture-controls">
-               <label for="capture-language">🌐 Capture Language:</label>
-               <select id="capture-language">
-                    <option value="auto">Auto Detect</option>
-                    <option value="en">English</option>
-                    <option value="fr">French</option>
-                    <option value="es">Spanish</option>
-                    <option value="pt">Portuguese</option>
-                    <option value="zh">Chinese</option>
-                    <option value="ar">Arabic</option>
-                    <!-- Add more as needed -->
-               </select>
-
-               <label for="read-language">🗣️ Read Language:</label>
-               <select id="read-language">
-                    <option value="en">English</option>
-                    <option value="fr">French</option>
-                    <option value="es">Spanish</option>
-                    <option value="pt">Portuguese</option>
-                    <option value="zh">Chinese</option>
-                    <option value="ar">Arabic</option>
-                    <!-- Add more as needed -->
-               </select>
-
-               <label>
-                    <input type="checkbox" id="capture-translate"> Translate Before Reading
+</div>
+<!-- 💾 Save Captured Items -->
+<div class="library-subsection">
+<h3>💾 Save Captured</h3>
+<button id="save-captured-btn">✅ Save Selected</button>
+</div>
+<div class="library-subsection">
+<h3>🎙️ Captured Texts</h3>
+<div class="library-list" id="capture-library"></div>
+<button class="danger-btn" id="bulk-delete-capture-btn">🗑️ Delete Selected</button>
+</div>
+</div>
+</div>
+<!-- 🗑️ Clear & Manage All Controls -->
+<div class="library-controls">
+<button onclick="confirmClearLibrary()">🗑️ Clear Entire Library</button>
+<button onclick="confirmClearFavorites()">❌ Remove All Favorites</button>
+<button onclick="confirmClearPlaylist()">🚫 Clear Playlist</button>
+</div>
+</section>
+<!-- Listen Section -->
+<section class="section" id="listen">
+<h2>🔊 Listen</h2>
+<!-- 🎛 TTS Engine and Voice Dropdowns -->
+<div class="tts-controls-listen">
+<label for="tts-engine-listen">🧠 TTS Engine:</label>
+<select id="tts-engine-listen">
+<option value="google">Google</option>
+<option value="ibm">IBM</option>
+<option value="responsiveVoice">ResponsiveVoice</option>
+</select>
+<label for="voice-listen">🎤 Voice:</label>
+<select id="voice-listen"></select>
+<select id="language-select-listen"></select>
+<input id="tts-input-listen" placeholder="Type text to speak..." type="text"/>
+<button id="speak-btn-listen">Speak</button>
+</div>
+<!-- 🎚 Playback Buttons -->
+<div class="playback-controls">
+<button id="play-btn">▶️ Play</button>
+<button id="pause-btn">⏸ Pause</button>
+<button id="stop-btn">⏹ Stop</button>
+<button id="loop-btn">🔁 Loop</button>
+</div>
+<!-- 🎧 Save + Speed + Pitch -->
+<div class="save-controls">
+<!-- <button id="save-to-library">💾 Save to Library</button>-->
+<button id="save-to-library-btn">💾 Save to Library</button>
+<label for="rate-slider">⚡ Speed:</label>
+<input id="rate-slider" max="2" min="0.5" step="0.01" type="range"/>
+<span id="rate-value">1.00</span>
+<label for="pitch-slider">🎚 Pitch:</label>
+<input id="pitch-slider" max="2" min="0.5" step="0.01" type="range"/>
+<span id="pitch-value">1.00</span>
+</div>
+<!-- 📚 Document Display Area -->
+<div class="text-display theme-background" id="text-display"></div>
+<!-- 🎵 Playlist Panel -->
+<div id="playback-queue-container">
+<h3>📝 Playback Queue</h3>
+<ul id="playback-queue"></ul>
+<button id="play-all">▶️ Play All</button>
+<button id="export-txt">📄 Export TXT</button>
+<button id="export-json">🧾 Export JSON</button>
+</div>
+<!-- 📥 Upload New Document -->
+<div class="upload-area">
+<label class="file-label" for="file-input">📤 Choose File</label>
+<input accept=".pdf,.epub,.txt,.docx,.doc,.pptx,.csv,.rtf,.msg,.sql,.webp,.xls,.xlsx,.xlsm,.xltx,.xltm,.tif,.eps,.tmp" id="file-input" type="file"/>
+</div>
+<!-- 💬 Sentence Navigation -->
+<div class="sentence-nav">
+<button id="prev-sentence">⏮ Prev</button>
+<button id="next-sentence">⏭ Next</button>
+</div>
+</section>
+<!-- Capture Section -->
+<section class="section" id="capture">
+<h2>🌍 Live Capture</h2>
+<!-- 🎛 TTS Engine and Voice Selection -->
+<div class="tts-controls-capture">
+<label for="tts-engine-capture">🧠 TTS Engine:</label>
+<select id="tts-engine-capture">
+<option value="google">Google</option>
+<option value="ibm">IBM</option>
+<option value="responsiveVoice">ResponsiveVoice</option>
+</select>
+<label for="voice-capture">🎤 Voice:</label>
+<select id="voice-capture"></select>
+<select id="language-select-capture"></select>
+<input id="tts-input-capture" placeholder="Type text to speak..." type="text"/>
+<button id="speak-btn-capture">Speak</button>
+</div>
+<!-- 🎚 Playback Controls -->
+<div class="playback-controls">
+<button id="play-capture-btn">▶️ Play</button>
+<button id="pause-capture-btn">⏸ Pause</button>
+<button id="stop-capture-btn">⏹ Stop</button>
+<button id="loop-capture-btn">🔁 Loop</button>
+</div>
+<!-- 💾 Save & Sliders -->
+<div class="save-controls">
+<button id="save-capture">💾 Save to Library</button>
+<label for="rate-capture-slider">⚡ Speed:</label>
+<input id="rate-capture-slider" max="2" min="0.5" step="0.01" type="range"/>
+<span id="rate-capture-value">1.00</span>
+<label for="pitch-capture-slider">🎚 Pitch:</label>
+<input id="pitch-capture-slider" max="2" min="0.5" step="0.01" type="range"/>
+<span id="pitch-capture-value">1.00</span>
+</div>
+<!-- 🎙️ Captured Text Area -->
+<div class="text-display theme-background" id="capture-display"></div>
+<!-- 🎧 Capture Metadata -->
+<div class="capture-controls">
+<label for="capture-language">🌐 Capture Language:</label>
+<select id="capture-language">
+<option value="auto">Auto Detect</option>
+<option value="en">English</option>
+<option value="fr">French</option>
+<option value="es">Spanish</option>
+<option value="pt">Portuguese</option>
+<option value="zh">Chinese</option>
+<option value="ar">Arabic</option>
+<!-- Add more as needed -->
+</select>
+<label for="read-language">🗣️ Read Language:</label>
+<select id="read-language">
+<option value="en">English</option>
+<option value="fr">French</option>
+<option value="es">Spanish</option>
+<option value="pt">Portuguese</option>
+<option value="zh">Chinese</option>
+<option value="ar">Arabic</option>
+<!-- Add more as needed -->
+</select>
+<label>
+<input id="capture-translate" type="checkbox"/> Translate Before Reading
                </label>
-          </div>
-
-          <!-- 🎤 Capture Activation -->
-          <div class="capture-actions">
-               <button id="start-capture">🎤 Start Listening</button>
-               <button id="stop-capture">🛑 Stop Listening</button>
-               <p id="capture-status">🔈 Status: Idle</p>
-          </div>
-    </section>
-
-    <!-- Store Section -->
-    <section id="store" class="section">
-      <h2>🛍️ NeurAloud Store</h2>
-      <p>Coming soon: premium voices, languages, and tools!</p>
-    </section>
-
-     <!-- Settings Section -->
-    <section id="profile" class="section">
-          <h2>⚙️ Settings</h2>
-
-          <!-- 🎨 Theme Selector -->
-          <div class="settings-group">
-               <label for="theme-select">🎨 Theme:</label>
-               <select id="theme-select">
-                    <option value="light">Light Mode</option>
-                    <option value="dark">Dark Mode</option>
-                    <option value="blue">Blue Mode</option>
-                    <option value="royal">Royal Mode</option>
-                    <option value="gray">Gray Mode</option>
-               </select>
-               <button onclick="toggleMode()">🌓 Toggle Mode</button>
-          </div>
-
-          <h2>⚙️ Profile Settings</h2>
-          <div id="profile-settings">
-            <!-- Elements will be auto-created and inserted here -->
-          </div>
-
-          <!-- 🗣️ Voice Avatar Selection -->
-          <div class="settings-group">
-               <label for="voice-avatar">🗣️ Voice Avatar:</label>
-               <select id="voice-avatar">
-                    <option value="default">Default</option>
-                    <option value="warm-male">Warm Male</option>
-                    <option value="bright-female">Bright Female</option>
-                    <option value="robotic-ai">Robotic AI</option>
-                    <option value="calm-deep">Calm Deep</option>
-               </select>
-          </div>
-
-          <!-- 🔊 Pitch & Rate Sliders -->
-          <div class="settings-group">
-               <label for="pitch-slider">🎚️ Pitch:</label>
-               <input type="range" id="pitch-slider" min="0.5" max="2" step="0.01" value="1">
-               <span id="pitch-value">1.00</span>
-          </div>
-          <div class="settings-group">
-               <label for="rate-slider">⚡ Speed:</label>
-               <input type="range" id="rate-slider" min="0.5" max="2" step="0.01" value="1">
-               <span id="rate-value">1.00</span>
-          </div>
-
-          <!-- 🔁 Playback Controls -->
-          <div class="settings-group">
-               <h3>🔁 Playback Options</h3>
-               <label><input type="checkbox" id="loop-toggle"> Loop Playback</label><br/>
-               <label><input type="checkbox" id="auto-resume"> Auto Resume</label>
-          </div>
-
-          <!-- 🌐 Language Preferences -->
-          <div class="settings-group">
-               <h3>🌐 Language Preferences</h3>
-               <label for="lang-read">Read in:</label>
-               <select id="lang-read">
-                    <option value="en">English</option>
-                    <option value="fr">French</option>
-                    <option value="es">Spanish</option>
-                    <option value="pt">Portuguese</option>
-                    <option value="sw">Swahili</option>
-                    <option value="ar">Arabic</option>
-                    <option value="zh">Chinese</option>
-                    <option value="jp">Japanese</option>
-               </select>
-
-               <label for="lang-translate">Translate to:</label>
-               <select id="lang-translate">
-                    <option value="none">None</option>
-                    <option value="en">English</option>
-                    <option value="fr">French</option>
-                    <option value="es">Spanish</option>
-                    <option value="pt">Portuguese</option>
-                    <option value="sw">Swahili</option>
-                    <option value="ar">Arabic</option>
-                    <option value="zh">Chinese</option>
-                    <option value="jp">Japanese</option>
-               </select>
-
-               <label><input type="checkbox" id="enable-translation"> 🌍 Enable Translation</label>
-          </div>
-
-          <!-- 📈 Listening Stats -->
-          <div class="settings-group">
-               <h3>📈 Listening Stats</h3>
-               <p>Total Listening Time: <span id="total-listening">0h 0m</span></p>
-               <p>Chapters Completed: <span id="chapters-completed">0</span></p>
-               <p>Favorites: <span id="favorites-count">0</span></p>
-          </div>
-
-          <!-- 🎁 Reward Progress -->
-          <div class="settings-group">
-               <h3>🎁 Reward Settings</h3>
-               <label><input type="checkbox" id="auto-reward-toggle" /> Enable Streak Rewards</label>
-               <p>Next Reward at: <span id="next-reward">10 chapters</span></p>
-          </div>
-
-          <!-- 🧩 Add-On Features -->
-          <div class="settings-group">
-               <h3>🧩 Add-On Features</h3>
-               <label><input type="checkbox" checked /> Translation</label>
-               <label><input type="checkbox" checked /> Capture Mode</label>
-               <label><input type="checkbox" /> AI Explanation</label>
-               <label><input type="checkbox" /> Image Description</label>
-          </div>
-
-          <!-- 💳 Billing Section -->
-          <div class="settings-group">
-               <h3>💳 Billing & Account</h3>
-               <button id="manage-subscription">Manage Subscription</button>
-               <button id="sign-out">Sign Out</button>
-          </div>
-
-          <!-- 🧠 Developer Mode -->
-          <div class="settings-group">
-               <h3>🧠 Developer Mode</h3>
-               <label><input type="checkbox" id="dev-mode-toggle"> Enable Developer Mode</label>
-               <button onclick="viewLogs()">View Logs</button>
-               <button onclick="simulateFree()">Simulate Free Mode</button>
-               <button onclick="simulateTrial()">Simulate Trial</button>
-               <button onclick="simulatePremium()">Simulate Premium</button>
-          </div>
-    </section>
-
-    <!-- 📋 Right-Click / Long-Press Context Menu -->
-    <div id="context-menu" class="context-menu">
-      <ul>
-        <li id="menu-play">▶️ Play</li>
-        <li id="menu-add">➕ Add to Playlist</li>
-        <li id="menu-fav">⭐ Toggle Favorite</li>
-        <li id="menu-download">⬇️ Download</li>
-        <li id="menu-delete">🗑️ Delete</li>
-      </ul>
-    </div>
-
-    <!-- 🌐 TRANSLATION & SUMMARY TOOLS SECTION -->
-    <section id="translation-tools">
-      <h2>🌍 Translation & Chapter Summary Tools</h2>
-      <p class="description">Translate text, auto-detect languages, and summarize chapters with advanced tools. Powered by cloud and local TTS engines.</p>
-
-      <!-- 🔠 Language Translation -->
-      <div class="translation-tool" id="language-translation">
-        <label for="language-input">Text to Translate:</label>
-        <textarea id="language-input" rows="4" placeholder="Enter your text here..."></textarea>
-
-        <label for="target-language">Translate to:</label>
-        <select id="target-language">
-          <option value="fr">🇫🇷 French</option>
-          <option value="es">🇪🇸 Spanish</option>
-          <option value="pt">🇵🇹 Portuguese</option>
-          <option value="la">🏛️ Latin</option>
-          <option value="af">🇿🇦 Afrikaans</option>
-          <option value="ln">🇨🇩 Lingala</option>
-          <option value="sw">🇰🇪 Swahili</option>
-          <option value="zh">🇨🇳 Chinese</option>
-          <option value="ja">🇯🇵 Japanese</option>
-          <option value="ar">🇸🇦 Arabic</option>
-        </select>
-
-        <button onclick="translateText()">🌐 Translate</button>
-
-        <div class="translation-result" id="translation-output">🔍 Translated result will appear here.</div>
-      </div>
-
-      <hr class="translation-separator">
-
-      <!-- 🧠 Auto Language Detection and Live Translation -->
-      <div class="translation-tool" id="auto-translate">
-        <label for="auto-input">Auto-Detect Language:</label>
-        <textarea id="auto-input" rows="4" placeholder="Paste foreign text..."></textarea>
-        <button onclick="autoDetectTranslate()">🔎 Detect & Translate</button>
-        <div class="translation-result" id="auto-translate-output">🌐 Detected language and translation will appear here.</div>
-      </div>
-
-      <hr class="translation-separator">
-
-      <!-- 📚 Chapter Summary -->
-      <div class="translation-tool" id="chapter-summary">
-        <label for="summary-text">Chapter Text:</label>
-        <textarea id="summary-text" rows="5" placeholder="Paste full chapter or section here..."></textarea>
-        <button onclick="summarizeChapter()">🧠 Summarize</button>
-        <div class="translation-result" id="summary-output">📄 Summary will be displayed here.</div>
-      </div>
-    </section>
-
-    
-  </main>
-
-  <!-- Modal -->
-  <div id="preview-modal" style="display:none;">
-    <span id="modal-close">✖</span>
-    <pre id="modal-text"></pre>
-  </div>
-
-  <!-- Footer -->
-  <footer>
-    <p style="text-align:center; margin-top: 30px;">💪📚🎧 = Empowering minds through books and sound</p>
-    <p style="text-align:center;">&copy; 2025 NeurAloud. All rights reserved.</p>
-  </footer>
-
-  <!-- Script -->
-  <!-- <script src="script.js"></script> -->
-  <script src="script.js" defer></script>
-  <script>
+</div>
+<!-- 🎤 Capture Activation -->
+<div class="capture-actions">
+<button id="start-capture">🎤 Start Listening</button>
+<button id="stop-capture">🛑 Stop Listening</button>
+<p id="capture-status">🔈 Status: Idle</p>
+</div>
+</section>
+<!-- Store Section -->
+<section class="section" id="store">
+<h2>🛍️ NeurAloud Store</h2>
+<p>Coming soon: premium voices, languages, and tools!</p>
+</section>
+<!-- Settings Section -->
+<section class="section" id="profile">
+<h2>⚙️ Settings</h2>
+<!-- 🎨 Theme Selector -->
+<div class="settings-group">
+<label for="theme-select">🎨 Theme:</label>
+<select id="theme-select">
+<option value="light">Light Mode</option>
+<option value="dark">Dark Mode</option>
+<option value="blue">Blue Mode</option>
+<option value="royal">Royal Mode</option>
+<option value="gray">Gray Mode</option>
+</select>
+<button onclick="toggleMode()">🌓 Toggle Mode</button>
+</div>
+<h2>⚙️ Profile Settings</h2>
+<div id="profile-settings">
+<!-- Elements will be auto-created and inserted here -->
+</div>
+<!-- 🗣️ Voice Avatar Selection -->
+<div class="settings-group">
+<label for="voice-avatar">🗣️ Voice Avatar:</label>
+<select id="voice-avatar">
+<option value="default">Default</option>
+<option value="warm-male">Warm Male</option>
+<option value="bright-female">Bright Female</option>
+<option value="robotic-ai">Robotic AI</option>
+<option value="calm-deep">Calm Deep</option>
+</select>
+</div>
+<!-- 🔊 Pitch & Rate Sliders -->
+<div class="settings-group">
+<label for="pitch-slider">🎚️ Pitch:</label>
+<input id="pitch-slider" max="2" min="0.5" step="0.01" type="range" value="1"/>
+<span id="pitch-value">1.00</span>
+</div>
+<div class="settings-group">
+<label for="rate-slider">⚡ Speed:</label>
+<input id="rate-slider" max="2" min="0.5" step="0.01" type="range" value="1"/>
+<span id="rate-value">1.00</span>
+</div>
+<!-- 🔁 Playback Controls -->
+<div class="settings-group">
+<h3>🔁 Playback Options</h3>
+<label><input id="loop-toggle" type="checkbox"/> Loop Playback</label><br/>
+<label><input id="auto-resume" type="checkbox"/> Auto Resume</label>
+</div>
+<!-- 🌐 Language Preferences -->
+<div class="settings-group">
+<h3>🌐 Language Preferences</h3>
+<label for="lang-read">Read in:</label>
+<select id="lang-read">
+<option value="en">English</option>
+<option value="fr">French</option>
+<option value="es">Spanish</option>
+<option value="pt">Portuguese</option>
+<option value="sw">Swahili</option>
+<option value="ar">Arabic</option>
+<option value="zh">Chinese</option>
+<option value="jp">Japanese</option>
+</select>
+<label for="lang-translate">Translate to:</label>
+<select id="lang-translate">
+<option value="none">None</option>
+<option value="en">English</option>
+<option value="fr">French</option>
+<option value="es">Spanish</option>
+<option value="pt">Portuguese</option>
+<option value="sw">Swahili</option>
+<option value="ar">Arabic</option>
+<option value="zh">Chinese</option>
+<option value="jp">Japanese</option>
+</select>
+<label><input id="enable-translation" type="checkbox"/> 🌍 Enable Translation</label>
+</div>
+<!-- 📈 Listening Stats -->
+<div class="settings-group">
+<h3>📈 Listening Stats</h3>
+<p>Total Listening Time: <span id="total-listening">0h 0m</span></p>
+<p>Chapters Completed: <span id="chapters-completed">0</span></p>
+<p>Favorites: <span id="favorites-count">0</span></p>
+</div>
+<!-- 🎁 Reward Progress -->
+<div class="settings-group">
+<h3>🎁 Reward Settings</h3>
+<label><input id="auto-reward-toggle" type="checkbox"/> Enable Streak Rewards</label>
+<p>Next Reward at: <span id="next-reward">10 chapters</span></p>
+</div>
+<!-- 🧩 Add-On Features -->
+<div class="settings-group">
+<h3>🧩 Add-On Features</h3>
+<label><input checked="" type="checkbox"/> Translation</label>
+<label><input checked="" type="checkbox"/> Capture Mode</label>
+<label><input type="checkbox"/> AI Explanation</label>
+<label><input type="checkbox"/> Image Description</label>
+</div>
+<!-- 💳 Billing Section -->
+<div class="settings-group">
+<h3>💳 Billing &amp; Account</h3>
+<button id="manage-subscription">Manage Subscription</button>
+<button id="sign-out">Sign Out</button>
+</div>
+<!-- 🧠 Developer Mode -->
+<div class="settings-group">
+<h3>🧠 Developer Mode</h3>
+<label><input id="dev-mode-toggle" type="checkbox"/> Enable Developer Mode</label>
+<button onclick="viewLogs()">View Logs</button>
+<button onclick="simulateFree()">Simulate Free Mode</button>
+<button onclick="simulateTrial()">Simulate Trial</button>
+<button onclick="simulatePremium()">Simulate Premium</button>
+</div>
+</section>
+<!-- 📋 Right-Click / Long-Press Context Menu -->
+<div class="context-menu" id="context-menu">
+<ul>
+<li id="menu-play">▶️ Play</li>
+<li id="menu-add">➕ Add to Playlist</li>
+<li id="menu-fav">⭐ Toggle Favorite</li>
+<li id="menu-download">⬇️ Download</li>
+<li id="menu-delete">🗑️ Delete</li>
+</ul>
+</div>
+<!-- 🌐 TRANSLATION & SUMMARY TOOLS SECTION -->
+<section id="translation-tools">
+<h2>🌍 Translation &amp; Chapter Summary Tools</h2>
+<p class="description">Translate text, auto-detect languages, and summarize chapters with advanced tools. Powered by cloud and local TTS engines.</p>
+<!-- 🔠 Language Translation -->
+<div class="translation-tool" id="language-translation">
+<label for="language-input">Text to Translate:</label>
+<textarea id="language-input" placeholder="Enter your text here..." rows="4"></textarea>
+<label for="target-language">Translate to:</label>
+<select id="target-language">
+<option value="fr">🇫🇷 French</option>
+<option value="es">🇪🇸 Spanish</option>
+<option value="pt">🇵🇹 Portuguese</option>
+<option value="la">🏛️ Latin</option>
+<option value="af">🇿🇦 Afrikaans</option>
+<option value="ln">🇨🇩 Lingala</option>
+<option value="sw">🇰🇪 Swahili</option>
+<option value="zh">🇨🇳 Chinese</option>
+<option value="ja">🇯🇵 Japanese</option>
+<option value="ar">🇸🇦 Arabic</option>
+</select>
+<button onclick="translateText()">🌐 Translate</button>
+<div class="translation-result" id="translation-output">🔍 Translated result will appear here.</div>
+</div>
+<hr class="translation-separator"/>
+<!-- 🧠 Auto Language Detection and Live Translation -->
+<div class="translation-tool" id="auto-translate">
+<label for="auto-input">Auto-Detect Language:</label>
+<textarea id="auto-input" placeholder="Paste foreign text..." rows="4"></textarea>
+<button onclick="autoDetectTranslate()">🔎 Detect &amp; Translate</button>
+<div class="translation-result" id="auto-translate-output">🌐 Detected language and translation will appear here.</div>
+</div>
+<hr class="translation-separator"/>
+<!-- 📚 Chapter Summary -->
+<div class="translation-tool" id="chapter-summary">
+<label for="summary-text">Chapter Text:</label>
+<textarea id="summary-text" placeholder="Paste full chapter or section here..." rows="5"></textarea>
+<button onclick="summarizeChapter()">🧠 Summarize</button>
+<div class="translation-result" id="summary-output">📄 Summary will be displayed here.</div>
+</div>
+</section>
+</main>
+<!-- Modal -->
+<div id="preview-modal" style="display:none;">
+<span id="modal-close">✖</span>
+<pre id="modal-text"></pre>
+</div>
+<!-- Footer -->
+<footer>
+<p style="text-align:center; margin-top: 30px;">💪📚🎧 = Empowering minds through books and sound</p>
+<p style="text-align:center;">© 2025 NeurAloud. All rights reserved.</p>
+</footer>
+<!-- Script -->
+<!-- <script src="script_final_enhanced.js"></script> -->
+<script defer="" src="script.js"></script>
+<script>
     if ("serviceWorker" in navigator)
       navigator.serviceWorker.register("service-worker.js")
         .then(r => console.log("✅ Service Worker registered"))
         .catch(console.error);
   </script>
+<!-- 🧠 Agent Panel (Usable Chat Version) -->
+<div id="agent-dock" class="agent-dock-collapsed" onclick="showAgentPanel()">
+  <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" alt="Agent" class="agent-avatar-small" />
+  <span class="agent-tooltip">Agent</span>
+</div>
+
+<div id="agent-panel" class="agent-panel-hidden">
+  
+  <div class="agent-body">
+
+<div class="agent-close-top"><span class="agent-close-btn" onclick="hideAgentPanel()">×</span></div><div class="agent-top-bar"><div class="agent-avatar-wrapper"><img alt="Agent Avatar" class="agent-avatar" src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png"/></div><div class="agent-controls-wrapper">
+  <span class="agent-close-btn" onclick="hideAgentPanel()">×</span>
+</div>
+
+    
+
+  <button onclick="startListening()">🎤 Speak</button>
+  <button onclick="playLastResponse()">▶️ Play Last Response</button>
+  <label style="font-size: 13px; margin-left: 8px;">
+    <input type="checkbox" id="autoplay-response" />
+    🔊 Auto Play Response
+  </label>
+</div>
+    <div id="agent-chat-log" class="agent-chat-log"></div>
+    <input id="agent-input" type="text" placeholder="Ask something..." onkeydown="if(event.key==='Enter') sendAgentQuery()"/>
+    <button onclick="sendAgentQuery()">Send</button>
+
+
+  </div>
+</div>
+
+<style>
+  .agent-dock-collapsed {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .agent-avatar-small {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease;
+  }
+  .agent-avatar-small:hover {
+    transform: scale(1.1);
+  }
+  .agent-tooltip {
+    margin-top: 5px;
+    background: #333;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0.85;
+  }
+  .agent-panel-hidden {
+    display: none;
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 300px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    z-index: 9998;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+  }
+  .agent-header {
+    background: #4a63e7;
+    color: white;
+    padding: 10px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .agent-body {
+    padding: 10px;
+    text-align: center;
+  }
+  .agent-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+  }
+  #agent-chat-log {
+    text-align: left;
+    height: 150px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 5px;
+    font-size: 13px;
+    margin-bottom: 6px;
+    background: #f9f9f9;
+  }
+  #agent-input {
+    width: 80%;
+    padding: 4px;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+
+.agent-controls {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.agent-close-top {
+  text-align: right;
+  margin-top: 5px;
+  margin-right: 8px;
+}
+
+.agent-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 4px 0 10px 0;
+}
+.agent-avatar-wrapper {
+  flex: 0 0 auto;
+}
+.agent-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+.agent-controls-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+</style>
+
+<script>
+  function showAgentPanel() {
+    document.getElementById("agent-panel").style.display = "block";
+    document.getElementById("agent-dock").style.display = "none";
+  }
+
+  function hideAgentPanel() {
+    document.getElementById("agent-panel").style.display = "none";
+    document.getElementById("agent-dock").style.display = "flex";
+  }
+
+  function sendAgentQuery() {
+    const input = document.getElementById("agent-input");
+    const log = document.getElementById("agent-chat-log");
+    const question = input.value.trim();
+    if (!question) return;
+
+    log.innerHTML += `<div><strong>You:</strong> ${question}</div>`;
+
+    const response = getAgentResponse(question);
+    lastAgentResponse = response;
+    log.innerHTML += `<div><strong>Agent:</strong> ${response}</div>`;
+    log.scrollTop = log.scrollHeight;
+    input.value = "";
+  }
+
+  function getAgentResponse(q) {
+    const question = q.toLowerCase();
+    if (question.includes("highlight")) return "NeurAloud highlights text sentence-by-sentence during playback, even for PDFs.";
+    if (question.includes("tts") || question.includes("voice")) return "We support Google, IBM, ResponsiveVoice, and Local TTS engines.";
+    if (question.includes("library")) return "Your Library shows saved files, favorites, and playback queue.";
+    if (question.includes("floating") || question.includes("dock")) return "The floating playback panel can be collapsed, dragged, or docked.";
+    if (question.includes("hotkey") || question.includes("shortcut")) return "Use Ctrl+Shift+A to toggle the agent panel.";
+    if (question.includes("capture")) return "The Capture section allows you to transcribe live speech or audio and save it.";
+    if (question.includes("listen")) return "The Listen section plays back uploaded documents using your selected TTS engine.";
+    if (question.includes("subscription")) return "The freemium model allows 10 hours of use/month. Upgrade for unlimited access.";
+    if (question.includes("avatar")) return "You can change your voice avatar in the Profile settings.";
+    if (question.includes("developer")) return "Developer Mode lets you simulate free, trial, and premium environments.";
+    return "I'm still learning! Try asking about TTS, highlighting, or capture features.";
+  }
+
+  document.addEventListener("keydown", function(e) {
+    if (e.ctrlKey && e.shiftKey && e.key === "A") {
+      const panel = document.getElementById("agent-panel");
+      if (panel.style.display === "none" || panel.classList.contains("agent-panel-hidden")) {
+        showAgentPanel();
+      } else {
+        hideAgentPanel();
+      }
+    }
+  });
+
+  const synth = window.speechSynthesis;
+let lastAgentResponse = '';
+
+  function playLastResponse() {
+  if (lastAgentResponse) speakResponse(lastAgentResponse);
+}
+
+function speakResponse(text) {
+    if (!synth) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    synth.speak(utterance);
+  }
+
+  function startListening() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech Recognition not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.start();
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[0][0].transcript;
+      document.getElementById("agent-input").value = transcript;
+      sendAgentQuery();
+    };
+
+    recognition.onerror = function(event) {
+      console.error("Speech recognition error:", event.error);
+    };
+  }
+
+  const originalSendAgentQuery = sendAgentQuery;
+  sendAgentQuery = function() {
+    const input = document.getElementById("agent-input");
+    const log = document.getElementById("agent-chat-log");
+    const question = input.value.trim();
+    if (!question) return;
+
+    log.innerHTML += `<div><strong>You:</strong> ${question}</div>`;
+    const response = getAgentResponse(question);
+    lastAgentResponse = response;
+    log.innerHTML += `<div><strong>Agent:</strong> ${response}</div>`;
+    log.scrollTop = log.scrollHeight;
+    input.value = "";
+
+    if (document.getElementById("autoplay-response").checked) {
+      speakResponse(response);
+    }
+  };
+</script>
 </body>
 </html>
