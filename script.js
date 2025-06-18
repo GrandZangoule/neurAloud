@@ -437,10 +437,8 @@ function setupResponsiveVoice() {
   };
   document.body.appendChild(script);
 }
-✅ 2. Fix updateVoiceDropdown() to Handle All Voice Formats
-js
-Copy
-Edit
+
+
 function updateVoiceDropdown(engine, voices, context = "listen") {
   const dropdown = document.getElementById(`voice-${context}`);
   if (!dropdown) {
@@ -469,6 +467,8 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
 
   console.log(`✅ Voice dropdown updated for ${engine} → ${context}`);
 }
+
+
 // ✅ Setup & persist engine dropdown, then load voices
 async function loadTTSEngines(context = "listen") {
   const engineDropdown = document.getElementById(`tts-engine-${context}`);
