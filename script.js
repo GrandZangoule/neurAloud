@@ -305,34 +305,43 @@ function restoreSection() {
 // ✅ Add this immediately after the above:
 async function loadLastSessionFile() {
   const lastFileName = localStorage.getItem("lastFileName");
-  if (!lastFileName || !db) return;
 
-  const tx = db.transaction("files", "readonly");
-  const store = tx.objectStore("files");
-  const req = store.getAll();
+  // Ensure DB is ready and file name is set
+  if (!lastFileName || !db || !db.objectStoreNames.contains("files")) {
+    log("ℹ️ Skipping session file load — no DB or file found.");
+    return;
+  }
 
-  req.onsuccess = async () => {
-    const files = req.result;
-    const lastFile = files.find(f => f.name === lastFileName && f.category === "last");
+  try {
+    const tx = db.transaction("files", "readonly");
+    const store = tx.objectStore("files");
+    const req = store.getAll();
 
-    if (!lastFile) return;
+    req.onsuccess = async () => {
+      const files = req.result;
+      const lastFile = files.find(f => f.name === lastFileName && f.content);
 
-    log("🔄 Restoring last loaded file: " + lastFile.name);
+      if (!lastFile) {
+        log("⚠️ File not found in DB.");
+        return;
+      }
 
-    extractedText = lastFile.content;
-    sentences = extractedText.match(/[^.!?]+[.!?]+/g) || [extractedText];
-    currentSentenceIndex = parseInt(localStorage.getItem("currentSentenceIndex") || "0");
+      log("📂 Restoring last loaded file: " + lastFile.name);
+      extractedText = lastFile.content;
+      sentences = extractedText.match(/[^.?!]*[.?!]/g) || [extractedText];
+      currentSentenceIndex = parseInt(localStorage.getItem("currentSentenceIndex") || "0");
 
-    if (textDisplay) {
-      textDisplay.innerHTML = sentences.map((s, i) =>
-        `<span id="s-${i}" class="sentence">${s.trim()}</span>`
-      ).join(" ");
-    }
+      if (textDisplay) {
+        textDisplay.textContent = extractedText;
+        highlightCurrentSentence();
+      }
+    };
 
-    log("✅ Session restored with " + sentences.length + " sentences.");
-  };
+    req.onerror = () => log("❌ Failed to retrieve files from IndexedDB.");
+  } catch (err) {
+    log("❌ loadLastSessionFile error: " + err.message);
+  }
 }
-
 
 // ✅ Dynamically load TTS voices per engine and context
 async function loadVoicesDropdown(engine = "google", context = "listen") {
