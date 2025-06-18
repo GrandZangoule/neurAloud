@@ -23,13 +23,13 @@ let sentences = [];
 let currentSentenceIndex = 0;
 let lastFileName = "";
 
-//let googleVoices = [];
-//let ibmVoices = [];
+let googleVoices = [];
+let ibmVoices = [];
 let localVoices = [];
 let responsiveVoices = [];
 
 // Example placeholders — replace with actual async voice loading if needed
-googleVoices = [
+/*googleVoices = [
   { name: "en-US-Standard-B", description: "Google US Male" },
   { name: "en-US-Standard-C", description: "Google US Female" }
 ];
@@ -37,7 +37,7 @@ googleVoices = [
 ibmVoices = [
   { name: "en-US_AllisonV3Voice", description: "IBM Allison (US Female)" },
   { name: "en-GB_KateV3Voice", description: "IBM Kate (UK Female)" }
-];
+];*/
 // ===============================
 // 🔊 Voice Engine Globals & Flags
 // ===============================
