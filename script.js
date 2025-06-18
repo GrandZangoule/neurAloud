@@ -2551,42 +2551,53 @@ document.getElementById("translate-btn")?.addEventListener("click", () => {
   if (text) translateWithPreview(text, "auto", toLang);
 });
 
-document.addEventListener("DOMContentLoaded", async () => {
-  // === Init DB and Restore File ===
-  await initDB();
-  await loadLastSessionFile();
-  if (db) restoreLastFileFromIndexedDB();
 
-  // === TTS Engines and Voice Dropdowns ===
+
+// ============================== //
+// ✅ DOMContentLoaded Consolidated Block
+// ============================== //
+document.addEventListener("DOMContentLoaded", async () => {
+  // 🔁 Restore last visited section (Home, Listen, Capture, etc.)
+  restoreSection();
+
+  // 🎚 Persist all UI selections
+  [
+    "rate-slider", "pitch-slider",
+    "loop-toggle", "auto-resume-toggle",
+    "translation-lang"
+  ].forEach(persistSelection);
+
+  // 🔄 Restore engine selections and attach change handlers
+  persistEngineDropdown("listen");
+  persistEngineDropdown("capture");
+
+  // 🔁 IBM voices must load only after engine is known
+  fetchIBMVoces().then(() => {
+    ["listen", "capture"].forEach(context => {
+      const current = document.getElementById(`tts-engine-${context}`)?.value?.toLowerCase();
+      if (current === "ibm") {
+        loadVoicesForEngine("ibm", context);
+      }
+    });
+  });
+
+  // 🧠 Load other TTS voices (local, google, responsiveVoice)
   await loadTTSEngines("listen");
   await loadTTSEngines("capture");
 
-  bindTTSSelectors();
+  // 🌍 Restore language selections
   ["listen", "capture"].forEach(context => {
-    const savedEngine = localStorage.getItem(`selectedEngine-${context}`) || "google";
-    const dropdown = document.getElementById(`tts-engine-${context}`);
-    if (dropdown) dropdown.value = savedEngine;
-    if (savedEngine.toLowerCase() === "responsivevoice") {
-      setupResponsiveVoice(context);
-    } else {
-      loadVoicesDropdown(savedEngine, context);
-    }
-  });
-
-  // === Restore Language Selections ===
-  const langDropdowns = ["listen", "capture"];
-  langDropdowns.forEach(context => {
     const langDropdown = document.getElementById(`language-select-${context}`);
     const savedLang = localStorage.getItem(`selectedLanguage-${context}`) || "en-US";
     if (langDropdown) langDropdown.value = savedLang;
     if (langDropdown) {
-      langDropdown.addEventListener("change", (e) => {
+      langDropdown.addEventListener("change", e => {
         localStorage.setItem(`selectedLanguage-${context}`, e.target.value);
       });
     }
   });
 
-  // === Upload Acceptable File Types ===
+  // 📁 Setup file inputs
   const acceptedTypes = [
     ".pdf", ".txt", ".docx", ".epub", ".pptx", ".doc",
     ".xlsx", ".xlsm", ".xls", ".xltx", ".xltm",
@@ -2599,6 +2610,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("upload-multiple-btn"),
     document.getElementById("upload-files-btn")
   ];
+
   fileInputs.forEach(input => {
     if (input) {
       input.setAttribute("accept", acceptedTypes);
@@ -2606,46 +2618,37 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // === Upload Handler for #upload-files-btn ===
+  await initDB();
+  await loadLastSessionFile();
+
+  const saveBtn = document.getElementById("save-to-library-btn");
+  if (saveBtn) saveBtn.addEventListener("click", saveFileToLibrary);
+
+  // 📦 Upload files to library
   const uploadFilesInput = document.getElementById("upload-files-btn");
   if (uploadFilesInput) {
     uploadFilesInput.addEventListener("change", (event) => {
       const files = Array.from(event.target.files);
       const validFiles = files.filter(isValidFile);
-      if (validFiles.length !== files.length) {
-        alert("Some files were skipped due to unsupported types.");
-      }
-      validFiles.forEach(file => {
-        saveFileToLibrary(file);
-      });
+      if (validFiles.length !== files.length) alert("Some files were skipped due to unsupported types.");
+      validFiles.forEach(file => saveFileToLibrary(file));
     });
   }
 
-  // === Save to Library button ===
-  const saveBtn = document.getElementById("save-to-library-btn");
-  if (saveBtn) {
-    saveBtn.addEventListener("click", saveFileToLibrary);
-  }
-
-  // === Bulk Delete & Checkbox Setup ===
-  initializeBulkDeleteFeature();
-  addCheckboxesToLibrary();
+  // 🧹 Bulk Delete and Checkbox Setup
   addCheckboxesToLibraryItems();
-  setupUploadMultipleHandler();
   setupBulkDeleteButton("bulk-delete-listen-btn", "listen-library");
   setupBulkDeleteButton("bulk-delete-capture-btn", "capture-library");
+  initializeBulkDeleteFeature();
+  addCheckboxesToLibrary();
+  setupUploadMultipleHandler();
 
-  // === Tooltips & Floating Panel ===
-  applyTooltips();
-  addTooltips();
-  initFloatingPanel();
-
-  // === Profile Settings ===
+  // 🧠 Profile Settings
   const settings = loadProfileSettings();
   applyProfileSettings(settings);
-  const saveProfileBtn = document.getElementById("save-profile-btn");
-  if (saveProfileBtn) {
-    saveProfileBtn.addEventListener("click", () => {
+  const profileBtn = document.getElementById("save-profile-btn");
+  if (profileBtn) {
+    profileBtn.addEventListener("click", () => {
       const settings = {
         theme: document.querySelector("input[name='theme']:checked")?.value || "light",
         ttsRate: parseFloat(document.getElementById("rate").value),
@@ -2663,7 +2666,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // === Ads Consent & Display ===
+  // ⚙ Consent + Ads + Floating Panel + Tooltips
   displayConsentModal();
   initAds();
+  initFloatingPanel();
+  applyTooltips();
+  addTooltips();
+
+  // 💾 Last file restore
+  if (db) restoreLastFileFromIndexedDB();
 });
+
+// ============================== //
+// ✅ Restore Section on Reload
+// ============================== //
+function restoreSection() {
+  const last = localStorage.getItem("lastSection") || "home";
+  navigate(last);
+}
