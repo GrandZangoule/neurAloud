@@ -231,11 +231,33 @@ function initDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open("neurAloudDB", 1);
     request.onerror = () => reject("❌ Failed to open IndexedDB");
+
     request.onsuccess = () => {
       db = request.result;
       log("✅ IndexedDB ready.");
-      resolve();
+
+      // Check if there are any saved files before attempting load logic
+      const transaction = db.transaction("files", "readonly");
+      const store = transaction.objectStore("files");
+      const countRequest = store.count();
+
+      countRequest.onsuccess = () => {
+        if (countRequest.result === 0) {
+          log("ℹ️ No files found in IndexedDB — skipping file load.");
+        } else {
+          // You can optionally call `restoreLastFile()` or similar here
+          log(`📄 Found ${countRequest.result} file(s) in IndexedDB.`);
+          restoreLastFile(); // Only call this if files exist
+        }
+        resolve();
+      };
+
+      countRequest.onerror = () => {
+        log("⚠️ Could not count files in IndexedDB.");
+        resolve(); // Still resolve to proceed with app load
+      };
     };
+
     request.onupgradeneeded = event => {
       db = event.target.result;
       db.createObjectStore("files", { keyPath: "id", autoIncrement: true });
