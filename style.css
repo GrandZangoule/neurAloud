@@ -17,9 +17,111 @@ section.active-section {
 
 body {
   font-family: 'Segoe UI', sans-serif;
-  background-color: #f0f2f5;
-  color: #333;
+  background-color: var(--background);
+  color: var(--text);
 }
+
+/* 🌞 Light Mode (default) */
+:root {
+  --background: #f0f2f5;
+  --text: #333;
+  --border: #ccc;
+  --primary: #4a90e2;
+  --primary-hover: #357bd8;
+  --usage-bar-bg: #ddd;
+  --usage-bar-fill: #4caf50;
+}
+
+/* 🌙 Dark Mode */
+body.dark-mode {
+  --background: #121212;
+  --text: #f5f5f5;
+  --border: #444;
+  --primary: #6495ed;
+  --primary-hover: #4169e1;
+  --usage-bar-bg: #333;
+  --usage-bar-fill: #00e676;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text);
+}
+
+/* Container for Listen + Capture controls */
+#tts-controls {
+  border-top: 1px solid var(--border);
+  padding-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+/* Shared row layout */
+.tts-controls-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+/* Labels */
+.tts-controls-group label {
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* Dropdowns, inputs, buttons */
+.tts-controls-group select,
+.tts-controls-group input,
+.tts-controls-group button {
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background-color: var(--background);
+  color: var(--text);
+  min-width: 120px;
+  flex: 1 1 auto;
+}
+
+/* Buttons */
+.tts-controls-group button {
+  background-color: var(--primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.tts-controls-group button:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Usage Bar */
+.usage-bar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--usage-bar-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  margin-top: -5px;
+  margin-bottom: 8px;
+  display: none;
+}
+
+.usage-bar .usage-fill {
+  height: 100%;
+  width: 0%;
+  background-color: var(--usage-bar-fill);
+  transition: width 0.4s ease-in-out;
+}
+
 
 #side-panel-toggle {
   position: fixed;
@@ -110,57 +212,6 @@ body {
   font-size: 14px;
 }
 
-#tts-controls {
-  border-top: 1px solid #ddd;
-  padding-top: 15px;
-  display: flex;
-  flex-direction: column; /* stack .tts-controls-group rows vertically */
-  gap: 20px;              /* space between each group */
-  margin-bottom: 20px;    /* optional space below entire section */
-}
-
-/* ================================
-🔊 TTS Controls – Shared Layout
-================================= */
-.tts-controls-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.tts-controls-group label {
-  white-space: nowrap;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-/* Dropdowns, Input, and Button */
-.tts-controls-group select,
-.tts-controls-group input,
-.tts-controls-group button {
-  padding: 6px 10px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  min-width: 120px;
-  flex: 1 1 auto;
-}
-
-/* Buttons */
-.tts-controls-group button {
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.tts-controls-group button:hover {
-  background-color: #357bd8;
-}
-
 /* ================================
 📊 Google TTS Usage Bar Styling
 ================================= */
@@ -193,22 +244,38 @@ body {
   }
 
   #tts-controls-listen label,
+  #tts-controls-listen select,
+  #tts-controls-listen input,
+  #tts-controls-listen button,
   #tts-controls-capture label,
+  #tts-controls-capture select,
+  #tts-controls-capture input,
+  #tts-controls-capture button {
+    flex: 1 1 100%;
+  }
+
+  #tts-engine-listen,
+  #voice-listen,
+  #tts-engine-capture,
+  #voice-capture {
+    flex: 1 1 48%;
+  }
+}
+
+@media (min-width: 768px) {
+  #tts-controls-listen,
+  #tts-controls-capture {
+    flex-wrap: nowrap;
+  }
+
   #tts-controls-listen select,
   #tts-controls-capture select,
   #tts-controls-listen input,
   #tts-controls-capture input,
   #tts-controls-listen button,
   #tts-controls-capture button {
-    flex: 1 1 100%;
-  }
-
-  /* Engine + Voice only share row */
-  #tts-engine-listen,
-  #voice-listen,
-  #tts-engine-capture,
-  #voice-capture {
-    flex: 1 1 48%;
+    flex: 1;
+    min-width: 120px;
   }
 }
 
@@ -1089,31 +1156,6 @@ body[data-theme='dark'] #profile-settings select {
   background: #444;
   color: #fff;
   border: 1px solid #555;
-}
-
-.tts-controls-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.tts-controls-group label {
-  white-space: nowrap;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.tts-controls-group select,
-.tts-controls-group input,
-.tts-controls-group button {
-  padding: 6px 10px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  min-width: 120px;
-  flex: 1 1 auto;
 }
 
 .dropdown-group {
