@@ -2197,73 +2197,70 @@ const defaultProfileSettings = {
 };
 
 function saveProfileSettings(settings) {
-  localStorage.setItem(PROFILE_SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem(PROFILE_SETTINGS_KEY, JSON.stringify(settings));
 }
 
 function loadProfileSettings() {
-  const stored = localStorage.getItem(PROFILE_SETTINGS_KEY);
-  return stored ? JSON.parse(stored) : defaultProfileSettings;
+    const stored = localStorage.getItem(PROFILE_SETTINGS_KEY);
+    return stored ? JSON.parse(stored) : defaultProfileSettings;
 }
 
 function applyProfileSettings(settings) {
-  try {
-    if (settings.theme) setTheme(settings.theme);
+    try {
+        if (settings.theme) setTheme(settings.theme);
 
-    // Ensure a visible container exists for profile settings
-    let container = document.getElementById("profile-settings");
-    if (!container) {
-      container = document.createElement("div");
-      container.id = "profile-settings";
-      container.style.marginTop = "2rem";
-      document.body.appendChild(container);
-    }
-
-    // Helper: Create labeled input/select if missing
-    const createLabeledElement = (id, label, type = "input", defaultValue = "") => {
-      let el = document.getElementById(id);
-      if (!el) {
-        const wrapper = document.createElement("div");
-        wrapper.style.marginBottom = "10px";
-
-        const lbl = document.createElement("label");
-        lbl.textContent = label;
-        lbl.htmlFor = id;
-        lbl.style.marginRight = "0.5rem";
-
-        el = document.createElement(type);
-        el.id = id;
-        el.name = id;
-        el.value = defaultValue;
-        if (type === "input" && id.includes("toggle")) {
-          el.type = "checkbox";
-          el.checked = defaultValue;
+        // Ensure a visible container exists for profile settings
+        let container = document.getElementById("profile-settings");
+        if (!container) {
+            container = document.createElement("div");
+            container.id = "profile-settings";
+            container.style.marginTop = "2rem";
+            document.body.appendChild(container);
         }
 
-        wrapper.appendChild(lbl);
-        wrapper.appendChild(el);
-        container.appendChild(wrapper);
+        // Helper: Create labeled input/select if missing
+        const createLabeledElement = (id, label, type = "input", defaultValue = "") => {
+            let el = document.getElementById(id);
+            if (!el) {
+                const wrapper = document.createElement("div");
+                wrapper.style.marginBottom = "10px";
 
-        console.warn(`⚠️ Auto-created #${id} with default value.`);
-      }
-      return el;
-    };
+                const lbl = document.createElement("label");
+                lbl.textContent = label;
+                lbl.htmlFor = id;
+                lbl.style.marginRight = "0.5rem";
 
-    createLabeledElement("rate", "🗣️ TTS Rate:", "input", settings.ttsRate || "1.0").value = settings.ttsRate || "1.0";
-    createLabeledElement("pitch", "🎵 Pitch:", "input", settings.ttsPitch || "1.0").value = settings.ttsPitch || "1.0";
-    createLabeledElement("voice-select", "🎤 Voice:", "select", settings.selectedVoice || "").value = settings.selectedVoice || "";
-    createLabeledElement("auto-resume-toggle", "🔁 Auto Resume:", "input", settings.autoResume || false).checked = settings.autoResume || false;
-    createLabeledElement("language-select", "🌐 Language:", "select", settings.language || "").value = settings.language || "";
-    createLabeledElement("translation-select", "🌎 Translate To:", "select", settings.translationLanguage || "").value = settings.translationLanguage || "";
-    createLabeledElement("notification-time", "⏰ Notify At:", "input", settings.notificationTime || "").value = settings.notificationTime || "";
-    createLabeledElement("language-select", "🌐 Language:", "select", settings.language || "en").value = settings.language || "en";
-    createLabeledElement("translation-select", "🌎 Translate To:", "select", settings.translationLanguage || "fr").value = settings.translationLanguage || "fr";
+                el = document.createElement(type);
+                el.id = id;
+                el.name = id;
+                el.value = defaultValue;
+                if (type === "input" && id.includes("toggle")) {
+                    el.type = "checkbox";
+                    el.checked = defaultValue;
+                }
 
+                wrapper.appendChild(lbl);
+                wrapper.appendChild(el);
+                container.appendChild(wrapper);
 
-    document.body.dataset.developer = settings.developerMode ?? false;
+                console.warn(`⚠️ Auto-created #${id} with default value.`);
+            }
+            return el;
+        };
 
-  } catch (err) {
-    console.error("❌ Failed to apply profile settings:", err);
-  }
+        createLabeledElement("rate", "🗣️ TTS Rate:", "input", settings.ttsRate || "1.0").value = settings.ttsRate || "1.0";
+        createLabeledElement("pitch", "🎵 Pitch:", "input", settings.ttsPitch || "1.0").value = settings.ttsPitch || "1.0";
+        createLabeledElement("voice-select", "🎤 Voice:", "select", settings.selectedVoice || "").value = settings.selectedVoice || "";
+        createLabeledElement("auto-resume-toggle", "🔁 Auto Resume:", "input", settings.autoResume || false).checked = settings.autoResume || false;
+        createLabeledElement("language-select", "🌐 Language:", "select", settings.language || "en").value = settings.language || "en";
+        createLabeledElement("translation-select", "🌎 Translate To:", "select", settings.translationLanguage || "fr").value = settings.translationLanguage || "fr";
+        createLabeledElement("notification-time", "⏰ Notify At:", "input", settings.notificationTime || "").value = settings.notificationTime || "";
+
+        document.body.dataset.developer = settings.developerMode ?? false;
+
+    } catch (err) {
+        console.error("❌ Failed to apply profile settings:", err);
+    }
 }
 
 
@@ -2629,40 +2626,55 @@ document.addEventListener("DOMContentLoaded", async () => {
     persistSelection(id);
   });
 
-  // ✅ Pitch & Rate Sliders Setup
+  // ✅ Pitch & Rate Sliders Setup with Display Updates
   const rateSlider = document.getElementById("rate-slider");
   const pitchSlider = document.getElementById("pitch-slider");
   const rateCaptureSlider = document.getElementById("rate-capture-slider");
   const pitchCaptureSlider = document.getElementById("pitch-capture-slider");
 
-  // Load values from localStorage or use default
+  const rateValue = document.getElementById("rate-value");
+  const pitchValue = document.getElementById("pitch-value");
+  const rateCaptureValue = document.getElementById("rate-capture-value");
+  const pitchCaptureValue = document.getElementById("pitch-capture-value");
+
+  // Load values
   window.ttsRate = parseFloat(localStorage.getItem("rate")) || 1.0;
   window.ttsPitch = parseFloat(localStorage.getItem("pitch")) || 1.0;
   window.ttsRateCapture = parseFloat(localStorage.getItem("rate-capture")) || 1.0;
   window.ttsPitchCapture = parseFloat(localStorage.getItem("pitch-capture")) || 1.0;
 
-  // Update slider UI
+  // Update sliders
   if (rateSlider) rateSlider.value = window.ttsRate;
   if (pitchSlider) pitchSlider.value = window.ttsPitch;
   if (rateCaptureSlider) rateCaptureSlider.value = window.ttsRateCapture;
   if (pitchCaptureSlider) pitchCaptureSlider.value = window.ttsPitchCapture;
 
+  // Update display spans
+  if (rateValue) rateValue.textContent = window.ttsRate.toFixed(2);
+  if (pitchValue) pitchValue.textContent = window.ttsPitch.toFixed(2);
+  if (rateCaptureValue) rateCaptureValue.textContent = window.ttsRateCapture.toFixed(2);
+  if (pitchCaptureValue) pitchCaptureValue.textContent = window.ttsPitchCapture.toFixed(2);
+
   // Attach listeners
   rateSlider?.addEventListener("input", e => {
     window.ttsRate = parseFloat(e.target.value);
     localStorage.setItem("rate", window.ttsRate);
+    if (rateValue) rateValue.textContent = window.ttsRate.toFixed(2);
   });
   pitchSlider?.addEventListener("input", e => {
     window.ttsPitch = parseFloat(e.target.value);
     localStorage.setItem("pitch", window.ttsPitch);
+    if (pitchValue) pitchValue.textContent = window.ttsPitch.toFixed(2);
   });
   rateCaptureSlider?.addEventListener("input", e => {
     window.ttsRateCapture = parseFloat(e.target.value);
     localStorage.setItem("rate-capture", window.ttsRateCapture);
+    if (rateCaptureValue) rateCaptureValue.textContent = window.ttsRateCapture.toFixed(2);
   });
   pitchCaptureSlider?.addEventListener("input", e => {
     window.ttsPitchCapture = parseFloat(e.target.value);
     localStorage.setItem("pitch-capture", window.ttsPitchCapture);
+    if (pitchCaptureValue) pitchCaptureValue.textContent = window.ttsPitchCapture.toFixed(2);
   });
 
   // ✅ Restore Docking Station Mode
@@ -2782,16 +2794,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 👤 Profile Save Button
   document.getElementById("save-profile-btn")?.addEventListener("click", () => {
     const settings = {
-      theme: document.querySelector("input[name='theme']:checked")?.value || "light",
-      ttsRate: parseFloat(document.getElementById("rate").value),
-      ttsPitch: parseFloat(document.getElementById("pitch").value),
-      selectedVoice: document.getElementById("voice-select")?.value || "",
-      autoResume: document.getElementById("auto-resume-toggle")?.checked || false,
-      notificationTime: document.getElementById("notification-time")?.value || "18:30",
-      language: document.getElementById("language-select")?.value || "en-US",
-      translationLanguage: document.getElementById("translation-select")?.value || "en",
-      developerMode: document.body.dataset.developer === "true"
+        theme: document.querySelector("input[name='theme']:checked")?.value || "light",
+
+        // 🎛 Listen Sliders
+        ttsRate: window.ttsRate || 1.0,
+        ttsPitch: window.ttsPitch || 1.0,
+
+        // 🎛 Capture Sliders
+        ttsRateCapture: window.ttsRateCapture || 1.0,
+        ttsPitchCapture: window.ttsPitchCapture || 1.0,
+
+        // 🔊 Voice & Language
+        selectedVoice: document.getElementById("voice-select")?.value || "",
+        language: document.getElementById("language-select")?.value || "en-US",
+        translationLanguage: document.getElementById("translation-select")?.value || "en",
+
+        // 🔁 Toggles & Preferences
+        autoResume: document.getElementById("auto-resume-toggle")?.checked || false,
+        notificationTime: document.getElementById("notification-time")?.value || "18:30",
+        developerMode: document.body.dataset.developer === "true"
     };
+
     saveProfileSettings(settings);
     applyProfileSettings(settings);
     alert("✅ Profile settings saved.");
