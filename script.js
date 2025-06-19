@@ -23,6 +23,8 @@ window.navigate = function(id) {
 const fileInput = document.getElementById("file-input");
 const textDisplay = document.getElementById("text-display");
 const logArea = document.getElementById("log-area");
+// === API Keys ===
+const GOOGLE_TTS_API_KEY = "AIzaSyBpZDvX3iKG0ZHqsEOWHr-JD6P-LkMNIxE";
 
 // Safe logging function
 const log = (...args) => console.log("📘", ...args);
@@ -243,40 +245,70 @@ fileInput.addEventListener("change", async (event) => {
 });
 
 
+
+/* --- Initialization --- */
+// ==============================
+// 🧩 Utility: Persist Any Selection
+// ==============================
+function persistSelection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const type = el.type;
+
+  if (type === "checkbox") {
+    localStorage.setItem(id, el.checked);
+    el.addEventListener("change", () => localStorage.setItem(id, el.checked));
+  } else if (type === "range" || type === "select-one" || type === "text") {
+    localStorage.setItem(id, el.value);
+    el.addEventListener("input", () => localStorage.setItem(id, el.value));
+  }
+}
+
+function restoreSelection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const val = localStorage.getItem(id);
+  if (val === null) return;
+
+  if (el.type === "checkbox") el.checked = val === "true";
+  else el.value = val;
+}
+
+
 /***************************
  * MODULE 2: INIT + SETTINGS RESTORE
  ***************************/
 async function fetchGoogleVoices() {
   try {
-    const res = await fetch("https://texttospeech.googleapis.com/v1/voices?key=YOUR_GOOGLE_API_KEY");
+    const res = await fetch("https://texttospeech.googleapis.com/v1/voices?key=AIzaSyBpZDvX3iKG0ZHqsEOWHr-JD6P-LkMNIxE");
     const data = await res.json();
+    if (!data.voices) throw new Error("Missing voices array");
+
     googleVoices = data.voices.map(v => ({
       name: v.name,
       description: `${v.name} (${v.languageCodes?.[0] || ""})`
     }));
+
     console.log(`✅ Google voices loaded: ${googleVoices.length}`);
   } catch (err) {
-    console.error("❌ Google TTS load error:", err);
+    console.error("❌ Google TTS load error:", err.message);
+    googleVoices = [];
   }
 }
 
-async function fetchIBMVoces() {
+async function fetchGoogleVoices() {
+  const url = `https://texttospeech.googleapis.com/v1/voices?key=${GOOGLE_TTS_API_KEY}`;
   try {
-    const res = await fetch("https://YOUR_REGION.api.text-to-speech.watson.cloud.ibm.com/v1/voices", {
-      headers: {
-        Authorization: "Basic " + btoa("apikey:YOUR_IBM_API_KEY")
-      }
-    });
+    const res = await fetch(url);
     const data = await res.json();
-    ibmVoices = data.voices.map(v => ({
-      name: v.name,
-      description: `${v.name} (${v.language})`
-    }));
-    console.log(`✅ IBM voices loaded: ${ibmVoices.length}`);
+    googleVoices = data.voices || [];
+    console.log(`✅ Google voices loaded (${googleVoices.length})`);
   } catch (err) {
-    console.error("❌ IBM TTS load error:", err);
+    console.error("❌ Failed to fetch Google voices:", err);
+    googleVoices = [];
   }
 }
+
 
 function setupResponsiveVoice() {
   if (window._responsiveVoiceLoaded) return;
@@ -320,7 +352,7 @@ function initDB() {
       if (!db.objectStoreNames.contains("files")) {
         console.warn("⚠️ 'files' store not found even after success.");
         resolve();
-        return;
+
       }
 
       const transaction = db.transaction("files", "readonly");
@@ -374,7 +406,7 @@ async function loadLastSessionFile() {
   // Ensure DB is ready and file name is set
   if (!lastFileName || !db || !db.objectStoreNames.contains("files")) {
     log("ℹ️ Skipping session file load — no DB or file found.");
-    return;
+
   }
 
   try {
@@ -388,7 +420,7 @@ async function loadLastSessionFile() {
 
       if (!lastFile) {
         log("⚠️ File not found in DB.");
-        return;
+
       }
 
       log("📂 Restoring last loaded file: " + lastFile.name);
@@ -409,7 +441,7 @@ async function loadLastSessionFile() {
 }
 
 // ✅ Dynamically load TTS voices per engine and context
-async function loadVoicesDropdown(engine = "google", context = "listen") {
+async function loadVoicesDropdown(engine = "local", context = "listen") {
   const dropdown = document.getElementById(
     context === "capture" ? "voice-select-capture" : "voice-select"
   );
@@ -420,15 +452,24 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
 
   try {
     switch (engine.toLowerCase()) {
-      case "google":
       case "local":
         voices = speechSynthesis.getVoices();
         if (!voices.length) {
-          console.warn("⚠️ Google/Local voices not ready — retrying...");
-          setTimeout(() => loadVoicesDropdown(engine, context), 300);
+          console.warn("⚠️ Local voices not ready — retrying...");
+          speechSynthesis.onvoiceschanged = () => {
+            const updatedVoices = speechSynthesis.getVoices();
+            updateVoiceDropdown("local", updatedVoices, context);
+          };
+          return;
+        } else {
+          updateVoiceDropdown("local", voices, context);
           return;
         }
-        break;
+
+      case "google":
+        // 🚫 Google Cloud TTS not implemented – skip for now
+        console.warn("⚠️ Google TTS engine is disabled or not implemented.");
+        return;
 
       case "ibm":
         voices = await fetchIBMVoices(context);
@@ -438,24 +479,27 @@ async function loadVoicesDropdown(engine = "google", context = "listen") {
         if (typeof responsiveVoice !== "undefined") {
           voices = responsiveVoice.getVoices();
         } else {
-          console.warn("⚠️ responsiveVoice not defined.");
+          console.warn("⚠️ responsiveVoice not defined or not loaded.");
+          return;
         }
         break;
 
       default:
-        voices = [];
+        console.warn(`⚠️ Unknown TTS engine: ${engine}`);
+        return;
     }
 
     if (!Array.isArray(voices) || voices.length === 0) {
-      console.warn(`❌ No voices returned for ${engine} → ${context}`);
+      console.warn(`❌ No voices found for engine: ${engine} (${context})`);
       return;
     }
 
     updateVoiceDropdown(engine, voices, context);
   } catch (err) {
-    console.error(`🔥 Failed to load voices for ${engine} → ${context}`, err);
+    console.error(`🔥 Error loading voices for ${engine} → ${context}`, err);
   }
 }
+
 
 let responsiveVoiceLoaded = false;
 
@@ -483,7 +527,7 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
 
   if (!Array.isArray(voices) || voices.length === 0) {
     console.warn(`⚠️ No voices returned for ${engine} → ${context}`);
-    return;
+
   }
 
   // Add voices
@@ -521,42 +565,34 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
 }
 
 
-function loadVoicesForEngine(engine, context = "listen") {
-  const e = engine.toLowerCase();
-  if (e === "google") updateVoiceDropdown("google", googleVoices, context);
-  else if (e === "ibm") updateVoiceDropdown("ibm", ibmVoices, context);
-  else if (e === "local") updateVoiceDropdown("local", localVoices, context);
-  else if (e === "responsivevoice") {
-    responsiveVoices = responsiveVoice?.getVoices?.() || [];
-    updateVoiceDropdown("responsiveVoice", responsiveVoices, context);
-  } else {
-    console.warn(`⚠️ Unknown TTS engine: ${engine}`);
-  }
-}
+function loadVoicesForEngine(engine, context) {
+  const dropdown = document.getElementById(context === "capture" ? "voice-capture" : "voice-listen");
+  if (!dropdown) return;
 
+  let voices = [];
 
-// Step 3: Load voices based on selected engine
-function loadVoicesForEngine(engine, context = "listen") {
-  if (engine === "google") {
-    if (googleVoices.length > 0) {
-      updateVoiceDropdown("google", googleVoices, context);
-    } else {
-      console.warn(`⚠️ No voices returned for google → ${context}`);
-    }
+  if (engine === "local") {
+    voices = speechSynthesis.getVoices();
   } else if (engine === "ibm") {
-    if (ibmVoices.length > 0) {
-      updateVoiceDropdown("ibm", ibmVoices, context);
-    } else {
-      console.warn(`⚠️ No voices returned for ibm → ${context}`);
-    }
-  } else if (engine === "responsiveVoice") {
-    responsiveVoices = responsiveVoice?.getVoices?.() || [];
-    updateVoiceDropdown("responsiveVoice", responsiveVoices, context);
-  } else if (engine === "local") {
-    updateVoiceDropdown("local", localVoices, context);
-  } else {
-    console.warn(`⚠️ Unknown TTS engine: ${engine}`);
+    voices = window.ibmVoices?.[context] || [];  // use scoped object
+  } else if (engine === "responsivevoice") {
+    voices = window.responsiveVoices?.[context] || [];
   }
+
+  dropdown.innerHTML = "";
+  voices.forEach(v => {
+    const option = document.createElement("option");
+    option.value = v.name;
+    option.textContent = `${v.name} (${v.lang})`;
+    dropdown.appendChild(option);
+  });
+
+  const savedVoice = localStorage.getItem(`voice-${context}`);
+  if (savedVoice) dropdown.value = savedVoice;
+
+  dropdown.addEventListener("change", e => {
+    localStorage.setItem(`voice-${context}`, e.target.value);
+  });
 }
 
 
@@ -572,11 +608,13 @@ function loadInitialVoices() {
     const savedVoiceCapture = localStorage.getItem("voice-capture");
 
     if (savedVoiceListen) {
-      document.getElementById("voice-listen").value = savedVoiceListen;
+      const voice_listenEl = document.getElementById("voice-listen");
+if (voice_listenEl) voice_listenEl.value = savedVoiceListen;
     }
 
     if (savedVoiceCapture) {
-      document.getElementById("voice-capture").value = savedVoiceCapture;
+      const voice_captureEl = document.getElementById("voice-capture");
+if (voice_captureEl) voice_captureEl.value = savedVoiceCapture;
     }
   }, 200); // Delay ensures dropdowns are populated
 }
@@ -661,7 +699,7 @@ function renderLibraryItem(item, type) {
   const container = document.getElementById(`${type}-library`);
   if (!container) {
     console.warn(`⚠️ Container #${type}-library not found.`);
-    return;
+
   }
 
   const el = document.createElement("div");
@@ -699,7 +737,7 @@ function restoreLibraryItems(type) {
     const container = document.getElementById(`${type}-library`);
     if (!container) {
       console.warn(`⚠️ Container #${type}-library not found.`);
-      return;
+
     }
 
     container.innerHTML = ""; // Clear existing before restore
@@ -714,6 +752,87 @@ function restoreLibraryItems(type) {
 }
 
 
+// ==============================
+// 📊 Google TTS Character Quota
+// ==============================
+
+function getGoogleCharacterCount() {
+  const stored = localStorage.getItem("googleTTSCharCount");
+  return stored ? parseInt(stored, 10) : 0;
+}
+
+function updateGoogleCharacterCount(charsUsed) {
+  const current = getGoogleCharacterCount();
+  const updated = current + charsUsed;
+  localStorage.setItem("googleTTSCharCount", updated);
+}
+
+function isGoogleTTSQuotaExceeded(limit = 3990000) {
+  return getGoogleCharacterCount() >= limit;
+}
+
+function showQuotaWarning(limit = 3990000) {
+  const used = getGoogleCharacterCount();
+  const percent = ((used / limit) * 100).toFixed(2);
+  console.warn(`📊 Google TTS Quota Used: ${used}/${limit} characters (${percent}%)`);
+  
+  const quotaDisplay = document.getElementById("google-quota-display");
+  if (quotaDisplay) {
+    quotaDisplay.textContent = `📊 Google TTS Used: ${used.toLocaleString()} / ${limit.toLocaleString()} (${percent}%)`;
+    quotaDisplay.style.color = used > 0.9 * limit ? "red" : "#666";
+  }
+}
+
+// ==============================
+// 🔐 Safe Google TTS Call
+// ==============================
+
+async function safeGoogleTTS(text) {
+  if (isGoogleTTSQuotaExceeded()) {
+    alert("❌ Monthly Google TTS limit reached (3.99M characters). Please use another engine.");
+    showQuotaWarning();
+    return;
+  }
+
+  showQuotaWarning(); // Always show latest status
+  await safeGoogleTTS(text); // Quota-safe wrapper
+}
+
+// ==============================
+// 🔊 Google Cloud TTS Synthesizer
+// ==============================
+
+async function synthesizeWithGoogleTTS(text, voiceName = "en-US-Wavenet-D") {
+  const apiKey = "AIzaSyBpZDvX3iKG0ZHqsEOWHr-JD6P-LkMNIxE";
+  const requestBody = {
+    input: { text },
+    voice: {
+      name: voiceName,
+      languageCode: voiceName.split("-").slice(0, 2).join("-"),
+    },
+    audioConfig: { audioEncoding: "MP3" }
+  };
+
+  try {
+    const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody)
+    });
+
+    const result = await response.json();
+    if (!result.audioContent) throw new Error("No audio content returned");
+
+    updateGoogleCharacterCount(text.length); // Only update after success
+
+    const audio = new Audio("data:audio/mp3;base64," + result.audioContent);
+    audio.play();
+  } catch (err) {
+    console.error("❌ Google TTS synthesis failed:", err.message);
+  }
+}
+
+
 // ===============================
 // 🔁 Load All Voice Engines
 // ===============================
@@ -723,19 +842,21 @@ function initializeTTS() {
     if (!voices.length) {
       console.warn("⏳ Voices not ready, retrying...");
       setTimeout(tryLoad, 300);
-      return;
+      return; // 🔴 Important: prevent proceeding on empty voices
     }
 
     ["listen", "capture"].forEach(context => {
-      const savedEngine = localStorage.getItem(`selectedEngine-${context}`) || "google";
       const dropdown = document.getElementById(`tts-engine-${context}`);
-      if (dropdown) dropdown.value = savedEngine;
+      if (!dropdown) return;
+
+      const savedEngine = localStorage.getItem(`tts-engine-${context}`) || "local";
+      dropdown.value = savedEngine;
 
       loadVoicesDropdown(savedEngine, context);
     });
   };
 
-  // Try right now and fallback to event
+  // Run immediately and on voice list change
   tryLoad();
   speechSynthesis.onvoiceschanged = tryLoad;
 }
@@ -743,17 +864,37 @@ function initializeTTS() {
 
 // 🔊 Load local voices (Google/OS) for both Listen & Capture
 function loadLocalVoices() {
-  const allVoices = speechSynthesis.getVoices();
-  if (allVoices.length) {
-    ["listen", "capture"].forEach(ctx => {
-      updateVoiceDropdown("google", allVoices, ctx);
+  function populate(context = "listen") {
+    const dropdown = document.getElementById(
+      context === "capture" ? "voice-select-capture" : "voice-select"
+    );
+    if (!dropdown) return;
+
+    const voices = speechSynthesis.getVoices();
+    dropdown.innerHTML = "";
+
+    voices.forEach(voice => {
+      const opt = document.createElement("option");
+      opt.value = voice.name;
+      opt.textContent = `${voice.name} (${voice.lang})`;
+      dropdown.appendChild(opt);
     });
+
+    const saved = localStorage.getItem(`voice-local-${context}`);
+    if (saved) dropdown.value = saved;
+
+    dropdown.addEventListener("change", () => {
+      localStorage.setItem(`voice-local-${context}`, dropdown.value);
+    });
+
+    console.log(`✅ Local voices loaded (${voices.length}) for ${context}`);
+  }
+
+  if (speechSynthesis.getVoices().length) {
+    ["listen", "capture"].forEach(populate);
   } else {
     speechSynthesis.onvoiceschanged = () => {
-      const voices = speechSynthesis.getVoices();
-      ["listen", "capture"].forEach(ctx => {
-        updateVoiceDropdown("google", voices, ctx);
-      });
+      ["listen", "capture"].forEach(populate);
     };
   }
 }
@@ -766,13 +907,13 @@ function setupResponsiveVoice(context = "listen") {
   script.onload = () => {
     if (typeof responsiveVoice === "undefined") {
       console.warn("❌ ResponsiveVoice SDK failed to load");
-      return;
+
     }
 
     const rvVoices = responsiveVoice.getVoices();
     if (!Array.isArray(rvVoices) || !rvVoices.length) {
       console.warn("❌ No ResponsiveVoice voices found.");
-      return;
+
     }
 
     updateVoiceDropdown("responsiveVoice", rvVoices, context);
@@ -788,57 +929,36 @@ function setupResponsiveVoice(context = "listen") {
 
 
 // 🌐 Fetch IBM Watson voices and update dropdown
-function fetchIBMVoices(context = "listen") {
+async function fetchIBMVoices(context = "listen") {
+  const ibmApiKey = "clMaAFKOaK9TDgy-u9X2O5lsgaeYDOqeqaDTtTULgk4_";
   const ibmUrl = "https://api.us-east.text-to-speech.watson.cloud.ibm.com/v1/voices";
-  const ibmApiKey = "clMaAFKOaK9TDgy-u9X2O5lsgaeYDOqeqaDTtTULgk4_"; // Replace with env-secured value in production
 
-  fetch(ibmUrl, {
-    headers: {
-      "Authorization": "Basic " + btoa("apikey:" + ibmApiKey),
-      "Content-Type": "application/json"
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.voices && Array.isArray(data.voices)) {
+  try {
+    const res = await fetch(ibmUrl, {
+      headers: {
+        Authorization: "Basic " + btoa("apikey:" + ibmApiKey),
+        "Content-Type": "application/json"
+      }
+    });
+
+    const data = await res.json();
+    if (Array.isArray(data.voices)) {
       const voices = data.voices.map(v => ({
         name: v.name,
-        language: v.language,
-        gender: v.gender
+        description: `${v.name} (${v.language})`
       }));
-      updateVoiceDropdown("ibm", voices, "listen");
-      updateVoiceDropdown("ibm", voices, "capture");
-      console.log(`✅ IBM voices (${voices.length}) loaded for ${context}`);
+
+      console.log("🎙 IBM Voices:", voices);  // 🔍 Log the actual list here
+      updateVoiceDropdown("ibm", voices, context);
+      console.log(`✅ IBM voices loaded (${voices.length}) for ${context}`);
     } else {
       console.warn("⚠️ IBM returned no voices:", data);
     }
-  })
-  .catch(err => console.error("❌ Error fetching IBM voices:", err));
-}
-
-
-// ===========================
-// 🎤 IBM Watson TTS Integration
-// ===========================
-
-const ibmApiKey = "clMaAFKOaK9TDgy-u9X2O5lsgaeYDOqeqaDTtTULgk4_";
-const ibmApiUrl = "https://api.us-east.text-to-speech.watson.cloud.ibm.com/v1/voices";
-let ibmVoiceQuota = 9500; // Admin lock at 9500
-
-async function fetchIBMWatsonVoices() {
-  try {
-    const res = await fetch(ibmApiUrl, {
-      headers: {
-        Authorization: "Basic " + btoa("apikey:" + ibmApiKey)
-      }
-    });
-    const data = await res.json();
-    return data.voices || [];
   } catch (err) {
-    console.error("❌ IBM TTS fetch failed", err);
-    return [];
+    console.error("❌ IBM TTS load error:", err);
   }
 }
+
 
 // ===========================
 // 📣 ResponsiveVoice Integration
@@ -865,50 +985,63 @@ function fetchResponsiveVoices() {
 
 ["listen", "capture"].forEach(context => {
   const engineDropdown = document.getElementById(`tts-engine-${context}`);
-  if (engineDropdown) {
-    engineDropdown.addEventListener("change", async (e) => {
-      const selectedEngine = e.target.value;
-      localStorage.setItem(`selectedEngine-${context}`, selectedEngine);
 
-      if (selectedEngine === "Google" || selectedEngine === "Local") {
-        loadVoicesDropdown(selectedEngine.toLowerCase(), context);
-      } else if (selectedEngine === "IBM") {
-        const ibmVoices = await fetchIBMVocalList();
-        updateVoiceDropdown("IBM", ibmVoices);
-      } else if (selectedEngine === "ResponsiveVoice") {
-        const rvVoices = await fetchResponsiveVoices();
-        updateVoiceDropdown("ResponsiveVoice", rvVoices);
+  if (engineDropdown) {
+    // 🔁 Restore previously selected engine
+    const savedEngine = localStorage.getItem(`tts-engine-${context}`);
+    if (savedEngine) engineDropdown.value = savedEngine;
+
+    // 🎤 Load voices for the restored engine
+    const currentEngine = engineDropdown.value?.toLowerCase();
+    if (currentEngine === "google") {
+      fetchGoogleVoices().then(() => loadVoicesForEngine("google", context));
+    } else if (currentEngine === "ibm") {
+      fetchIBMVoices(context);
+    } else if (currentEngine === "responsivevoice") {
+      fetchResponsiveVoices().then(rv => updateVoiceDropdown("responsivevoice", rv, context));
+    } else {
+      loadVoicesForEngine("local", context);
+    }
+
+    // 🎛 Handle engine selection change
+    engineDropdown.addEventListener("change", async (e) => {
+      const selectedEngine = e.target.value.toLowerCase();
+      localStorage.setItem(`tts-engine-${context}`, selectedEngine);
+
+      try {
+        if (selectedEngine === "google") {
+          await fetchGoogleVoices();
+          loadVoicesForEngine("google", context);
+        } else if (selectedEngine === "ibm") {
+          await fetchIBMVoices(context);
+        } else if (selectedEngine === "responsivevoice") {
+          const rvVoices = await fetchResponsiveVoices();
+          updateVoiceDropdown("responsivevoice", rvVoices, context);
+        } else {
+          loadVoicesForEngine("local", context);
+        }
+      } catch (err) {
+        console.error(`❌ Failed to load voices for ${selectedEngine}:`, err);
+        updateVoiceDropdown(selectedEngine, [], context); // fallback to empty
       }
     });
   }
 });
 
 // ===========================
-// 🌐 IBM + ResponsiveVoice Integration (Real Fetching)
+// 🌐 ResponsiveVoice Integration (Real Fetching)
 // ===========================
 
-async function fetchIBMVocalList() {
-  try {
-    const apiKey = "YOUR_IBM_API_KEY";
-    const url = "https://api.us-east.text-to-speech.watson.cloud.ibm.com/v1/voices";
-    const response = await fetch(url, {
-      headers: {
-        "Authorization": "Basic " + btoa("apikey:" + apiKey),
-      },
-    });
-    const data = await response.json();
-    return data.voices || [];
-  } catch (error) {
-    console.warn("⚠️ IBM voices could not be fetched:", error);
-    return [];
-  }
-}
 
 async function fetchResponsiveVoices() {
   try {
-    const response = await fetch("https://code.responsivevoice.org/getvoice.php?key=free")
-    const data = await response.json();
-    return data.voices || [];
+    if (typeof responsiveVoice !== "undefined" && typeof responsiveVoice.getVoices === "function") {
+      const voices = responsiveVoice.getVoices();
+      console.log(`✅ ResponsiveVoice loaded (${voices.length}) voices`);
+      return voices;
+    } else {
+      throw new Error("responsiveVoice is not available or not ready");
+    }
   } catch (error) {
     console.warn("⚠️ ResponsiveVoice voices could not be fetched:", error);
     return [];
@@ -1134,7 +1267,7 @@ function initializeTTS() {
 function loadResponsiveVoiceVoices(target = "listen") {
   if (typeof responsiveVoice === "undefined" || !responsiveVoice.getVoices) {
     console.warn("⚠ ResponsiveVoice SDK not loaded.");
-    return;
+
   }
 
   const voices = responsiveVoice.getVoices();
@@ -1221,7 +1354,7 @@ function fetchTTSFromBackend(text, langCode) {
   const model = availableModels[langCode];
   if (!model) {
     alert("Unsupported language selected.");
-    return;
+
   }
 
   fetch(`/api/tts`, {
@@ -1470,7 +1603,7 @@ function showExtractedText(text) {
 async function saveFileToLibrary() {
   if (!extractedText || !lastFileName) {
     alert("No loaded file to save.");
-    return;
+
   }
 
   const tx = db.transaction("files", "readwrite");
@@ -1484,7 +1617,7 @@ async function saveFileToLibrary() {
     // Check limit
     if (listenItems.length >= 100) {
       alert("📦 Library full! Remove items to save new ones.");
-      return;
+
     }
 
     // Shift all existing listen files down by 1 (reversed to avoid overwrite)
@@ -1535,7 +1668,7 @@ function initializeBulkDeleteFeature() {
 
             if (checkboxes.length === 0) {
                   alert("Please select at least one item to delete.");
-                  return;
+
             }
 
             if (!confirm("Are you sure you want to delete the selected item(s)?")) return;
@@ -1651,7 +1784,8 @@ let downloadQueue = [];
 /* --- Auto Resume Settings --- */
 function loadAutoResumeSetting() {
   const autoResume = localStorage.getItem("autoResume") === "true";
-  document.getElementById("auto-resume-toggle").checked = autoResume;
+  const auto_resume_toggleEl = document.getElementById("auto-resume-toggle");
+if (auto_resume_toggleEl) auto_resume_toggleEl.checked = autoResume;
 }
 
 function toggleAutoResumeSetting() {
@@ -1666,7 +1800,7 @@ function toggleFavorite(itemId) {
   } else {
     if (favorites.length >= 10) {
       alert("You can only have up to 10 favorites.");
-      return;
+
     }
     favorites.push(itemId);
   }
@@ -1678,7 +1812,7 @@ function renderFavorites() {
   const favContainer = document.getElementById("favorites-section");
   if (!favContainer) {
     console.warn("⚠️ 'favorites-section' not found in DOM.");
-    return;
+
   }
 
   favContainer.innerHTML = "";
@@ -1792,7 +1926,7 @@ function renderLibraryItem(item, type) {
   const container = document.getElementById(`${type}-library`);
   if (!container) {
     console.warn(`⚠️ Container #${type}-library not found.`);
-    return;
+
   }
 
   const el = document.createElement("div");
@@ -1829,7 +1963,7 @@ function restoreLibraryItems(type) {
     const container = document.getElementById(`${type}-library`);
     if (!container) {
       console.warn(`⚠️ Container #${type}-library not found.`);
-      return;
+
     }
 
     container.innerHTML = "";
@@ -1853,7 +1987,7 @@ function playItem(itemId, onComplete = null) {
 
   if (!text.trim()) {
     alert("This item has no text to play.");
-    return;
+
   }
 
   localStorage.setItem("lastPlayedId", itemId);
@@ -1897,100 +2031,6 @@ function playItem(itemId, onComplete = null) {
   speechSynthesis.cancel();
   speechSynthesis.speak(utterance);
 }
-
-
-/* --- Initialization --- */
-// ==============================
-// 🧩 Utility: Persist Any Selection
-// ==============================
-function persistSelection(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-
-  // Restore saved value
-  const saved = localStorage.getItem(id);
-  if (saved !== null) {
-    if (el.type === "checkbox") {
-      el.checked = saved === "true";
-    } else {
-      el.value = saved;
-    }
-  }
-
-  // Save on change
-  el.addEventListener("change", () => {
-    const val = el.type === "checkbox" ? el.checked : el.value;
-    localStorage.setItem(id, val);
-  });
-
-  // Also persist on input (for sliders)
-  el.addEventListener("input", () => {
-    if (el.type === "range") {
-      localStorage.setItem(id, el.value);
-    }
-  });
-}
-
-// ==============================
-// 📦 Main Page Load Logic
-// ==============================
-window.addEventListener("DOMContentLoaded", () => {
-  // Persist UI selections
-  [
-    "tts-engine-listen", "voice-listen",
-    "tts-engine-capture", "voice-capture",
-    "rate-slider", "pitch-slider",
-    "loop-toggle", "auto-resume-toggle",
-    "translation-lang"
-  ].forEach(persistSelection);
-
-  // Hook up engine switch → load voices
-  ["listen", "capture"].forEach(context => {
-    const sel = document.getElementById(`tts-engine-${context}`);
-    if (sel) {
-      sel.addEventListener("change", () => {
-        localStorage.setItem(`tts-engine-${context}`, sel.value);
-        loadVoicesForEngine(sel.value, context);
-      });
-    }
-  });
-
-  // Load Web Speech local voices
-  localVoices = speechSynthesis.getVoices();
-  speechSynthesis.onvoiceschanged = () => {
-    localVoices = speechSynthesis.getVoices();
-    ["listen", "capture"].forEach(context => {
-      const engine = document.getElementById(`tts-engine-${context}`).value;
-      if (engine === "local") loadVoicesForEngine(engine, context);
-    });
-  };
-
-  // Load ResponsiveVoice (once)
-  setupResponsiveVoice();
-
-  // Load Google & IBM and then update if selected
-  fetchGoogleVoices().then(() => {
-    ["listen", "capture"].forEach(context => {
-      if (document.getElementById(`tts-engine-${context}`).value === "google") {
-        loadVoicesForEngine("google", context);
-      }
-    });
-  });
-
-  fetchIBMVoces().then(() => {
-    ["listen", "capture"].forEach(context => {
-      if (document.getElementById(`tts-engine-${context}`).value === "ibm") {
-        loadVoicesForEngine("ibm", context);
-      }
-    });
-  });
-
-  // Trigger initial engine-based voice population
-  ["listen", "capture"].forEach(context => {
-    const engine = document.getElementById(`tts-engine-${context}`).value;
-    loadVoicesForEngine(engine, context);
-  });
-});
 
 
 // =======================
@@ -2090,7 +2130,7 @@ function playFileById(fileId, callback) {
   const fileText = getFileTextById(fileId);
   if (!fileText) {
     alert("❌ Unable to play file.");
-    return;
+
   }
 
   const sentences = fileText.match(/[^.!?]+[.!?]+/g) || [fileText];
@@ -2099,7 +2139,7 @@ function playFileById(fileId, callback) {
   const speakSentence = () => {
     if (index >= sentences.length) {
       if (callback) callback();
-      return;
+
     }
 
     const utter = new SpeechSynthesisUtterance(sentences[index]);
@@ -2127,8 +2167,6 @@ function getFileTextById(id) {
   const found = files.find(f => f.id === id);
   return found ? found.text : null;
 }
-
-window.addEventListener("DOMContentLoaded", loadPlaylist);
 
 
 // =======================
@@ -2565,60 +2603,113 @@ document.getElementById("translate-btn")?.addEventListener("click", () => {
 // ✅ DOMContentLoaded Consolidated Block
 // ============================== //
 document.addEventListener("DOMContentLoaded", async () => {
-  // 🔁 Restore last visited section (Home, Listen, Capture, etc.)
+  // 🧠 Restore last visited section (Home, Listen, Capture, etc.)
   restoreSection();
 
-  // 🎚 Persist all UI selections
-  [
+  // ✅ Restore & persist all relevant UI controls
+  const persistentIds = [
+    "tts-engine-listen", "voice-listen",
+    "tts-engine-capture", "voice-capture",
     "rate-slider", "pitch-slider",
-    "loop-toggle", "auto-resume-toggle",
+    "rate-capture-slider", "pitch-capture-slider",
+    "loop-toggle", "auto-resume", "autoplay-response",
+    "theme-select", "voice-avatar",
+    "lang-read", "lang-translate", "enable-translation",
+    "auto-reward-toggle", "dev-mode-toggle",
+    "Translation", "Capture Mode", "AI Explanation", "Image Description",
     "translation-lang"
-  ].forEach(persistSelection);
+  ];
 
-  // 🔄 Restore engine selections and attach change handlers
-  persistEngineDropdown("listen");
-  persistEngineDropdown("capture");
-
-  // 🔁 IBM voices must load only after engine is known
-  fetchIBMVoces().then(() => {
-    ["listen", "capture"].forEach(context => {
-      const current = document.getElementById(`tts-engine-${context}`)?.value?.toLowerCase();
-      if (current === "ibm") {
-        loadVoicesForEngine("ibm", context);
-      }
-    });
+  persistentIds.forEach(id => {
+    restoreSelection(id);
+    persistSelection(id);
   });
 
-  // 🧠 Load other TTS voices (local, google, responsiveVoice)
-  await loadTTSEngines("listen");
-  await loadTTSEngines("capture");
+  // ✅ Restore Docking Station Mode
+  const savedDockMode = localStorage.getItem("station-mode") || "normal";
+  switch (savedDockMode) {
+    case "expanded": expandStation(); break;
+    case "docked": dockStation(); break;
+    default: restoreToNormal();
+  }
 
-  // 🌍 Restore language selections
+  // 🎛 Engine Switcher + Voice Loading
+  ["listen", "capture"].forEach(context => {
+    const engineDropdown = document.getElementById(`tts-engine-${context}`);
+    if (engineDropdown) {
+      engineDropdown.addEventListener("change", async (e) => {
+        const selectedEngine = e.target.value.toLowerCase();
+        localStorage.setItem(`tts-engine-${context}`, selectedEngine);
+
+        try {
+          if (selectedEngine === "google" || selectedEngine === "local") {
+            loadVoicesDropdown(selectedEngine, context);
+          } else if (selectedEngine === "ibm") {
+            const ibmVoices = await fetchIBMVoices(context);
+            updateVoiceDropdown("ibm", ibmVoices, context);
+          } else if (selectedEngine === "responsivevoice") {
+            const rvVoices = await fetchResponsiveVoices();
+            updateVoiceDropdown("responsivevoice", rvVoices, context);
+          }
+        } catch (err) {
+          console.error(`❌ Failed to load voices for ${selectedEngine}:`, err);
+          updateVoiceDropdown(selectedEngine, [], context);
+        }
+      });
+    }
+  });
+
+  // 🗣 Local TTS voice loading
+  localVoices = speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged = () => {
+    localVoices = speechSynthesis.getVoices();
+    ["listen", "capture"].forEach(context => {
+      const engine = document.getElementById(`tts-engine-${context}`)?.value?.toLowerCase();
+      if (engine === "local") loadVoicesForEngine("local", context);
+    });
+  };
+
+  // 🌐 ResponsiveVoice setup
+  setupResponsiveVoice();
+
+  // 🔁 Initial Engine-Based Voice Load
+  await fetchGoogleVoices();
+  await Promise.all(["listen", "capture"].map(async context => {
+    const engine = document.getElementById(`tts-engine-${context}`)?.value?.toLowerCase();
+    if (engine === "ibm") {
+      await fetchIBMVoices(context);
+    } else if (engine === "responsivevoice") {
+      const rvVoices = await fetchResponsiveVoices();
+      updateVoiceDropdown("responsivevoice", rvVoices, context);
+    } else {
+      loadVoicesForEngine(engine, context);
+    }
+  }));
+
+  // 🌍 Restore Language Selection
   ["listen", "capture"].forEach(context => {
     const langDropdown = document.getElementById(`language-select-${context}`);
     const savedLang = localStorage.getItem(`selectedLanguage-${context}`) || "en-US";
-    if (langDropdown) langDropdown.value = savedLang;
     if (langDropdown) {
+      langDropdown.value = savedLang;
       langDropdown.addEventListener("change", e => {
         localStorage.setItem(`selectedLanguage-${context}`, e.target.value);
       });
     }
   });
 
-  // 📁 Setup file inputs
+  // 📁 File Input Accept Types
   const acceptedTypes = [
     ".pdf", ".txt", ".docx", ".epub", ".pptx", ".doc",
     ".xlsx", ".xlsm", ".xls", ".xltx", ".xltm",
     ".csv", ".rtf", ".msg", ".sql",
     ".webp", ".png", ".jpeg", ".jpg", ".bmp", ".tif", ".eps", ".tmp"
   ].join(",");
-
   const fileInputs = [
     document.getElementById("file-upload"),
     document.getElementById("upload-multiple-btn"),
     document.getElementById("upload-files-btn")
   ];
-
   fileInputs.forEach(input => {
     if (input) {
       input.setAttribute("accept", acceptedTypes);
@@ -2626,24 +2717,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // 💾 Load File from IndexedDB
   await initDB();
   await loadLastSessionFile();
+  if (db) restoreLastFileFromIndexedDB();
 
+  // 📥 Save/Upload Hooks
   const saveBtn = document.getElementById("save-to-library-btn");
   if (saveBtn) saveBtn.addEventListener("click", saveFileToLibrary);
 
-  // 📦 Upload files to library
   const uploadFilesInput = document.getElementById("upload-files-btn");
   if (uploadFilesInput) {
-    uploadFilesInput.addEventListener("change", (event) => {
+    uploadFilesInput.addEventListener("change", event => {
       const files = Array.from(event.target.files);
       const validFiles = files.filter(isValidFile);
-      if (validFiles.length !== files.length) alert("Some files were skipped due to unsupported types.");
+      if (validFiles.length !== files.length) alert("Some files were skipped.");
       validFiles.forEach(file => saveFileToLibrary(file));
     });
   }
 
-  // 🧹 Bulk Delete and Checkbox Setup
+  // 🧹 Library Maintenance
   addCheckboxesToLibraryItems();
   setupBulkDeleteButton("bulk-delete-listen-btn", "listen-library");
   setupBulkDeleteButton("bulk-delete-capture-btn", "capture-library");
@@ -2651,9 +2744,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   addCheckboxesToLibrary();
   setupUploadMultipleHandler();
 
-  // 🧠 Profile Settings
-  const settings = loadProfileSettings();
-  applyProfileSettings(settings);
+  // 👤 Profile Save Button
   const profileBtn = document.getElementById("save-profile-btn");
   if (profileBtn) {
     profileBtn.addEventListener("click", () => {
@@ -2661,11 +2752,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         theme: document.querySelector("input[name='theme']:checked")?.value || "light",
         ttsRate: parseFloat(document.getElementById("rate").value),
         ttsPitch: parseFloat(document.getElementById("pitch").value),
-        selectedVoice: document.getElementById("voice-select").value,
-        autoResume: document.getElementById("auto-resume-toggle").checked,
-        notificationTime: document.getElementById("notification-time").value || "18:30",
-        language: document.getElementById("language-select").value,
-        translationLanguage: document.getElementById("translation-select").value,
+        selectedVoice: document.getElementById("voice-select")?.value || "",
+        autoResume: document.getElementById("auto-resume-toggle")?.checked || false,
+        notificationTime: document.getElementById("notification-time")?.value || "18:30",
+        language: document.getElementById("language-select")?.value || "en-US",
+        translationLanguage: document.getElementById("translation-select")?.value || "en",
         developerMode: document.body.dataset.developer === "true"
       };
       saveProfileSettings(settings);
@@ -2674,16 +2765,45 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // ⚙ Consent + Ads + Floating Panel + Tooltips
+  // 🤖 Agent Panel & Docking
+  createAgentPanel();
+  createFloatingPlaybackPanel();
+
+  // 🧠 Consent, Ads, Tooltips, Panels
   displayConsentModal();
   initAds();
   initFloatingPanel();
   applyTooltips();
   addTooltips();
 
-  // 💾 Last file restore
-  if (db) restoreLastFileFromIndexedDB();
+  // 🎥 Capture Settings
+  loadCaptureSettings();
+
+  document.getElementById("captureToggleBtn")?.addEventListener("click", () => {
+    if (isCapturing) stopCapture();
+    else startCapture();
+  });
+
+  document.getElementById("captureLangSelect")?.addEventListener("change", e => {
+    captureLanguage = e.target.value;
+    saveCaptureSettings();
+  });
+
+  document.getElementById("translateCaptureToggle")?.addEventListener("change", e => {
+    translateCapture = e.target.checked;
+    saveCaptureSettings();
+  });
+
+  document.getElementById("captureTranslateLangSelect")?.addEventListener("change", e => {
+    captureTranslatedLang = e.target.value;
+    saveCaptureSettings();
+  });
+
+  // ▶️ Sample Playback Run
+  const sentences = prepareSampleText();
+  playSentences(sentences);
 });
+
 
 // ============================== //
 // ✅ Restore Section on Reload
@@ -2693,6 +2813,52 @@ function restoreSection() {
   navigate(last);
 }
 
+
+function restoreToNormal() {
+  const station = document.getElementById("floating-station");
+  station.className = "station-mode-normal";
+  station.innerHTML = `
+    <div class="station-header">
+      <span id="station-timer">4:12</span>
+      <div>
+        <button class="station-icon" onclick="dockStation()" title="Dock">🧲</button>
+        <button class="station-icon" onclick="expandStation()" title="Expand">🔍</button>
+      </div>
+    </div>
+    <div class="station-controls">
+      <button onclick="document.getElementById('play-btn').click()">▶️</button>
+      <button onclick="navigate('capture')" title="Capture">📸</button>
+      <button onclick="alert('Bookmark saved!')" title="Bookmark">🔖</button>
+    </div>`;
+  localStorage.setItem("station-mode", "normal");
+}
+
+
+function expandStation() {
+  const station = document.getElementById("floating-station");
+  station.className = "station-mode-expanded";
+  station.innerHTML = `
+    <div class="station-header">
+      <span id="station-timer">4:12</span>
+      <button class="station-icon" onclick="restoreToNormal()" title="Close">✖</button>
+    </div>
+    <div class="station-controls">
+      <button onclick="document.getElementById('play-btn').click()">▶️</button>
+      <button onclick="navigate('capture')" title="Capture">📸</button>
+      <button onclick="alert('Bookmark saved!')" title="Bookmark">🔖</button>
+    </div>`;
+  localStorage.setItem("station-mode", "expanded");
+}
+
+
+function dockStation() {
+  const station = document.getElementById("floating-station");
+  station.className = "station-mode-docked";
+  station.innerHTML = `🎧`;
+  station.title = "Undock";
+  station.onclick = () => restoreToNormal();
+  localStorage.setItem("station-mode", "docked");
+}
 
 
 // =========================
@@ -2785,30 +2951,6 @@ function saveCaptureSettings() {
   localStorage.setItem("translateCapture", translateCapture);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadCaptureSettings();
-  document.getElementById("captureToggleBtn").addEventListener("click", () => {
-    if (isCapturing) stopCapture();
-    else startCapture();
-  });
-
-  document.getElementById("captureLangSelect").addEventListener("change", e => {
-    captureLanguage = e.target.value;
-    saveCaptureSettings();
-  });
-
-  document.getElementById("translateCaptureToggle").addEventListener("change", e => {
-    translateCapture = e.target.checked;
-    saveCaptureSettings();
-  });
-
-  document.getElementById("captureTranslateLangSelect").addEventListener("change", e => {
-    captureTranslatedLang = e.target.value;
-    saveCaptureSettings();
-  });
-});
-
-
 
 // =========================
 // 📦 Merged Module 3: module_17_stream_integration (1).js
@@ -2832,7 +2974,7 @@ function startStreamReading() {
   streamInterval = setInterval(() => {
     if (currentStreamIndex >= streamQueue.length) {
       stopStreamReading();
-      return;
+
     }
     const currentText = streamQueue[currentStreamIndex];
     speakText(currentText, "stream");
@@ -2921,7 +3063,7 @@ updateStreamStatus("Idle. Load stream to begin.");
 // ✅ UI Integration                  | ✔️     | Shows above text display area in Listen & Capture.
 // ✅ Fallback Handling               | ✔️     | Shows error and reverts to original text if translation fails.
 
-let translationEnabled = false;
+//let translationEnabled = false;
 let targetLanguage = "fr"; // default to French
 
 // 🌐 Initialize translation settings
@@ -2961,7 +3103,7 @@ function updateTranslationUI() {
 async function translateAndRead(sentence) {
     if (!translationEnabled || !targetLanguage || targetLanguage === "none") {
         speakSentence(sentence);
-        return;
+
     }
     try {
         const translated = await translateText(sentence, targetLanguage);
@@ -2981,24 +3123,6 @@ async function translateText(text, targetLang) {
     const data = await res.json();
     return data[0]?.map(t => t[0]).join("") || null;
 }
-
-// 📦 UI Setup
-window.addEventListener("DOMContentLoaded", () => {
-    initTranslationSettings();
-
-    const langSelector = document.getElementById("translation-language");
-    if (langSelector) {
-        langSelector.addEventListener("change", e => {
-            setTranslationLanguage(e.target.value);
-        });
-    }
-
-    const toggleBtn = document.getElementById("toggle-translation");
-    if (toggleBtn) {
-        toggleBtn.addEventListener("click", toggleTranslation);
-    }
-});
-
 
 
 // =========================
@@ -3328,13 +3452,6 @@ function triggerDailyReminder() {
   }
 }
 
-// 🧭 Hook into app load
-window.addEventListener("DOMContentLoaded", () => {
-  loadStreakData();
-  setTimeout(triggerDailyReminder, 3000);
-});
-
-
 
 // =========================
 // 📦 Merged Module 9: module_23_analytics_insights.js
@@ -3444,14 +3561,14 @@ function previewVoice() {
   const sampleText = document.getElementById("preview-sample").value.trim();
   if (!sampleText) {
     logMessage("⛔ Enter sample text to preview.");
-    return;
+
   }
 
   const engine = localStorage.getItem("selectedEngine") || "Google";
   const voiceObj = allVoices.find(v => v.name === selectedVoice && v.engine === engine);
   if (!voiceObj) {
     logMessage("⚠️ Voice not available.");
-    return;
+
   }
 
   const utter = new SpeechSynthesisUtterance(sampleText);
@@ -3494,7 +3611,7 @@ let devWhitelist = ["admin@neurAloud.com", "oscar.eta.jr@gmail.com"]; // Editabl
 function createDevDashboard() {
   const dash = document.createElement("div");
   dash.id = "dev-dashboard";
-  dash.style = \`
+  dash.style = `
     position: fixed;
     top: 20px;
     right: 20px;
@@ -3506,8 +3623,8 @@ function createDevDashboard() {
     width: 320px;
     font-family: monospace;
     box-shadow: 0 0 10px #000;
-  \`;
-  dash.innerHTML = \`
+  `;
+  dash.innerHTML = `
     <div style="margin-bottom: 8px;"><strong>🛠️ Developer Dashboard</strong></div>
     <label><input type="checkbox" id="dev-toggle" /> Enable Developer Mode</label><br><br>
     <label>User Role:
@@ -3521,7 +3638,7 @@ function createDevDashboard() {
     <button onclick="clearLogs()">🧹 Clear Logs</button>
     <button onclick="printLogs()">📋 Show Logs</button>
     <div id="dev-log-box" style="margin-top: 8px; font-size: 12px; max-height: 120px; overflow-y: auto; border: 1px solid #444; padding: 4px;"></div>
-  \`;
+  `;
   document.body.appendChild(dash);
 
   // Hook up events
@@ -3546,7 +3663,7 @@ let devLogs = [];
 
 function devLog(message) {
   const timestamp = new Date().toLocaleTimeString();
-  devLogs.push(\`[\${timestamp}] \${message}\`);
+  devLogs.push(`[\${timestamp}] \${message}`);
   const box = document.getElementById("dev-log-box");
   if (box) {
     box.innerText = devLogs.slice(-10).join("\n");
@@ -3570,7 +3687,7 @@ function trackLatency(action, fn) {
   const result = fn();
   const end = performance.now();
   const duration = end - start;
-  devLog(\`⏱️ \${action} took \${duration.toFixed(2)} ms\`);
+  devLog(`⏱️ \${action} took \${duration.toFixed(2)} ms`);
   return result;
 }
 
@@ -3586,23 +3703,6 @@ function getEffectiveUserRole() {
   return simulatedUserRole || "free";
 }
 
-// Hook into Init
-window.addEventListener("DOMContentLoaded", () => {
-  const savedDev = localStorage.getItem("developerMode") === "true";
-  const savedRole = localStorage.getItem("simulatedRole") || "free";
-  const savedAB = localStorage.getItem("abGroup") || "A";
-
-  if (checkDeveloperAccess() || savedDev) {
-    developerMode = savedDev;
-    simulatedUserRole = savedRole;
-    createDevDashboard();
-
-    document.getElementById("dev-toggle").checked = developerMode;
-    document.getElementById("dev-user-role").value = simulatedUserRole;
-    document.getElementById("ab-switcher").checked = savedAB === "B";
-    devLog("Dashboard loaded");
-  }
-});
 
 // Override Function Example
 function overrideQuotaIfDev(originalValue) {
@@ -3628,7 +3728,7 @@ function canAccessFeature(featureName) {
 function testAdminFeature() {
   if (!checkDeveloperAccess()) {
     alert("Access denied: Admins only.");
-    return;
+
   }
   devLog("Admin-only feature executed.");
   alert("✅ Admin Feature Accessed.");
@@ -3678,8 +3778,8 @@ function highlightCurrentSentence(index) {
 }
 
 // Hook into existing speech synthesis logic
-let utterance;
-let currentSentenceIndex = 0;
+// let utterance;
+// let currentSentenceIndex = 0;
 let isPlaying = false;
 
 function playSentences(sentences) {
@@ -3736,13 +3836,6 @@ function prepareSampleText() {
   return sentences;
 }
 
-// Sample run
-document.addEventListener('DOMContentLoaded', () => {
-  const sentences = prepareSampleText();
-  playSentences(sentences);
-});
-
-
 
 // =========================
 // 📦 Merged Module 28: module_27_voice_control.js
@@ -3755,8 +3848,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // User Settings
 let voiceControlEnabled = true;
 let wakeWord = "neur aloud";
-let isListening = false;
-let recognition, micIndicator, feedbackBox;
+// let isListening = false;
+// let recognition, micIndicator, feedbackBox;
 
 // Command Mapping
 const commandActions = {
@@ -3778,7 +3871,7 @@ function setupVoiceRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
     console.warn("SpeechRecognition not supported");
-    return;
+
   }
 
   recognition = new SpeechRecognition();
@@ -3834,7 +3927,7 @@ function executeVoiceCommand(phrase) {
     if (phrase.includes(command)) {
       commandActions[command]();
       showVoiceFeedback(`🗣️ “${phrase}” → ✅ Executing: ${command}`);
-      return;
+
     }
   }
   showVoiceFeedback(`⚠️ “${phrase}” → Unknown command.`);
@@ -3895,14 +3988,6 @@ function toggleVoiceControl(setting) {
   else stopVoiceControl();
 }
 
-// Load Setting on Init
-window.addEventListener("DOMContentLoaded", () => {
-  setupVoiceRecognition();
-  const setting = loadSetting("voiceControl");
-  if (setting === true) {
-    toggleVoiceControl(true);
-  }
-});
 
 // Voice Commands Help
 function printAvailableCommands() {
@@ -3995,18 +4080,6 @@ function stopWaveform() {
   if (waveformCanvas) waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  const audioEl = document.getElementById("tts-audio");
-  if (audioEl) {
-    audioEl.addEventListener("play", () => {
-      initAudioVisualizer("tts-audio");
-    });
-    audioEl.addEventListener("pause", stopWaveform);
-    audioEl.addEventListener("ended", stopWaveform);
-  }
-});
-
-
 
 // =========================
 // 📦 Merged Module 30: module_30_session_analytics.js
@@ -4075,14 +4148,6 @@ function createRecommendBox() {
   return box;
 }
 
-// Restore and analyze on startup
-window.addEventListener("DOMContentLoaded", () => {
-  loadSessionData();
-  generateSmartRecommendations();
-  showRecommendations();
-});
-
-
 
 // =========================
 // 📦 Merged Module 31: module_31_sentence_navigation.js
@@ -4141,20 +4206,6 @@ function extractSentencesFromText() {
   });
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  extractSentencesFromText();
-  highlightSentence(currentHighlightIndex);
-
-  const nav = document.createElement("div");
-  nav.style = "position:fixed;top:10px;right:10px;z-index:9999;";
-  nav.innerHTML = \`
-    <button onclick="previousSentence()">⬅️ Previous</button>
-    <button onclick="nextSentence()">Next ➡️</button>
-  \`;
-  document.body.appendChild(nav);
-});
-
-
 
 // =========================
 // 📦 Merged Module 32: module_33_notification_streaks.js
@@ -4165,7 +4216,7 @@ window.addEventListener("DOMContentLoaded", () => {
 // ==========================
 
 let reminderTime = "18:30"; // Default daily reminder time
-let streakCount = 0;
+//let streakCount = 0;
 let lastUsedDate = null;
 
 // Check & update streak
@@ -4210,11 +4261,6 @@ function scheduleDailyReminder() {
   }
 }
 
-// Load streak on start
-window.addEventListener("DOMContentLoaded", () => {
-  requestNotificationPermission();
-  updateStreak();
-});
 
 // ================================
 // MODULE 35
@@ -4223,56 +4269,65 @@ window.addEventListener("DOMContentLoaded", () => {
 //==========================
 //Module35–SocialSharing&PromotionPanel
 //==========================
-letshareLog=[];
-functioncreateSharePanel(){
-constpanel=document.createElement("div");
-panel.id="share-panel";
-panel.style=`
-position:fixed;
-top:20px;
-right:20px;
-background:var(--panel-bg,#f8f8f8);
-border:1pxsolidvar(--panel-border,#ccc);
-padding:10px;
-border-radius:6px;
-box-shadow:02px8pxrgba(0,0,0,0.2);
-z-index:9999;
-width:260px;
-font-family:sans-serif;
-font-size:14px;
-transition:opacity0.3sease;
-`;
-panel.innerHTML=`
-<strong>📣ShareNeurAloud</strong>
-<divstyle="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">
-${createShareButtonHTML("📘","Facebook")}
-${createShareButtonHTML("🐦","Twitter")}
-${createShareButtonHTML("💼","LinkedIn")}
-${createShareButtonHTML("💬","WhatsApp")}
-${createShareButtonHTML("✉️","Email")}
-${createShareButtonHTML("🔗","CopyLink")}
-</div>
-<divid="share-log"style="margin-top:10px;font-size:12px;color:#444;"></div>
-<divstyle="text-align:right;margin-top:8px;">
-<buttononclick="hideSharePanel()"style="font-size:12px;">❌Close</button>
-</div>
-`;
-document.body.appendChild(panel);
-updateShareLog();
+let shareLog = [];
+
+function createSharePanel() {
+  const panel = document.createElement("div");
+  panel.id = "share-panel";
+  panel.style = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--panel-bg, #f8f8f8);
+    border: 1px solid var(--panel-border, #ccc);
+    padding: 10px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    width: 260px;
+    font-family: sans-serif;
+    font-size: 14px;
+    transition: opacity 0.3s ease;
+  `;
+
+  panel.innerHTML = `
+    <strong>📣 ShareNeurAloud</strong>
+    <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px;">
+      ${createShareButtonHTML("📘", "Facebook")}
+      ${createShareButtonHTML("🐦", "Twitter")}
+      ${createShareButtonHTML("💼", "LinkedIn")}
+      ${createShareButtonHTML("💬", "WhatsApp")}
+      ${createShareButtonHTML("✉️", "Email")}
+      ${createShareButtonHTML("🔗", "CopyLink")}
+    </div>
+    <div id="share-log" style="margin-top: 10px; font-size: 12px; color: #444;"></div>
+    <div style="text-align: right; margin-top: 8px;">
+      <button onclick="hideSharePanel()" style="font-size: 12px;">❌ Close</button>
+    </div>
+  `;
+
+  document.body.appendChild(panel);
+  updateShareLog();
 }
-functioncreateShareButtonHTML(icon,label){
-return`<buttononclick="handleShare('${label}')"title="${label}"style="
-flex:1030%;
-padding:6px;
-font-size:16px;
-cursor:pointer;
-border:1pxsolid#ccc;
-border-radius:4px;
-background:var(--btn-bg,#fff);
-color:#333;
-">${icon}</button>`;
+
+function createShareButtonHTML(icon, label) {
+  return `
+    <button onclick="handleShare('${label}')" title="${label}" style="
+      flex: 1 1 auto;
+      padding: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: var(--btn-bg, #fff);
+      color: #333;
+    ">${icon}</button>
+  `;
 }
-functionhandleShare(platform){
+
+function handleShare(platform) {
+  // Your sharing logic here
+}
 consturl=generateShareLink();
 letshareURL="";
 switch(platform.toLowerCase()){
@@ -4296,32 +4351,38 @@ navigator.clipboard.writeText(url).then(()=>{
 logShare(platform+"(copied)");
 alert("🔗Linkcopiedtoclipboard!");
 });
-return;
+
 default:
-return;
+
 }
-window.open(shareURL,"_blank");
-logShare(platform);
+function handleShare(platform) {
+  const shareURL = generateShareLink();
+  window.open(shareURL, "_blank");
+  logShare(platform);
 }
-functiongenerateShareLink(){
-letbase=window.location.href.split("?")[0];
-constfileName=localStorage.getItem("lastFileName")||"neurAloud";
-return`${base}?file=${encodeURIComponent(fileName)}&utm_source=NeurAloud&utm_medium=share&utm_campaign=organic`;
+
+function generateShareLink() {
+  let base = window.location.href.split("?")[0];
+  const fileName = localStorage.getItem("lastFileName") || "neurAloud";
+  return `${base}?file=${encodeURIComponent(fileName)}&utm_source=NeurAloud&utm_medium=share&utm_campaign=organic`;
 }
-functionlogShare(platform){
-consttimestamp=newDate().toLocaleTimeString();
-shareLog.unshift(`[${timestamp}]${platform}`);
-if(shareLog.length>5)shareLog.pop();
-updateShareLog();
+
+function logShare(platform) {
+  const timestamp = new Date().toLocaleTimeString();
+  shareLog.unshift(`[${timestamp}] ${platform}`);
+  if (shareLog.length > 5) shareLog.pop();
+  updateShareLog();
 }
-functionupdateShareLog(){
-constbox=document.getElementById("share-log");
-if(!box)return;
-box.innerHTML=`<strong>RecentShares:</strong><br>${shareLog.join("<br>")}`;
+
+function updateShareLog() {
+  const box = document.getElementById("share-log");
+  if (!box) return;
+  box.innerHTML = `<strong>Recent Shares:</strong><br>${shareLog.join("<br>")}`;
 }
-functionhideSharePanel(){
-constpanel=document.getElementById("share-panel");
-if(panel)panel.style.display="none";
+
+function hideSharePanel() {
+  const panel = document.getElementById("share-panel");
+  if (panel) panel.style.display = "none";
 }
 //Optionalauto-hideonscroll
 letscrollTimeout;
@@ -4334,11 +4395,7 @@ scrollTimeout=setTimeout(()=>(panel.style.opacity="1"),1500);
 }
 });
 //Loadoninit
-window.addEventListener("DOMContentLoaded",()=>{
-setTimeout(()=>{
-createSharePanel();
-},300);
-});
+
 
 // ================================
 // MODULE 36
@@ -4477,11 +4534,6 @@ function improveChapterTitles() {
     return ch;
   });
 }
-// Init Hook
-window.addEventListener("DOMContentLoaded", () => {
-  const enabled = loadSetting("audiobookMode") === "true";
-  if (enabled) toggleAudiobookMode(true);
-});
 
 // ================================
 // MODULE 37
@@ -4495,12 +4547,7 @@ let summaryDB = {};
 let translationMemory = {};
 let lastSummaryText = "";
 let summaryPanel;
-// Setup
-window.addEventListener("DOMContentLoaded", () => {
-  initSummaryDB();
-  createSummaryPanel();
-  attachSummaryButton();
-});
+
 // INIT STORAGE
 function initSummaryDB() {
   const saved = localStorage.getItem("summaryDB");
@@ -4555,7 +4602,7 @@ async function generateSummary() {
   if (!text) return alert("No text available for summary.");
   if (summaryDB[text]) {
     showSummary(summaryDB[text]);
-    return;
+
   }
   const summary = await mockSummarizeAPI(text);
   summaryDB[text] = summary;
@@ -4597,7 +4644,7 @@ async function translateSummary() {
   if (!lang) return;
   if (translationMemory[lastSummaryText]?.[lang]) {
     showTranslatedSummary(translationMemory[lastSummaryText][lang], lang);
-    return;
+
   }
   const translated = await mockTranslateAPI(lastSummaryText, lang);
   if (!translationMemory[lastSummaryText]) {
@@ -4688,7 +4735,7 @@ function renderBookmarkList() {
   container.innerHTML = "";
   if (bookmarks.length === 0) {
     container.innerHTML = "<p>No bookmarks yet.</p>";
-    return;
+
   }
   bookmarks.forEach((bm, idx) => {
     const div = document.createElement("div");
@@ -4757,15 +4804,7 @@ async function onDocumentLoadWithBookmarks(fileId) {
 function onSentenceAdvance(index) {
   updateResumePoint(index);
 }
-// HTML Setup (for demo/testing)
-window.addEventListener("DOMContentLoaded", () => {
-  const bPanel = document.createElement("div");
-  bPanel.id = "bookmark-panel";
-  bPanel.style = "position:fixed;top:70px;left:10px;background:#fff;padding:8px;border:1px solid #ccc;";
-  bPanel.innerHTML = "<h4>Bookmarks</h4><div id='bookmark-list'></div>";
-  document.body.appendChild(bPanel);
-  setupBookmarkButtons();
-});
+
 
 // ================================
 // MODULE 39
@@ -4894,14 +4933,6 @@ function setupSummarySettings() {
     };
   }
 }
-// Hook into document load
-window.addEventListener("DOMContentLoaded", () => {
-  setupSummarySettings();
-});
-// Hook this into your playback loop
-function onSentenceChangeHook(index) {
-  if (autoSummaryEnabled) monitorForChapterEnds(index);
-}
 
 // ================================
 // MODULE 40
@@ -5018,10 +5049,7 @@ function onSentenceChangeLoopHook(index) {
     loopPlayback(index);
   }
 }
-window.addEventListener("DOMContentLoaded", () => {
-  restoreLoopSettings();
-  createLoopPanel();
-});
+
 
 // ================================
 // MODULE 41
@@ -5119,12 +5147,7 @@ function resetIdleTimer() {
 ["click", "keydown", "mousemove", "scroll"].forEach(evt => {
   window.addEventListener(evt, resetIdleTimer);
 });
-window.addEventListener("DOMContentLoaded", () => {
-  createSleepPanel();
-  autoPauseOnBlur = localStorage.getItem("pauseOnBlur") !== "false";
-  document.getElementById("pause-on-blur").checked = autoPauseOnBlur;
-  resetIdleTimer();
-});
+
 
 // ================================
 // MODULE 42
@@ -5240,15 +5263,7 @@ function logGesture(msg) {
   if (gestureLog.length > 5) gestureLog.shift();
   document.getElementById("key-log").innerText = "Gestures: " + gestureLog.join(", ");
 }
-// ✅ Init
-window.addEventListener("DOMContentLoaded", () => {
-  shortcutsEnabled = localStorage.getItem("shortcutsEnabled") !== "false";
-  createShortcutTogglePanel();
-  document.getElementById("shortcut-enable").checked = shortcutsEnabled;
-  window.addEventListener("keydown", handleKeyShortcuts);
-  window.addEventListener("touchstart", handleTouchStart);
-  window.addEventListener("touchend", handleTouchEnd);
-});
+
 
 // ================================
 // MODULE 43
@@ -5343,20 +5358,7 @@ function renderAvatarPicker() {
   if (existing) existing.replaceWith(container);
   else document.body.appendChild(container);
 }
-// Hook to render when page loads
-window.addEventListener("DOMContentLoaded", () => {
-  renderAvatarPicker();
-});
-// Style guide (can be moved to CSS file)
-/*
-#avatar-picker button:hover {
-  background: #dceeff !important;
-}
-#avatar-picker button:focus {
-  outline: none;
-  box-shadow: 0 0 5px #007bff;
-}
-*/
+
 
 // ========== Module 46.docx ==========
 
@@ -5452,10 +5454,6 @@ function loadSavedTheme() {
 function getCurrentTheme() {
   return localStorage.getItem("userTheme") || "light";
 }
-window.addEventListener("DOMContentLoaded", () => {
-  createThemeDropdown();
-  loadSavedTheme();
-});
 
 // ========== Module 47.docx ==========
 
@@ -5566,11 +5564,6 @@ function initProfileUI() {
     voiceSelect.appendChild(opt);
   });
 }
-window.addEventListener("DOMContentLoaded", () => {
-  initProfileUI();
-  const prefs = loadProfilePrefs();
-  setProfileForm(prefs);
-});
 
 // ========== Module 48.docx ==========
 
@@ -5634,11 +5627,8 @@ function initSmartTranslateUI(sectionId) {
   label.appendChild(document.createTextNode(" Smart Translate"));
   container.appendChild(label);
 }
-// Inject into DOMContentLoaded
-window.addEventListener("DOMContentLoaded", () => {
-  initSmartTranslateUI("listen");
-  initSmartTranslateUI("capture");
-});
+
+
 // Override sentence reading
 async function speakSentence(sentence, voice, rate, pitch) {
   const translatedSentence = await prepareSentenceForTTS(sentence);
@@ -5728,10 +5718,7 @@ function initSmartSkipUI(sectionId) {
   container.appendChild(toggleLabel);
   container.appendChild(slider);
 }
-window.addEventListener("DOMContentLoaded", () => {
-  initSmartSkipUI("listen");
-  initSmartSkipUI("capture");
-});
+
 // Updated version of playSentences()
 async function playSentences(sentences, voice, rate, pitch) {
   for (let i = 0; i < sentences.length; i++) {
@@ -5842,11 +5829,7 @@ async function playSentences(sentences, voice, rate, pitch) {
     await delay(100);
   }
 }
-// Initialization
-window.addEventListener("DOMContentLoaded", () => {
-  initTranslationSettings("listen");
-  initTranslationSettings("capture");
-});
+
 
 // ========== Module 50 b.docx ==========
 
@@ -5947,10 +5930,6 @@ function getPitch(section) {
   const slider = document.querySelector(`#${section} .pitch-slider`);
   return slider ? parseFloat(slider.value) : 1.0;
 }
-window.addEventListener("DOMContentLoaded", () => {
-  initSummaryFeature("listen");
-  initSummaryFeature("capture");
-});
 
 // ========== Module 51.docx ==========
 
@@ -6059,7 +6038,7 @@ function onVoiceChange(target = "listen") {
   const newLang = selectedOption.getAttribute("data-lang") || "unknown";
   if (autoVoiceApplied) {
     autoVoiceApplied = false;
-    return;
+
   }
   trackLanguageOverride(detectedLanguage, newLang);
 }
@@ -6101,10 +6080,7 @@ function initQuizToggleUI(sectionId) {
   label.appendChild(document.createTextNode(" Quiz Mode"));
   container.appendChild(label);
 }
-window.addEventListener("DOMContentLoaded", () => {
-  initQuizToggleUI("listen");
-  initQuizToggleUI("capture");
-});
+
 // ✅ Quiz question generator from sentence
 function generateQuizQuestion(sentence) {
   const parts = sentence.split(" ");
@@ -6183,6 +6159,7 @@ function delay(ms) {
   return new Promise((res) => setTimeout(res, ms));
 }
 
+
 // ========== Module 52: Real-Time Transcription ==========
 
 // ==========================
@@ -6217,7 +6194,7 @@ document.body.appendChild(buttons);
 function startTranscription() {
   if (!("webkitSpeechRecognition" in window)) {
     alert("SpeechRecognition not supported");
-    return;
+
   }
   recognition = new webkitSpeechRecognition();
   recognition.continuous = true;
@@ -6293,7 +6270,7 @@ function retryLowConfidence() {
   const lowWords = transcriptData.filter(w => w.confidence < 0.6);
   if (lowWords.length === 0) {
     alert("No low-confidence words to retry.");
-    return;
+
   }
   const textToRetry = lowWords.map(w => w.word).join(" ");
   const simulatedBox = document.createElement("div");
@@ -6385,16 +6362,9 @@ const observer = new MutationObserver(() => {
   }
 });
 observer.observe(document.body, { childList: true, subtree: true });
-// Run on initial load
-window.addEventListener("DOMContentLoaded", () => {
-  applyMonospaceStyle();
-  generateTableOfContents();
-  addReadabilityToggle();
-});
+
 
 // ===== Additional Enhancements (Modules 53 & 54) =====
-
-
 
 // ========== Module 53: Shazam-like Speech & Music Recognition ==========
 function recognizeAudioContent() {
@@ -6536,8 +6506,162 @@ function makeDraggable(element) {
   };
 }
 
-// Initialize after page loads
-window.addEventListener("DOMContentLoaded", () => {
+
+// ==============================
+// ✅ Modular Initialization Functions - ALL
+// ==============================
+
+function initVoiceUISelections() {
+  [
+    "tts-engine-listen", "voice-listen",
+    "tts-engine-capture", "voice-capture",
+    "rate-slider", "pitch-slider",
+    "loop-toggle", "auto-resume-toggle",
+    "translation-lang"
+  ].forEach(persistSelection);
+}
+
+function initTTSEngineSwitchListeners() {
+  ["listen", "capture"].forEach(context => {
+    const sel = document.getElementById(`tts-engine-${context}`);
+    if (sel) {
+      sel.addEventListener("change", () => {
+        localStorage.setItem(`tts-engine-${context}`, sel.value);
+        loadVoicesForEngine(sel.value, context);
+      });
+    }
+  });
+}
+
+function initLocalVoices() {
+  localVoices = speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged = () => {
+    localVoices = speechSynthesis.getVoices();
+    ["listen", "capture"].forEach(context => {
+      const engine = document.getElementById(`tts-engine-${context}`).value;
+      if (engine === "local") loadVoicesForEngine(engine, context);
+    });
+  };
+}
+
+async function initCloudVoices() {
+  setupResponsiveVoice();
+
+  await fetchGoogleVoices().then(() => {
+    ["listen", "capture"].forEach(context => {
+      if (document.getElementById(`tts-engine-${context}`).value === "google") {
+        loadVoicesForEngine("google", context);
+      }
+    });
+  });
+
+  for (const context of ["listen", "capture"]) {
+    const engine = document.getElementById(`tts-engine-${context}`)?.value?.toLowerCase();
+    if (engine === "ibm") {
+      await fetchIBMVoices(context);
+    } else {
+      loadVoicesForEngine(engine, context);
+    }
+  }
+}
+
+function initTranslationControls() {
+  initTranslationSettings();
+  const langSelector = document.getElementById("translation-language");
+  if (langSelector) {
+    langSelector.addEventListener("change", e => {
+      setTranslationLanguage(e.target.value);
+    });
+  }
+  const toggleBtn = document.getElementById("toggle-translation");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", toggleTranslation);
+  }
+}
+
+function initDeveloperPanel() {
+  const savedDev = localStorage.getItem("developerMode") === "true";
+  const savedRole = localStorage.getItem("simulatedRole") || "free";
+  const savedAB = localStorage.getItem("abGroup") || "A";
+
+  if (checkDeveloperAccess() || savedDev) {
+    developerMode = savedDev;
+    simulatedUserRole = savedRole;
+    createDevDashboard();
+
+    document.getElementById("dev-toggle").checked = developerMode;
+    document.getElementById("dev-user-role").value = simulatedUserRole;
+    document.getElementById("ab-switcher").checked = savedAB === "B";
+    devLog("Dashboard loaded");
+  }
+}
+
+function initAudioPlayback() {
+  const audioEl = document.getElementById("tts-audio");
+  if (audioEl) {
+    audioEl.addEventListener("play", () => {
+      initAudioVisualizer("tts-audio");
+    });
+    audioEl.addEventListener("pause", stopWaveform);
+    audioEl.addEventListener("ended", stopWaveform);
+  }
+}
+
+function initDockedPanels() {
   createAgentPanel();
   createFloatingPlaybackPanel();
+}
+
+// ==============================
+// 📦 Main Consolidated Load
+// ==============================
+
+
+
+window.addEventListener("DOMContentLoaded", async () => {
+  // Load and populate local voices
+  function populateLocalVoices() {
+    const voices = speechSynthesis.getVoices();
+    if (voices.length) {
+      ["listen", "capture"].forEach(context => {
+        updateVoiceDropdown("local", voices, context);
+      });
+    }
+  }
+
+  // Add Local to TTS engine dropdowns
+  ["listen", "capture"].forEach(context => {
+    const engineSelect = document.getElementById(`tts-engine-${context}`);
+    if (engineSelect && ![...engineSelect.options].some(opt => opt.value === "local")) {
+      const option = document.createElement("option");
+      option.value = "local";
+      option.text = "Local";
+      engineSelect.add(option, engineSelect.firstChild); // Add at the top
+    }
+  });
+
+  // ResponsiveVoice SDK setup (no fetch)
+  if (typeof responsiveVoice === "undefined") {
+    const script = document.createElement("script");
+    script.src = "https://code.responsivevoice.org/responsivevoice.js?key=4KSLPhgK";
+    script.onload = () => console.log("✅ ResponsiveVoice SDK loaded");
+    document.body.appendChild(script);
+  }
+
+  // Defer IBM voice loading if selected
+  ["listen", "capture"].forEach(async (context) => {
+    const engine = document.getElementById(`tts-engine-${context}`)?.value?.toLowerCase();
+    if (engine === "ibm") {
+      try {
+        await fetchIBMVoices(context);
+      } catch (err) {
+        console.warn(`⚠️ IBM voice fetch failed for ${context}:`, err);
+      }
+    } else if (engine === "local") {
+      populateLocalVoices();
+    }
+  });
+
+  // Refresh local voices onvoiceschanged
+  speechSynthesis.onvoiceschanged = populateLocalVoices;
 });
