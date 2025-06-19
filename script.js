@@ -1407,10 +1407,19 @@ function playCurrentSentence() {
       return; // Stop playback if not looping
     }
   }
+  
 
+  const currentContext = sectionId === "capture-panel" ? "capture" : "listen";
   const sentence = sentences[currentSentenceIndex];
   utterance = new SpeechSynthesisUtterance(sentence);
 
+  if (currentContext === "listen") {
+    utterance.rate = window.ttsRate || 1.0;
+    utterance.pitch = window.ttsPitch || 1.0;
+  } else if (currentContext === "capture") {
+    utterance.rate = window.ttsRateCapture || 1.0;
+    utterance.pitch = window.ttsPitchCapture || 1.0;
+  }
   // Set user-controlled options
   const rateInput = document.getElementById("rate");
   const pitchInput = document.getElementById("pitch");
@@ -2608,21 +2617,74 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ✅ Restore & persist all relevant UI controls
   const persistentIds = [
-    "tts-engine-listen", "voice-listen",
-    "tts-engine-capture", "voice-capture",
-    "rate-slider", "pitch-slider",
-    "rate-capture-slider", "pitch-capture-slider",
-    "loop-toggle", "auto-resume", "autoplay-response",
-    "theme-select", "voice-avatar",
-    "lang-read", "lang-translate", "enable-translation",
-    "auto-reward-toggle", "dev-mode-toggle",
-    "Translation", "Capture Mode", "AI Explanation", "Image Description",
-    "translation-lang"
-  ];
+  "AI Explanation",
+  "Capture Mode",
+  "Image Description",
+  "Translation",
+  "auto-reward-toggle",
+  "auto-resume",
+  "autoplay-response",
+  "dev-mode-toggle",
+  "enable-translation",
+  "lang-read",
+  "lang-translate",
+  "loop-toggle",
+  "pitch-capture-slider",
+  "pitch-slider",
+  "rate-capture-slider",
+  "rate-slider",
+  "theme-select",
+  "translation-lang",
+  "tts-engine-capture",
+  "tts-engine-listen",
+  "voice-avatar",
+  "voice-capture",
+  "voice-listen"
+];
+
 
   persistentIds.forEach(id => {
     restoreSelection(id);
     persistSelection(id);
+  });
+
+  // ✅ Pitch & Rate Sliders Setup
+  const rateSlider = document.getElementById("rate-slider");
+  const pitchSlider = document.getElementById("pitch-slider");
+  const rateCaptureSlider = document.getElementById("rate-capture-slider");
+  const pitchCaptureSlider = document.getElementById("pitch-capture-slider");
+
+  // Load values from localStorage or use default
+  window.ttsRate = parseFloat(localStorage.getItem("rate")) || 1.0;
+  window.ttsPitch = parseFloat(localStorage.getItem("pitch")) || 1.0;
+  window.ttsRateCapture = parseFloat(localStorage.getItem("rate-capture")) || 1.0;
+  window.ttsPitchCapture = parseFloat(localStorage.getItem("pitch-capture")) || 1.0;
+
+  // Update slider UI
+  if (rateSlider) rateSlider.value = window.ttsRate;
+  if (pitchSlider) pitchSlider.value = window.ttsPitch;
+  if (rateCaptureSlider) rateCaptureSlider.value = window.ttsRateCapture;
+  if (pitchCaptureSlider) pitchCaptureSlider.value = window.ttsPitchCapture;
+
+  // Attach listeners
+  rateSlider?.addEventListener("input", e => {
+    window.ttsRate = parseFloat(e.target.value);
+    localStorage.setItem("rate", window.ttsRate);
+  });
+
+  pitchSlider?.addEventListener("input", e => {
+    window.ttsPitch = parseFloat(e.target.value);
+    localStorage.setItem("pitch", window.ttsPitch);
+  });
+
+  rateCaptureSlider?.addEventListener("input", e => {
+    window.ttsRateCapture = parseFloat(e.target.value);
+    localStorage.setItem("rate-capture", window.ttsRateCapture);
+  });
+
+  pitchCaptureSlider?.addEventListener("input", e => {
+    window.ttsPitchCapture = parseFloat(e.target.value);
+    localStorage.setItem("pitch-capture", window.ttsPitchCapture);
   });
 
   // ✅ Restore Docking Station Mode
