@@ -2617,32 +2617,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ✅ Restore & persist all relevant UI controls
   const persistentIds = [
-  "AI Explanation",
-  "Capture Mode",
-  "Image Description",
-  "Translation",
-  "auto-reward-toggle",
-  "auto-resume",
-  "autoplay-response",
-  "dev-mode-toggle",
-  "enable-translation",
-  "lang-read",
-  "lang-translate",
-  "loop-toggle",
-  "pitch-capture-slider",
-  "pitch-slider",
-  "rate-capture-slider",
-  "rate-slider",
-  "theme-select",
-  "translation-lang",
-  "tts-engine-capture",
-  "tts-engine-listen",
-  "voice-avatar",
-  "voice-capture",
-  "voice-listen"
-];
-
-
+    "AI Explanation", "Capture Mode", "Image Description", "Translation",
+    "auto-reward-toggle", "auto-resume", "autoplay-response", "dev-mode-toggle",
+    "enable-translation", "lang-read", "lang-translate", "loop-toggle",
+    "pitch-capture-slider", "pitch-slider", "rate-capture-slider", "rate-slider",
+    "theme-select", "translation-lang", "tts-engine-capture", "tts-engine-listen",
+    "voice-avatar", "voice-capture", "voice-listen"
+  ];
   persistentIds.forEach(id => {
     restoreSelection(id);
     persistSelection(id);
@@ -2671,17 +2652,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.ttsRate = parseFloat(e.target.value);
     localStorage.setItem("rate", window.ttsRate);
   });
-
   pitchSlider?.addEventListener("input", e => {
     window.ttsPitch = parseFloat(e.target.value);
     localStorage.setItem("pitch", window.ttsPitch);
   });
-
   rateCaptureSlider?.addEventListener("input", e => {
     window.ttsRateCapture = parseFloat(e.target.value);
     localStorage.setItem("rate-capture", window.ttsRateCapture);
   });
-
   pitchCaptureSlider?.addEventListener("input", e => {
     window.ttsPitchCapture = parseFloat(e.target.value);
     localStorage.setItem("pitch-capture", window.ttsPitchCapture);
@@ -2785,18 +2763,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (db) restoreLastFileFromIndexedDB();
 
   // 📥 Save/Upload Hooks
-  const saveBtn = document.getElementById("save-to-library-btn");
-  if (saveBtn) saveBtn.addEventListener("click", saveFileToLibrary);
-
-  const uploadFilesInput = document.getElementById("upload-files-btn");
-  if (uploadFilesInput) {
-    uploadFilesInput.addEventListener("change", event => {
-      const files = Array.from(event.target.files);
-      const validFiles = files.filter(isValidFile);
-      if (validFiles.length !== files.length) alert("Some files were skipped.");
-      validFiles.forEach(file => saveFileToLibrary(file));
-    });
-  }
+  document.getElementById("save-to-library-btn")?.addEventListener("click", saveFileToLibrary);
+  document.getElementById("upload-files-btn")?.addEventListener("change", event => {
+    const files = Array.from(event.target.files);
+    const validFiles = files.filter(isValidFile);
+    if (validFiles.length !== files.length) alert("Some files were skipped.");
+    validFiles.forEach(file => saveFileToLibrary(file));
+  });
 
   // 🧹 Library Maintenance
   addCheckboxesToLibraryItems();
@@ -2807,25 +2780,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupUploadMultipleHandler();
 
   // 👤 Profile Save Button
-  const profileBtn = document.getElementById("save-profile-btn");
-  if (profileBtn) {
-    profileBtn.addEventListener("click", () => {
-      const settings = {
-        theme: document.querySelector("input[name='theme']:checked")?.value || "light",
-        ttsRate: parseFloat(document.getElementById("rate").value),
-        ttsPitch: parseFloat(document.getElementById("pitch").value),
-        selectedVoice: document.getElementById("voice-select")?.value || "",
-        autoResume: document.getElementById("auto-resume-toggle")?.checked || false,
-        notificationTime: document.getElementById("notification-time")?.value || "18:30",
-        language: document.getElementById("language-select")?.value || "en-US",
-        translationLanguage: document.getElementById("translation-select")?.value || "en",
-        developerMode: document.body.dataset.developer === "true"
-      };
-      saveProfileSettings(settings);
-      applyProfileSettings(settings);
-      alert("✅ Profile settings saved.");
-    });
-  }
+  document.getElementById("save-profile-btn")?.addEventListener("click", () => {
+    const settings = {
+      theme: document.querySelector("input[name='theme']:checked")?.value || "light",
+      ttsRate: parseFloat(document.getElementById("rate").value),
+      ttsPitch: parseFloat(document.getElementById("pitch").value),
+      selectedVoice: document.getElementById("voice-select")?.value || "",
+      autoResume: document.getElementById("auto-resume-toggle")?.checked || false,
+      notificationTime: document.getElementById("notification-time")?.value || "18:30",
+      language: document.getElementById("language-select")?.value || "en-US",
+      translationLanguage: document.getElementById("translation-select")?.value || "en",
+      developerMode: document.body.dataset.developer === "true"
+    };
+    saveProfileSettings(settings);
+    applyProfileSettings(settings);
+    alert("✅ Profile settings saved.");
+  });
 
   // 🤖 Agent Panel & Docking
   createAgentPanel();
