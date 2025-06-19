@@ -114,9 +114,125 @@ body {
   border-top: 1px solid #ddd;
   padding-top: 15px;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: column; /* stack .tts-controls-group rows vertically */
+  gap: 20px;              /* space between each group */
+  margin-bottom: 20px;    /* optional space below entire section */
 }
+
+/* ================================
+🔊 TTS Controls – Shared Layout
+================================= */
+.tts-controls-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.tts-controls-group label {
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* Dropdowns, Input, and Button */
+.tts-controls-group select,
+.tts-controls-group input,
+.tts-controls-group button {
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  min-width: 120px;
+  flex: 1 1 auto;
+}
+
+/* Buttons */
+.tts-controls-group button {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.tts-controls-group button:hover {
+  background-color: #357bd8;
+}
+
+/* ================================
+📊 Google TTS Usage Bar Styling
+================================= */
+.usage-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  margin-top: -5px;
+  margin-bottom: 8px;
+  display: none;
+}
+
+.usage-bar .usage-fill {
+  height: 100%;
+  width: 0%;
+  background-color: #4caf50;
+  transition: width 0.4s ease-in-out;
+}
+
+/* ================================
+📱 Mobile Styles (≤ 767px)
+================================= */
+@media (max-width: 767px) {
+  #tts-controls-listen,
+  #tts-controls-capture {
+    flex-wrap: wrap;
+  }
+
+  #tts-controls-listen label,
+  #tts-controls-capture label,
+  #tts-controls-listen select,
+  #tts-controls-capture select,
+  #tts-controls-listen input,
+  #tts-controls-capture input,
+  #tts-controls-listen button,
+  #tts-controls-capture button {
+    flex: 1 1 100%;
+  }
+
+  /* Engine + Voice only share row */
+  #tts-engine-listen,
+  #voice-listen,
+  #tts-engine-capture,
+  #voice-capture {
+    flex: 1 1 48%;
+  }
+}
+
+/* ================================
+💻 Desktop / Tablet Styles (≥ 768px)
+================================= */
+@media (min-width: 768px) {
+  #tts-controls-listen,
+  #tts-controls-capture {
+    flex-wrap: nowrap;
+  }
+
+  #tts-controls-listen select,
+  #tts-controls-capture select,
+  #tts-controls-listen input,
+  #tts-controls-capture input,
+  #tts-controls-listen button,
+  #tts-controls-capture button {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+
 #voice-select {
   padding: 8px;
   font-size: 14px;
@@ -975,23 +1091,29 @@ body[data-theme='dark'] #profile-settings select {
   border: 1px solid #555;
 }
 
-.tts-controls {
+.tts-controls-group {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-bottom: 1rem;
+  margin-bottom: 15px;
 }
 
-.tts-controls label {
-  font-weight: bold;
+.tts-controls-group label {
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: 14px;
 }
 
-.tts-controls select {
-  padding: 4px 10px;
-  border-radius: 6px;
+.tts-controls-group select,
+.tts-controls-group input,
+.tts-controls-group button {
+  padding: 6px 10px;
+  font-size: 14px;
   border: 1px solid #ccc;
-  min-width: 160px;
+  border-radius: 6px;
+  min-width: 120px;
+  flex: 1 1 auto;
 }
 
 .dropdown-group {

@@ -189,7 +189,8 @@
 <section class="section" id="listen">
 <h2>🔊 Listen</h2>
 <!-- 🎛 TTS Engine and Voice Dropdowns -->
-<div class="tts-controls-listen">
+<div class="tts-controls-group" id="tts-controls-listen">
+  <!-- 🧠 TTS Engine -->
   <label for="tts-engine-listen">🧠 TTS Engine:</label>
   <select id="tts-engine-listen">
     <option value="local">Local</option>
@@ -198,13 +199,22 @@
     <option value="google">Google</option>
   </select>
 
-  <!-- ✅ Google usage bar -->
-  <div id="google-tts-usage" class="usage-bar"></div>
+  <!-- 📊 Google TTS Usage Bar -->
+  <div id="google-tts-usage-listen" class="usage-bar" style="display: none;">
+    <div class="usage-fill" style="width: 0%;"></div>
+  </div>
 
+  <!-- 🎤 Voice -->
   <label for="voice-listen">🎤 Voice:</label>
   <select id="voice-listen"></select>
+
+  <!-- 🌐 Language -->
   <select id="language-select-listen"></select>
+
+  <!-- ✍️ Input Text -->
   <input id="tts-input-listen" placeholder="Type text to speak..." type="text"/>
+
+  <!-- ▶️ Speak Button -->
   <button id="speak-btn-listen">Speak</button>
 </div>
 <!-- 🎚 Playback Buttons -->
@@ -250,7 +260,8 @@
 <section class="section" id="capture">
 <h2>🌍 Live Capture</h2>
 <!-- 🎛 TTS Engine and Voice Selection -->
-<div class="tts-controls-capture">
+<div class="tts-controls-group" id="tts-controls-capture">
+  <!-- 🧠 TTS Engine -->
   <label for="tts-engine-capture">🧠 TTS Engine:</label>
   <select id="tts-engine-capture">
     <option value="local">Local</option>
@@ -259,13 +270,22 @@
     <option value="google">Google</option>
   </select>
 
-  <!-- ✅ Add usage bar here -->
-  <div id="google-tts-usage" class="usage-bar"></div>
+  <!-- 📊 Google TTS Usage Bar -->
+  <div id="google-tts-usage" class="usage-bar" style="display: none;">
+    <div class="usage-fill" style="width: 0%;"></div>
+  </div>
 
+  <!-- 🎤 Voice -->
   <label for="voice-capture">🎤 Voice:</label>
   <select id="voice-capture"></select>
+
+  <!-- 🌐 Language -->
   <select id="language-select-capture"></select>
+
+  <!-- ✍️ Input Text -->
   <input id="tts-input-capture" placeholder="Type text to speak..." type="text"/>
+
+  <!-- ▶️ Speak Button -->
   <button id="speak-btn-capture">Speak</button>
 </div>
 
