@@ -1,3 +1,98 @@
+// ==============================
+// 📦 Module 3: IndexedDB Setup for File Persistence
+// ==============================
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("neurAloudDB", 1);
+    request.onerror = (e) => reject(e);
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("files")) {
+        db.createObjectStore("files", { keyPath: "id" });
+      }
+    };
+  });
+}
+
+async function saveFileToDB(id, name, data, type) {
+  const db = await openDB();
+  const tx = db.transaction("files", "readwrite");
+  tx.objectStore("files").put({ id, name, data, type });
+  await tx.done;
+}
+
+async function restoreLastLoadedFile() {
+  const lastFileId = localStorage.getItem("lastFileId");
+  if (!lastFileId) return;
+
+  const db = await openDB();
+  const tx = db.transaction("files", "readonly");
+  const file = await tx.objectStore("files").get(lastFileId);
+  if (file && file.data) {
+    if (file.type.includes("pdf")) {
+      renderPDF(file.data, file.name);
+    } else if (file.type.includes("text") || file.type.includes("plain")) {
+      loadPlainText(file.data);
+    }
+  }
+}
+
+// ==============================
+// 📄 Module 4: PDF File Handling
+// ==============================
+async function renderPDF(pdfDataUrl, fileName) {
+  const loadingTask = pdfjsLib.getDocument({ url: pdfDataUrl });
+  const pdf = await loadingTask.promise;
+  const container = document.getElementById("pdf-viewer");
+  container.innerHTML = "";
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const canvas = document.createElement("canvas");
+    canvas.className = "pdf-page";
+    container.appendChild(canvas);
+
+    const page = await pdf.getPage(i);
+    const context = canvas.getContext("2d");
+    const viewport = page.getViewport({ scale: 1.5 });
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    const renderContext = { canvasContext: context, viewport: viewport };
+    await page.render(renderContext).promise;
+  }
+
+  console.log(`✅ PDF "${fileName}" rendered.`);
+}
+
+
+// === Theme Toggle Function ===
+function toggleMode() {
+  const body = document.body;
+  if (body.classList.contains("dark-mode")) {
+    body.classList.remove("dark-mode");
+    body.classList.add("light-mode");
+  } else {
+    body.classList.remove("light-mode");
+    body.classList.add("dark-mode");
+  }
+}
+
+
+// ==============================
+// 📜 Module 5: Plain Text File Handling
+// ==============================
+async function loadPlainText(dataUrl) {
+  const response = await fetch(dataUrl);
+  const text = await response.text();
+  const container = document.getElementById("text-display");
+  container.innerText = text;
+
+  console.log("✅ Plain text file loaded.");
+}
+
+
 // =========================
 // 📦 Merged Module 25: neurAloud_consolidated_script__to_24.js
 // =========================
@@ -9,11 +104,30 @@
 // === Navigation Fix ===
 window.navigate = function(id) {
   console.log("Navigating to:", id);
+
+  // Show the correct section
   document.querySelectorAll("main section").forEach(section =>
     section.classList.remove("active-section")
   );
   const target = document.getElementById(id);
   if (target) target.classList.add("active-section");
+
+  // Remove active-tab from all buttons
+  document.querySelectorAll("nav button").forEach(btn =>
+    btn.classList.remove("active-tab")
+  );
+
+  // Add active-tab to the matching button
+  const activeBtn = document.querySelector(`nav button[data-page="${id}"]`);
+  if (!activeBtn) {
+    console.warn(`❌ No nav button found for data-page="${id}"`);
+  } else {
+    activeBtn.classList.add("active-tab");
+    console.log(`✅ Highlighted tab: ${id}`);
+  }
+
+  // Save the selected page
+  localStorage.setItem("current-page", id);
 };
 
 
@@ -245,7 +359,6 @@ fileInput.addEventListener("change", async (event) => {
 });
 
 
-
 /* --- Initialization --- */
 // ==============================
 // 🧩 Utility: Persist Any Selection
@@ -254,12 +367,19 @@ function persistSelection(id) {
   const el = document.getElementById(id);
   if (!el) return;
   const type = el.type;
+  const saved = localStorage.getItem(id);
 
+  // 🧠 Restore saved value
   if (type === "checkbox") {
-    localStorage.setItem(id, el.checked);
+    el.checked = saved === "true";
+  } else if (type === "range" || type === "select-one" || type === "text") {
+    if (saved !== null) el.value = saved;
+  }
+
+  // 💾 Persist future changes
+  if (type === "checkbox") {
     el.addEventListener("change", () => localStorage.setItem(id, el.checked));
   } else if (type === "range" || type === "select-one" || type === "text") {
-    localStorage.setItem(id, el.value);
     el.addEventListener("input", () => localStorage.setItem(id, el.value));
   }
 }
@@ -272,6 +392,15 @@ function restoreSelection(id) {
 
   if (el.type === "checkbox") el.checked = val === "true";
   else el.value = val;
+
+  // 🔁 Special case logic
+  if (id === "dev-mode-toggle") document.body.dataset.developer = el.checked ? "true" : "false";
+  if (id === "theme-select") applyTheme(val);
+  if (id === "loop-toggle") window.shouldLoop = el.checked;
+  if (id === "auto-resume" || id === "auto-resume-toggle") window.autoResumeEnabled = el.checked;
+  if (id === "auto-reward-toggle") window.rewardTracking = el.checked;
+  if (id === "lang-read") window.ttsLang = el.value;
+  if (id === "lang-translate" || id === "translation-lang") window.translationLang = el.value;
 }
 
 
@@ -519,40 +648,20 @@ function setupResponsiveVoice() {
 }
 
 
-function updateVoiceDropdown(engine, voices, context = "listen") {
-  const dropdown = document.getElementById(`voice-${context}`);
-  if (!dropdown) return;
-
-  dropdown.innerHTML = "";
-
-  if (!Array.isArray(voices) || voices.length === 0) {
-    console.warn(`⚠️ No voices returned for ${engine} → ${context}`);
-
-  }
-
-  // Add voices
-  voices.forEach(v => {
-    const option = document.createElement("option");
-    const value = v.name || v.voice || v.id || v;
-    const label = v.description || v.displayName || value;
-    option.value = value;
-    option.textContent = label;
-    dropdown.appendChild(option);
-  });
-
-  // Key to track per-engine voice preference
+// ✅ Helper function (place this once globally, above your main functions)
+function restoreVoiceSelection(dropdown, engine, context) {
   const voiceKey = `voice-${engine.toLowerCase()}-${context}`;
   const savedVoice = localStorage.getItem(voiceKey);
 
-  // Restore saved voice if it's in the current list
+  // Restore voice if exists
   if (savedVoice && [...dropdown.options].some(opt => opt.value === savedVoice)) {
     dropdown.value = savedVoice;
   } else {
     dropdown.selectedIndex = 0;
-    localStorage.setItem(voiceKey, dropdown.value); // fallback to first
+    localStorage.setItem(voiceKey, dropdown.value);
   }
 
-  // Prevent multiple event listeners by clearing any existing ones
+  // Prevent duplicate listeners
   const newDropdown = dropdown.cloneNode(true);
   dropdown.parentNode.replaceChild(newDropdown, dropdown);
 
@@ -560,63 +669,90 @@ function updateVoiceDropdown(engine, voices, context = "listen") {
   newDropdown.addEventListener("change", () => {
     localStorage.setItem(voiceKey, newDropdown.value);
   });
+}
+
+
+function updateVoiceDropdown(engine, voices, context = "listen") {
+  const dropdown = document.getElementById(`voice-${context}`);
+  if (!dropdown) {
+    console.warn(`⚠️ Dropdown not found for voice-${context}`);
+    return;
+  }
+
+  // ✅ Ensure voices is a valid array
+  if (!Array.isArray(voices)) {
+    console.warn(`⚠️ Voice list for ${engine} (${context}) is not an array:`, voices);
+    return;
+  }
+
+  dropdown.innerHTML = "";
+
+  voices.forEach((voice) => {
+    const name = voice.name || voice.voice || voice;
+    const lang = voice.lang || "";
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = `${name} ${lang ? `(${lang})` : ""}`;
+    dropdown.appendChild(option);
+  });
+
+  // ✅ Restore saved voice
+  const saved = localStorage.getItem(`voice-${context}`);
+  if (saved && Array.from(dropdown.options).some(opt => opt.value === saved)) {
+    dropdown.value = saved;
+  }
+
+  // 💾 Save selection when changed
+  dropdown.addEventListener("change", (e) => {
+    localStorage.setItem(`voice-${context}`, e.target.value);
+  });
 
   console.log(`✅ Voice dropdown updated for ${engine} → ${context}`);
 }
 
 
-function loadVoicesForEngine(engine, context) {
-  const dropdown = document.getElementById(context === "capture" ? "voice-capture" : "voice-listen");
-  if (!dropdown) return;
-
-  let voices = [];
-
+function ensureVoicesReady(engine, context = "listen", attempt = 0) {
   if (engine === "local") {
-    voices = speechSynthesis.getVoices();
-  } else if (engine === "ibm") {
-    voices = window.ibmVoices?.[context] || [];  // use scoped object
+    const voices = speechSynthesis.getVoices();
+    if (!voices.length && attempt < 10) {
+      // Retry after a short delay
+      return setTimeout(() => ensureVoicesReady(engine, context, attempt + 1), 300);
+    }
+    updateVoiceDropdown("local", voices, context);
   } else if (engine === "responsivevoice") {
-    voices = window.responsiveVoices?.[context] || [];
+    if (typeof responsiveVoice === "undefined") {
+      console.warn("ResponsiveVoice SDK not yet ready");
+      return;
+    }
+    const voices = responsiveVoice.getVoices();
+    updateVoiceDropdown("responsiveVoice", voices, context);
+  } else if (engine === "ibm") {
+    const voices = window.ibmVoices?.[context] || [];
+    updateVoiceDropdown("ibm", voices, context);
+  } else {
+    console.warn(`❌ Unknown engine: ${engine}`);
   }
-
-  dropdown.innerHTML = "";
-  voices.forEach(v => {
-    const option = document.createElement("option");
-    option.value = v.name;
-    option.textContent = `${v.name} (${v.lang})`;
-    dropdown.appendChild(option);
-  });
-
-  const savedVoice = localStorage.getItem(`voice-${context}`);
-  if (savedVoice) dropdown.value = savedVoice;
-
-  dropdown.addEventListener("change", e => {
-    localStorage.setItem(`voice-${context}`, e.target.value);
-  });
 }
 
 
 function loadInitialVoices() {
-  const engineListen = document.getElementById("tts-engine-listen").value;
-  const engineCapture = document.getElementById("tts-engine-capture").value;
+  const engineListen = document.getElementById("tts-engine-listen")?.value || "local";
+  const engineCapture = document.getElementById("tts-engine-capture")?.value || "local";
 
-  loadVoicesForEngine(engineListen, "listen");
-  loadVoicesForEngine(engineCapture, "capture");
+  // ✅ NEW — use this instead
+  ensureVoicesReady(engineListen, "listen");
+  ensureVoicesReady(engineCapture, "capture");
 
   setTimeout(() => {
-    const savedVoiceListen = localStorage.getItem("voice-listen");
-    const savedVoiceCapture = localStorage.getItem("voice-capture");
-
-    if (savedVoiceListen) {
-      const voice_listenEl = document.getElementById("voice-listen");
-if (voice_listenEl) voice_listenEl.value = savedVoiceListen;
-    }
-
-    if (savedVoiceCapture) {
-      const voice_captureEl = document.getElementById("voice-capture");
-if (voice_captureEl) voice_captureEl.value = savedVoiceCapture;
-    }
-  }, 200); // Delay ensures dropdowns are populated
+    ["listen", "capture"].forEach(ctx => {
+      const key = `voice-${ctx}`;
+      const savedVoice = localStorage.getItem(key);
+      const voiceEl = document.getElementById(`voice-${ctx}`);
+      if (savedVoice && voiceEl) {
+        voiceEl.value = savedVoice;
+      }
+    });
+  }, 300); // Slight delay to allow async loads
 }
 
 
@@ -1000,7 +1136,7 @@ function fetchResponsiveVoices() {
     } else if (currentEngine === "responsivevoice") {
       fetchResponsiveVoices().then(rv => updateVoiceDropdown("responsivevoice", rv, context));
     } else {
-      loadVoicesForEngine("local", context);
+      ensureVoicesReady("local", context);
     }
 
     // 🎛 Handle engine selection change
@@ -1018,7 +1154,7 @@ function fetchResponsiveVoices() {
           const rvVoices = await fetchResponsiveVoices();
           updateVoiceDropdown("responsivevoice", rvVoices, context);
         } else {
-          loadVoicesForEngine("local", context);
+          ensureVoicesReady("local", context);
         }
       } catch (err) {
         console.error(`❌ Failed to load voices for ${selectedEngine}:`, err);
@@ -1264,41 +1400,30 @@ function initializeTTS() {
 // ===========================
 
 // 🧠 Load ResponsiveVoice voices dynamically (free SDK-based)
-function loadResponsiveVoiceVoices(target = "listen") {
+function loadResponsiveVoiceVoices(context = "listen") {
   if (typeof responsiveVoice === "undefined" || !responsiveVoice.getVoices) {
-    console.warn("⚠ ResponsiveVoice SDK not loaded.");
-
+    console.warn("⚠️ ResponsiveVoice SDK not loaded.");
+    return;
   }
 
   const voices = responsiveVoice.getVoices();
+  if (!voices.length) {
+    console.warn(`⚠️ No ResponsiveVoice voices found for ${context}`);
+    return;
+  }
 
-  const dropdown = document.getElementById(
-    target === "capture" ? "voice-select-capture" : "voice-select"
-  );
-  if (!dropdown) return;
-
-  dropdown.innerHTML = "";
-  voices.forEach(voice => {
-    const option = document.createElement("option");
-    option.value = voice.name;
-    option.textContent = `${voice.name} (${voice.lang})`;
-    dropdown.appendChild(option);
-  });
-
-  // Save and restore selected voice
-  const saved = localStorage.getItem(`responsiveVoice-${target}`);
-  if (saved) dropdown.value = saved;
-  dropdown.addEventListener("change", () => {
-    localStorage.setItem(`responsiveVoice-${target}`, dropdown.value);
-  });
+  updateVoiceDropdown("responsiveVoice", voices, context); // ✅ Shared helper
 }
 
 // 📦 Fallback voice if user doesn’t select any
-function getSelectedResponsiveVoice(target = "listen") {
-  const dropdown = document.getElementById(
-    target === "capture" ? "voice-select-capture" : "voice-select"
-  );
+function getSelectedResponsiveVoice(context = "listen") {
+  const dropdown = document.getElementById(`voice-${context}`);
   return dropdown ? dropdown.value : "UK English Female";
+}
+
+function speakWithResponsiveVoice(text, context = "listen") {
+  const selectedVoice = getSelectedResponsiveVoice(context);
+  responsiveVoice.speak(text, selectedVoice);
 }
 
 // 🗣️ Speak using ResponsiveVoice
@@ -2605,26 +2730,198 @@ document.getElementById("translate-btn")?.addEventListener("click", () => {
 
 
 
-// ============================== //
-// ✅ DOMContentLoaded Consolidated Block
-// ============================== //
+
+// ========== Module 46.docx ==========
+
+// ==========================
+// Module 46 – Theme & UI Preferences
+// ==========================
+const themes = {
+  light: {
+    primary: "#ffffff",
+    font: "#000000",
+    hover: "yellow",
+  },
+  dark: {
+    primary: "#121212",
+    font: "#f0f0f0",
+    hover: "#916B3D",
+  },
+  blue: {
+    primary: "#001f3f",
+    font: "#ffffff",
+    hover: "#916B3D",
+  },
+  royal: {
+    primary: "#2C2A4A",
+    font: "#ffffff",
+    hover: "#916B3D",
+  },
+  gray: {
+    primary: "#333333",
+    font: "#f0f0f0",
+    hover: "#916B3D",
+  },
+};
+function createThemeDropdown() {
+  const container = document.createElement("div");
+  container.id = "theme-picker";
+  container.style = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: sans-serif;
+    z-index: 9999;
+  `;
+  const label = document.createElement("label");
+  label.innerText = "🎨 Theme: ";
+  const select = document.createElement("select");
+  select.id = "theme-select";
+  Object.keys(themes).forEach((theme) => {
+    const option = document.createElement("option");
+    option.value = theme;
+    option.textContent = theme.charAt(0).toUpperCase() + theme.slice(1) + " Mode";
+    select.appendChild(option);
+  });
+  select.onchange = (e) => {
+    const selected = e.target.value;
+    applyTheme(selected);
+    saveThemePref(selected);
+  };
+  label.appendChild(select);
+  container.appendChild(label);
+  document.body.appendChild(container);
+}
+
+
+function applyTheme(themeName) {
+  const theme = themes[themeName];
+  if (!theme) return;
+
+  // ✅ Update body class
+  document.body.className = `theme-${themeName}`;
+
+  // ✅ Store in localStorage
+  localStorage.setItem("theme-select", themeName);
+
+  // ✅ Apply core theme styles
+  document.body.style.backgroundColor = theme.primary;
+  document.body.style.color = theme.font;
+  document.documentElement.style.setProperty("--hover-color", theme.hover);
+  document.documentElement.style.setProperty("--font-color", theme.font);
+  document.documentElement.style.setProperty("--background-color", theme.primary);
+
+  // ✅ Update links, buttons, etc.
+  const links = document.querySelectorAll("a, button, .highlight");
+  links.forEach((el) => {
+    el.style.color = theme.font;
+    el.onmouseover = () => (el.style.color = theme.hover);
+    el.onmouseout = () => (el.style.color = theme.font);
+  });
+
+  console.log(`🎨 Applied ${themeName} theme.`);
+}
+
+
+function saveThemePref(themeName) {
+  localStorage.setItem("userTheme", themeName);
+}
+
+
+function loadSavedTheme() {
+  const saved = localStorage.getItem("userTheme") || "light";
+  applyTheme(saved);
+  const select = document.getElementById("theme-select");
+  if (select) select.value = saved;
+}
+function getCurrentTheme() {
+  return localStorage.getItem("userTheme") || "light";
+}
+
+
+function loadVoicesForEngine(engine, context = "listen") {
+  let voices = [];
+
+  if (engine === "local") {
+    voices = speechSynthesis.getVoices();
+    if (!voices.length) {
+      console.warn("⚠️ Local voices not ready — retrying...");
+      setTimeout(() => loadVoicesForEngine(engine, context), 300);
+      return;
+    }
+  } else if (engine === "ibm") {
+    voices = window.ibmVoices?.[context] || [];
+  } else if (engine === "responsivevoice") {
+    if (typeof responsiveVoice === "undefined" || !responsiveVoice.getVoices) {
+      console.warn("⚠️ ResponsiveVoice SDK not loaded.");
+      return;
+    }
+
+    voices = responsiveVoice.getVoices();
+    if (!voices.length) {
+      console.warn(`⚠️ No ResponsiveVoice voices found for ${context}`);
+      return;
+    }
+
+    updateVoiceDropdown("responsiveVoice", voices, context);
+    return;
+  } else {
+    console.warn(`⚠️ Unknown engine: ${engine}`);
+    return;
+  }
+
+  updateVoiceDropdown(engine, voices, context);
+}
+
+
+// ==============================
+// ✅ DOMContentLoaded Main Init
+// ==============================/
 document.addEventListener("DOMContentLoaded", async () => {
+
+  // ✅ Add these two calls immediately
+  loadQueueFromLocal();
+  makeAgentDraggable();
+
   // 🧠 Restore last visited section (Home, Listen, Capture, etc.)
-  restoreSection();
+  const lastPage = localStorage.getItem("current-page") || "home";
+  navigate(lastPage);
 
   // ✅ Restore & persist all relevant UI controls
   const persistentIds = [
-    "AI Explanation", "Capture Mode", "Image Description", "Translation",
-    "auto-reward-toggle", "auto-resume", "autoplay-response", "dev-mode-toggle",
-    "enable-translation", "lang-read", "lang-translate", "loop-toggle",
-    "pitch-capture-slider", "pitch-slider", "rate-capture-slider", "rate-slider",
-    "theme-select", "translation-lang", "tts-engine-capture", "tts-engine-listen",
-    "voice-avatar", "voice-capture", "voice-listen"
+  "AI Explanation", "Capture Mode", "Image Description", "Translation",
+  "auto-reward-toggle", "auto-resume", "autoplay-response", "dev-mode-toggle",
+  "enable-translation", "lang-read", "lang-translate", "loop-toggle",
+  "pitch-capture-slider", "pitch-slider", "rate-capture-slider", "rate-slider",
+  "theme-select", "translation-lang", "tts-engine-capture", "tts-engine-listen",
+  "voice-avatar", "voice-capture", "voice-listen"
   ];
   persistentIds.forEach(id => {
     restoreSelection(id);
     persistSelection(id);
   });
+
+  // 🎨 Apply saved theme immediately before other UI setup
+  const savedTheme = localStorage.getItem("theme-select") || "light";
+  applyTheme(savedTheme); // ✅ Ensure background/text colors update instantly
+
+  // 🎛 Theme dropdown binding
+  const themeSelect = document.getElementById("theme-select");
+  if (themeSelect) {
+    // 🟢 Reflect saved theme in dropdown
+    if (!themeSelect.value) themeSelect.value = savedTheme;
+
+    // 🔄 Persist and apply new theme on change
+    themeSelect.addEventListener("change", () => {
+      const selected = themeSelect.value;
+      localStorage.setItem("theme-select", selected);
+      applyTheme(selected);
+    });
+  }
 
   // ✅ Pitch & Rate Sliders Setup with Display Updates
   const rateSlider = document.getElementById("rate-slider");
@@ -2637,25 +2934,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   const rateCaptureValue = document.getElementById("rate-capture-value");
   const pitchCaptureValue = document.getElementById("pitch-capture-value");
 
-  // Load values
   window.ttsRate = parseFloat(localStorage.getItem("rate")) || 1.0;
   window.ttsPitch = parseFloat(localStorage.getItem("pitch")) || 1.0;
   window.ttsRateCapture = parseFloat(localStorage.getItem("rate-capture")) || 1.0;
   window.ttsPitchCapture = parseFloat(localStorage.getItem("pitch-capture")) || 1.0;
 
-  // Update sliders
   if (rateSlider) rateSlider.value = window.ttsRate;
   if (pitchSlider) pitchSlider.value = window.ttsPitch;
   if (rateCaptureSlider) rateCaptureSlider.value = window.ttsRateCapture;
   if (pitchCaptureSlider) pitchCaptureSlider.value = window.ttsPitchCapture;
 
-  // Update display spans
   if (rateValue) rateValue.textContent = window.ttsRate.toFixed(2);
   if (pitchValue) pitchValue.textContent = window.ttsPitch.toFixed(2);
   if (rateCaptureValue) rateCaptureValue.textContent = window.ttsRateCapture.toFixed(2);
   if (pitchCaptureValue) pitchCaptureValue.textContent = window.ttsPitchCapture.toFixed(2);
 
-  // Attach listeners
   rateSlider?.addEventListener("input", e => {
     window.ttsRate = parseFloat(e.target.value);
     localStorage.setItem("rate", window.ttsRate);
@@ -2686,30 +2979,51 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // 🎛 Engine Switcher + Voice Loading
-  ["listen", "capture"].forEach(context => {
-    const engineDropdown = document.getElementById(`tts-engine-${context}`);
-    if (engineDropdown) {
-      engineDropdown.addEventListener("change", async (e) => {
-        const selectedEngine = e.target.value.toLowerCase();
-        localStorage.setItem(`tts-engine-${context}`, selectedEngine);
+   ["listen", "capture"].forEach(context => {
+  const engineDropdown = document.getElementById(`tts-engine-${context}`);
+  if (engineDropdown) {
+   engineDropdown.addEventListener("change", async (e) => {
+    const selectedEngine = e.target.value.toLowerCase();
+    localStorage.setItem(`tts-engine-${context}`, selectedEngine);
 
-        try {
-          if (selectedEngine === "google" || selectedEngine === "local") {
-            loadVoicesDropdown(selectedEngine, context);
-          } else if (selectedEngine === "ibm") {
-            const ibmVoices = await fetchIBMVoices(context);
-            updateVoiceDropdown("ibm", ibmVoices, context);
-          } else if (selectedEngine === "responsivevoice") {
-            const rvVoices = await fetchResponsiveVoices();
-            updateVoiceDropdown("responsivevoice", rvVoices, context);
-          }
-        } catch (err) {
-          console.error(`❌ Failed to load voices for ${selectedEngine}:`, err);
-          updateVoiceDropdown(selectedEngine, [], context);
-        }
-      });
+    try {
+     if (selectedEngine === "google" || selectedEngine === "local") {
+      loadVoicesDropdown(selectedEngine, context);
+     } else if (selectedEngine === "ibm") {
+      const ibmVoices = await fetchIBMVoices(context);
+      updateVoiceDropdown("ibm", ibmVoices, context);
+      const voiceDropdown = document.getElementById(`voice-${context}`);
+      const savedVoice = localStorage.getItem(`voice-${context}`);
+      if (voiceDropdown && savedVoice) voiceDropdown.value = savedVoice;
+      // Save voice change
+      voiceDropdown?.addEventListener("change", e => {
+       localStorage.setItem(`voice-${context}`, e.target.value);
+      });            
+     } else if (selectedEngine === "responsivevoice") {
+      const rvVoices = await fetchResponsiveVoices();
+      updateVoiceDropdown("responsivevoice", rvVoices, context);
+      const voiceDropdown = document.getElementById(`voice-${context}`);
+      const savedVoice = localStorage.getItem(`voice-${context}`);
+      if (voiceDropdown && savedVoice) voiceDropdown.value = savedVoice;
+      // Save voice change
+      voiceDropdown?.addEventListener("change", e => {
+       localStorage.setItem(`voice-${context}`, e.target.value);
+      });            
+     }
+    } catch (err) {
+     console.error(`❌ Failed to load voices for ${selectedEngine}:`, err);
+     updateVoiceDropdown(selectedEngine, [], context);
+     const voiceDropdown = document.getElementById(`voice-${context}`);
+     const savedVoice = localStorage.getItem(`voice-${context}`);
+     if (voiceDropdown && savedVoice) voiceDropdown.value = savedVoice;
+     // Save voice change
+     voiceDropdown?.addEventListener("change", e => {
+      localStorage.setItem(`voice-${context}`, e.target.value);
+     });            
     }
-  });
+   });
+  }
+ });
 
   // 🗣 Local TTS voice loading
   localVoices = speechSynthesis.getVoices();
@@ -2717,7 +3031,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     localVoices = speechSynthesis.getVoices();
     ["listen", "capture"].forEach(context => {
       const engine = document.getElementById(`tts-engine-${context}`)?.value?.toLowerCase();
-      if (engine === "local") loadVoicesForEngine("local", context);
+      if (engine === "local") ensureVoicesReady("local", context);
     });
   };
 
@@ -2794,27 +3108,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 👤 Profile Save Button
   document.getElementById("save-profile-btn")?.addEventListener("click", () => {
     const settings = {
-        theme: document.querySelector("input[name='theme']:checked")?.value || "light",
-
-        // 🎛 Listen Sliders
-        ttsRate: window.ttsRate || 1.0,
-        ttsPitch: window.ttsPitch || 1.0,
-
-        // 🎛 Capture Sliders
-        ttsRateCapture: window.ttsRateCapture || 1.0,
-        ttsPitchCapture: window.ttsPitchCapture || 1.0,
-
-        // 🔊 Voice & Language
-        selectedVoice: document.getElementById("voice-select")?.value || "",
-        language: document.getElementById("language-select")?.value || "en-US",
-        translationLanguage: document.getElementById("translation-select")?.value || "en",
-
-        // 🔁 Toggles & Preferences
-        autoResume: document.getElementById("auto-resume-toggle")?.checked || false,
-        notificationTime: document.getElementById("notification-time")?.value || "18:30",
-        developerMode: document.body.dataset.developer === "true"
+      theme: document.querySelector("input[name='theme']:checked")?.value || "light",
+      ttsRate: window.ttsRate || 1.0,
+      ttsPitch: window.ttsPitch || 1.0,
+      ttsRateCapture: window.ttsRateCapture || 1.0,
+      ttsPitchCapture: window.ttsPitchCapture || 1.0,
+      selectedVoice: document.getElementById("voice-select")?.value || "",
+      language: document.getElementById("language-select")?.value || "en-US",
+      translationLanguage: document.getElementById("translation-select")?.value || "en",
+      autoResume: document.getElementById("auto-resume-toggle")?.checked || false,
+      notificationTime: document.getElementById("notification-time")?.value || "18:30",
+      developerMode: document.body.dataset.developer === "true"
     };
-
     saveProfileSettings(settings);
     applyProfileSettings(settings);
     alert("✅ Profile settings saved.");
@@ -3078,9 +3383,19 @@ function fetchLiveArticles() {
 }
 
 // ✅ Button Handlers
-document.getElementById("start-stream-btn").addEventListener("click", startStreamReading);
-document.getElementById("stop-stream-btn").addEventListener("click", stopStreamReading);
-document.getElementById("fetch-stream-btn").addEventListener("click", fetchLiveArticles);
+function safelyBind(id, handler) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener("click", handler);
+  } else {
+    console.warn(`⚠️ '${id}' not found.`);
+  }
+}
+
+// Usage
+safelyBind("start-stream-btn", startStreamReading);
+safelyBind("stop-stream-btn", stopStreamReading);
+safelyBind("fetch-stream-btn", fetchLiveArticles);
 
 // ✅ Initialization
 updateStreamStatus("Idle. Load stream to begin.");
@@ -5414,102 +5729,6 @@ function renderAvatarPicker() {
   else document.body.appendChild(container);
 }
 
-
-// ========== Module 46.docx ==========
-
-// ==========================
-// Module 46 – Theme & UI Preferences
-// ==========================
-const themes = {
-  light: {
-    primary: "#ffffff",
-    font: "#000000",
-    hover: "yellow",
-  },
-  dark: {
-    primary: "#121212",
-    font: "#f0f0f0",
-    hover: "#916B3D",
-  },
-  blue: {
-    primary: "#001f3f",
-    font: "#ffffff",
-    hover: "#916B3D",
-  },
-  royal: {
-    primary: "#2C2A4A",
-    font: "#ffffff",
-    hover: "#916B3D",
-  },
-  gray: {
-    primary: "#333333",
-    font: "#f0f0f0",
-    hover: "#916B3D",
-  },
-};
-function createThemeDropdown() {
-  const container = document.createElement("div");
-  container.id = "theme-picker";
-  container.style = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(0,0,0,0.6);
-    color: white;
-    padding: 10px;
-    border-radius: 6px;
-    font-family: sans-serif;
-    z-index: 9999;
-  `;
-  const label = document.createElement("label");
-  label.innerText = "🎨 Theme: ";
-  const select = document.createElement("select");
-  select.id = "theme-select";
-  Object.keys(themes).forEach((theme) => {
-    const option = document.createElement("option");
-    option.value = theme;
-    option.textContent = theme.charAt(0).toUpperCase() + theme.slice(1) + " Mode";
-    select.appendChild(option);
-  });
-  select.onchange = (e) => {
-    const selected = e.target.value;
-    applyTheme(selected);
-    saveThemePref(selected);
-  };
-  label.appendChild(select);
-  container.appendChild(label);
-  document.body.appendChild(container);
-}
-function applyTheme(themeName) {
-  const theme = themes[themeName];
-  if (!theme) return;
-  document.body.className = "theme-" + themeName;
-  document.body.style.backgroundColor = theme.primary;
-  document.body.style.color = theme.font;
-  document.documentElement.style.setProperty("--hover-color", theme.hover);
-  document.documentElement.style.setProperty("--font-color", theme.font);
-  document.documentElement.style.setProperty("--background-color", theme.primary);
-  const links = document.querySelectorAll("a, button, .highlight");
-  links.forEach((el) => {
-    el.style.color = theme.font;
-    el.onmouseover = () => (el.style.color = theme.hover);
-    el.onmouseout = () => (el.style.color = theme.font);
-  });
-  console.log(`🎨 Applied ${themeName} theme.`);
-}
-function saveThemePref(themeName) {
-  localStorage.setItem("userTheme", themeName);
-}
-function loadSavedTheme() {
-  const saved = localStorage.getItem("userTheme") || "light";
-  applyTheme(saved);
-  const select = document.getElementById("theme-select");
-  if (select) select.value = saved;
-}
-function getCurrentTheme() {
-  return localStorage.getItem("userTheme") || "light";
-}
-
 // ========== Module 47.docx ==========
 
 // ==========================
@@ -6579,46 +6798,70 @@ function initVoiceUISelections() {
 function initTTSEngineSwitchListeners() {
   ["listen", "capture"].forEach(context => {
     const sel = document.getElementById(`tts-engine-${context}`);
-    if (sel) {
-      sel.addEventListener("change", () => {
-        localStorage.setItem(`tts-engine-${context}`, sel.value);
-        loadVoicesForEngine(sel.value, context);
-      });
+    if (!sel) return;
+
+    // Restore persisted engine selection on load
+    const savedEngine = localStorage.getItem(`tts-engine-${context}`);
+    if (savedEngine && [...sel.options].some(opt => opt.value === savedEngine)) {
+      sel.value = savedEngine;
     }
+
+    // Add listener to update voices on change
+    sel.addEventListener("change", () => {
+      const selected = sel.value;
+      localStorage.setItem(`tts-engine-${context}`, selected);
+      loadVoicesForEngine(selected, context);
+    });
   });
 }
 
 function initLocalVoices() {
   localVoices = speechSynthesis.getVoices();
+
+  // Restore voices if ready on load
+  ["listen", "capture"].forEach(context => {
+    const engine = document.getElementById(`tts-engine-${context}`)?.value;
+    if (engine === "local") loadVoicesForEngine(engine, context);
+  });
+
+  // Attach callback for delayed voice loading
   speechSynthesis.onvoiceschanged = () => {
     localVoices = speechSynthesis.getVoices();
     ["listen", "capture"].forEach(context => {
-      const engine = document.getElementById(`tts-engine-${context}`).value;
+      const engine = document.getElementById(`tts-engine-${context}`)?.value;
       if (engine === "local") loadVoicesForEngine(engine, context);
     });
   };
 }
 
+
 async function initCloudVoices() {
   setupResponsiveVoice();
 
-  await fetchGoogleVoices().then(() => {
-    ["listen", "capture"].forEach(context => {
-      if (document.getElementById(`tts-engine-${context}`).value === "google") {
-        loadVoicesForEngine("google", context);
-      }
-    });
-  });
+  // ✅ Google: skip (unless you're handling it fully)
+  // await fetchGoogleVoices().then(() => {
+  //   ["listen", "capture"].forEach(context => {
+  //     if (document.getElementById(`tts-engine-${context}`).value === "google") {
+  //       loadVoicesForEngine("google", context);
+  //     }
+  //   });
+  // });
 
+  // ✅ IBM + ResponsiveVoice + Local
   for (const context of ["listen", "capture"]) {
     const engine = document.getElementById(`tts-engine-${context}`)?.value?.toLowerCase();
+
     if (engine === "ibm") {
       await fetchIBMVoices(context);
+      loadVoicesForEngine("ibm", context);
+    } else if (engine === "responsivevoice") {
+      setTimeout(() => loadVoicesForEngine("responsivevoice", context), 300);  // Give SDK time
     } else {
       loadVoicesForEngine(engine, context);
     }
   }
 }
+
 
 function initTranslationControls() {
   initTranslationSettings();
@@ -6672,9 +6915,16 @@ function initDockedPanels() {
 // ==============================
 
 
-
 window.addEventListener("DOMContentLoaded", async () => {
-  // Load and populate local voices
+  // ✅ Set default theme if not yet set
+  if (
+    !document.body.classList.contains("dark-mode") &&
+    !document.body.classList.contains("light-mode")
+  ) {
+    document.body.classList.add("dark-mode"); // Default to dark mode
+  }
+
+  // 🎤 Load and populate local voices
   function populateLocalVoices() {
     const voices = speechSynthesis.getVoices();
     if (voices.length) {
@@ -6684,7 +6934,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // Add Local to TTS engine dropdowns
+  // ➕ Add Local to TTS engine dropdowns
   ["listen", "capture"].forEach(context => {
     const engineSelect = document.getElementById(`tts-engine-${context}`);
     if (engineSelect && ![...engineSelect.options].some(opt => opt.value === "local")) {
@@ -6695,7 +6945,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // ResponsiveVoice SDK setup (no fetch)
+  // 🗣 ResponsiveVoice SDK setup
   if (typeof responsiveVoice === "undefined") {
     const script = document.createElement("script");
     script.src = "https://code.responsivevoice.org/responsivevoice.js?key=4KSLPhgK";
@@ -6703,7 +6953,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.body.appendChild(script);
   }
 
-  // Defer IBM voice loading if selected
+  // ⏳ Defer IBM/local voice loading based on selected engine
   ["listen", "capture"].forEach(async (context) => {
     const engine = document.getElementById(`tts-engine-${context}`)?.value?.toLowerCase();
     if (engine === "ibm") {
@@ -6717,6 +6967,361 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Refresh local voices onvoiceschanged
+  // 🔄 Refresh local voices on change
   speechSynthesis.onvoiceschanged = populateLocalVoices;
 });
+
+
+// ==============================
+// 🎯 Module: Make Agent Draggable
+// ==============================
+function makeAgentDraggable() {
+  const panel = document.getElementById("agent-panel");
+  let offsetX, offsetY;
+
+  panel.onmousedown = function(e) {
+    e.preventDefault();
+    offsetX = e.clientX - panel.getBoundingClientRect().left;
+    offsetY = e.clientY - panel.getBoundingClientRect().top;
+
+    document.onmousemove = function(e) {
+      panel.style.top = (e.clientY - offsetY) + "px";
+      panel.style.left = (e.clientX - offsetX) + "px";
+      panel.style.bottom = "auto"; // 🔁 Prevent conflict with bottom
+    };
+
+    document.onmouseup = function() {
+      document.onmousemove = null;
+      document.onmouseup = null;
+    };
+  };
+}
+
+
+// ==============================
+// 🎤 Module 6: Play, Pause, Stop Controls
+// ==============================
+let currentUtterance = null;
+
+function speakText(text, context = "listen") {
+  stopSpeaking();
+
+  const engine = document.getElementById(`tts-engine-${context}`)?.value?.toLowerCase();
+  const voice = document.getElementById(`voice-${context}`)?.value;
+  const rate = parseFloat(document.getElementById("rate-slider")?.value || "1");
+  const pitch = parseFloat(document.getElementById("pitch-slider")?.value || "1");
+
+  if (engine === "local") {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = speechSynthesis.getVoices().find(v => v.name === voice);
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+    speechSynthesis.speak(utterance);
+    currentUtterance = utterance;
+  }
+
+  // Other engines handled separately
+}
+
+function pauseSpeaking() {
+  if (speechSynthesis.speaking) {
+    speechSynthesis.pause();
+  }
+}
+
+function resumeSpeaking() {
+  if (speechSynthesis.paused) {
+    speechSynthesis.resume();
+  }
+}
+
+function stopSpeaking() {
+  if (speechSynthesis.speaking || speechSynthesis.paused) {
+    speechSynthesis.cancel();
+  }
+}
+
+// ==============================
+// 🔁 Module 7: Loop Toggle
+// ==============================
+function toggleLoop() {
+  const toggle = document.getElementById("loop-toggle");
+  localStorage.setItem("loop-toggle", toggle.checked);
+}
+
+document.getElementById("loop-toggle")?.addEventListener("change", toggleLoop);
+
+function shouldLoop() {
+  return localStorage.getItem("loop-toggle") === "true";
+}
+
+// ==============================
+// 🎚 Module 8: Rate and Pitch Sliders
+// ==============================
+function updateRateDisplay() {
+  const val = document.getElementById("rate-slider")?.value;
+  document.getElementById("rate-label").textContent = `Rate: ${val}`;
+  localStorage.setItem("rate-slider", val);
+}
+
+function updatePitchDisplay() {
+  const val = document.getElementById("pitch-slider")?.value;
+  document.getElementById("pitch-label").textContent = `Pitch: ${val}`;
+  localStorage.setItem("pitch-slider", val);
+}
+
+document.getElementById("rate-slider")?.addEventListener("input", updateRateDisplay);
+document.getElementById("pitch-slider")?.addEventListener("input", updatePitchDisplay);
+
+
+// ==============================
+// 📋 Module 9: Text Splitting & Sentence Navigation
+// ==============================
+function splitIntoSentences(text) {
+  return text.match(/[^\.!\?]+[\.!\?]+/g) || [text];
+}
+
+function scrollToSentence(sentenceEl) {
+  sentenceEl.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}
+
+// ==============================
+// 📚 Module 10: Playback Queue
+// ==============================
+function addToQueue(filename) {
+  const list = document.getElementById("playback-queue");
+  const li = document.createElement("li");
+  li.textContent = filename;
+  list.appendChild(li);
+  saveQueueToLocal();
+}
+
+function saveQueueToLocal() {
+  const queueItems = Array.from(document.querySelectorAll("#playback-queue li")).map(li => li.textContent.trim());
+  localStorage.setItem("playbackQueue", JSON.stringify(queueItems));
+}
+
+function loadQueueFromLocal() {
+  const stored = localStorage.getItem("playbackQueue");
+  if (!stored) return;
+  const items = JSON.parse(stored);
+  const list = document.getElementById("playback-queue");
+  list.innerHTML = "";
+  items.forEach(name => {
+    const li = document.createElement("li");
+    li.textContent = name;
+    list.appendChild(li);
+  });
+}
+
+
+// ==============================
+// 🌍 Module 11: Auto Translation
+// ==============================
+function autoTranslate(text, targetLang = "en") {
+  const placeholder = `[Translated to ${targetLang}]: ${text}`;
+  showTranslatedText(placeholder);
+}
+
+function showTranslatedText(text) {
+  const area = document.getElementById("translated-display");
+  if (!area) return;
+  area.textContent = text;
+  area.classList.add("translated-flash");
+  setTimeout(() => area.classList.remove("translated-flash"), 500);
+}
+
+function previewTranslationSelection() {
+  const selection = window.getSelection().toString();
+  if (selection.trim()) {
+    const lang = document.getElementById("translation-lang")?.value || "en";
+    autoTranslate(selection, lang);
+  }
+}
+
+document.addEventListener("mouseup", () => {
+  if (document.getElementById("preview-translate-toggle")?.checked) {
+    previewTranslationSelection();
+  }
+});
+
+// ==============================
+// 🎙️ Module 12: Capture Mode & Transcription (Stub)
+// ==============================
+function startCapture() {
+  const output = document.getElementById("capture-output");
+  output.textContent = "[Transcription started...]";
+  setTimeout(() => {
+    output.textContent += "\nThis is a mock transcription of your input audio.";
+  }, 1000);
+}
+
+document.getElementById("start-capture")?.addEventListener("click", startCapture);
+
+// ==============================
+// 🧠 Module 13: ResponsiveVoice Setup
+// ==============================
+async function initCloudVoices() {
+  await setupResponsiveVoice(); // Wait for ResponsiveVoice SDK
+
+  // Loop through both 'listen' and 'capture' contexts
+  for (const context of ["listen", "capture"]) {
+    const engine = document.getElementById(`tts-engine-${context}`)?.value?.toLowerCase();
+
+    if (engine === "ibm") {
+      await fetchIBMVoices(context);                 // Ensure IBM voices are fetched
+      loadVoicesForEngine("ibm", context);           // Then load into dropdown
+    } else if (engine === "responsivevoice") {
+      loadVoicesForEngine("responsivevoice", context); // Now SDK is guaranteed ready
+    } else {
+      loadVoicesForEngine(engine, context);          // Local or others
+    }
+  }
+}
+
+// ==============================
+// 🧪 Module 14: IBM Voice Fetching
+// ==============================
+async function fetchIBMVoces() {
+  try {
+    const res = await fetch("https://neur-aloud-api.onrender.com/api/ibm-voices");
+    const data = await res.json();
+    return data.voices || [];
+  } catch (err) {
+    console.error("❌ Failed to fetch IBM voices:", err);
+    return [];
+  }
+}
+
+// ==============================
+// 🧭 Module 15: Section Persistence
+// ==============================
+function restoreSection() {
+  const saved = localStorage.getItem("last-section");
+  if (saved) {
+    document.querySelectorAll(".section").forEach(s => s.style.display = "none");
+    const el = document.getElementById(saved);
+    if (el) el.style.display = "block";
+  }
+}
+
+function saveSection(id) {
+  localStorage.setItem("last-section", id);
+}
+
+// ==============================
+// 🧩 Module 16: Floating Playback Panel
+// ==============================
+function toggleFloatingPanel(expand = true) {
+  const panel = document.getElementById("floating-panel");
+  if (!panel) return;
+
+  if (expand) {
+    panel.classList.add("expanded");
+    panel.classList.remove("docked");
+  } else {
+    panel.classList.remove("expanded");
+    panel.classList.add("docked");
+  }
+}
+
+document.getElementById("expand-panel")?.addEventListener("click", () => toggleFloatingPanel(true));
+document.getElementById("dock-panel")?.addEventListener("click", () => toggleFloatingPanel(false));
+
+// ==============================
+// 🎭 Module 17: Avatar Selection and Agent Dock
+// ==============================
+function setAvatar(name) {
+  const avatar = document.getElementById("avatar-image");
+  if (!avatar) return;
+  avatar.src = `assets/avatars/${name}.png`;
+  localStorage.setItem("selected-avatar", name);
+}
+
+function restoreAvatar() {
+  const saved = localStorage.getItem("selected-avatar") || "neural";
+  setAvatar(saved);
+}
+
+document.querySelectorAll(".avatar-option").forEach(opt => {
+  opt.addEventListener("click", () => {
+    setAvatar(opt.dataset.avatar);
+  });
+});
+
+// ==============================
+// ⚙️ Module 18: Developer Tools (Hotkey, Auto Dock)
+// ==============================
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.shiftKey && e.key === "A") {
+    const agent = document.getElementById("agent-panel");
+    if (agent) agent.classList.toggle("visible");
+  }
+});
+
+function autoDockAgent() {
+  const agent = document.getElementById("agent-panel");
+  if (!agent) return;
+  const lastMode = localStorage.getItem("agent-mode");
+  if (lastMode === "docked") {
+    agent.classList.add("docked");
+    agent.classList.remove("expanded");
+  }
+}
+
+document.getElementById("close-agent")?.addEventListener("click", () => {
+  document.getElementById("agent-panel")?.classList.remove("visible");
+});
+
+// ==============================
+// 🧼 Module 19: Cleanup Previous Files on Load
+// ==============================
+function clearPreviousState() {
+  stopSpeaking();
+  document.getElementById("text-display").textContent = "";
+  document.getElementById("translated-display").textContent = "";
+  const canvas = document.getElementById("pdf-canvas");
+  if (canvas) {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+// ==============================
+// 🔢 Module 20: Sentence Playback Highlighting
+// ==============================
+function highlightAndSpeak(text, context = "listen") {
+  const container = document.getElementById("text-display");
+  const sentences = splitIntoSentences(text);
+
+  let idx = 0;
+  function speakNext() {
+    if (idx >= sentences.length) {
+      if (shouldLoop()) {
+        idx = 0;
+        speakNext();
+      }
+      return;
+    }
+
+    const span = document.createElement("span");
+    span.className = "highlighted-sentence";
+    span.textContent = sentences[idx];
+
+    container.innerHTML = "";
+    container.appendChild(span);
+
+    speakText(sentences[idx], context);
+
+    const duration = Math.max(1500, sentences[idx].length * 50);
+    setTimeout(() => {
+      idx++;
+      speakNext();
+    }, duration);
+  }
+
+  speakNext();
+}

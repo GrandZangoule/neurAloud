@@ -15,6 +15,7 @@ section.active-section {
   display: block;
 }
 
+
 body {
   font-family: 'Segoe UI', sans-serif;
   background-color: var(--background);
@@ -43,7 +44,7 @@ body {
   --usage-bar-fill: #4caf50;
 }
 
-/* 🌙 Dark Mode */
+/* 🌙 DARK MODE */
 body.theme-dark {
   --background: #121212;
   --text: #f5f5f5;
@@ -54,7 +55,7 @@ body.theme-dark {
   --usage-bar-fill: #00e676;
 }
 
-/* 💙 Blue Mode */
+/* 💙 BLUE MODE */
 body.theme-blue {
   --background: #e8f1fc;
   --text: #0a0a23;
@@ -65,7 +66,7 @@ body.theme-blue {
   --usage-bar-fill: #2196f3;
 }
 
-/* 👑 Royal Mode */
+/* 👑 ROYAL MODE */
 body.theme-royal {
   --background: #f5f0ff;
   --text: #2b2b40;
@@ -76,7 +77,7 @@ body.theme-royal {
   --usage-bar-fill: #7b68ee;
 }
 
-/* 🩶 Gray Mode */
+/* 🩶 GRAY MODE */
 body.theme-gray {
   --background: #eeeeee;
   --text: #222;
@@ -87,18 +88,7 @@ body.theme-gray {
   --usage-bar-fill: #888;
 }
 
-/* 🌙 Dark Mode */
-body.dark-mode {
-  --background: #121212;
-  --text: #f5f5f5;
-  --border: #444;
-  --primary: #6495ed;
-  --primary-hover: #4169e1;
-  --usage-bar-bg: #333;
-  --usage-bar-fill: #00e676;
-}
-
-/* 🌿 Green Mode */
+/* 🌿 GREEN MODE */
 body.theme-green {
   --background: #eafaf1;
   --text: #1a3c2e;
@@ -108,6 +98,258 @@ body.theme-green {
   --usage-bar-bg: #c8e6c9;
   --usage-bar-fill: #4caf50;
 }
+
+nav button.active-tab {
+  background-color: #63576e !important;
+  color: white !important;
+  font-weight: bold;
+  border-radius: 8px;
+}
+
+
+/* 🧠 GLOBAL STYLES */
+body {
+  background-color: var(--background);
+  color: var(--text);
+  transition: background-color 0.4s, color 0.4s;
+}
+
+/* 🧼 Override default button color */
+button, .btn {
+  background-color: #e0e0e0 !important;
+  color: #000 !important;
+  border: 1px solid #ccc !important;
+}
+
+
+button:hover, .btn:hover {
+  background-color: var(--primary-hover);
+  color: var(--text);
+}
+
+input, select, textarea {
+  background-color: var(--background);
+  color: var(--text);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+/* 🧪 SLIDERS & BARS */
+.usage-bar {
+  background-color: var(--usage-bar-bg);
+}
+.usage-bar-fill {
+  background-color: var(--usage-bar-fill);
+}
+
+/* 🧱 CARDS / PANELS */
+.card, .panel, .container, .box {
+  background-color: var(--background);
+  color: var(--text);
+  border: 1px solid var(--border);
+  transition: all 0.4s ease;
+}
+
+/* 🎚 SCROLLBARS */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
+}
+
+/* 🗂 TABS */
+.tabs, .tab {
+  background-color: var(--background);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.tab.active {
+  background-color: var(--primary);
+  color: var(--text);
+}
+
+
+#home-icon,
+#settings-icon {
+  font-size: 24px;
+  cursor: pointer;
+  padding: 6px;
+  margin: 0 6px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+#home-icon.active-tab,
+#settings-icon.active-tab {
+  background-color: var(--hover-color, #cce4ff);
+  color: var(--font-color, #000);
+}
+
+#home-icon:hover,
+#settings-icon:hover {
+  transform: scale(1.15);
+  background-color: var(--hover-color, #cce4ff);
+}
+
+
+avatar-box,
+.agent-panel,
+.agent-panel-hidden,
+#floating-station {
+  background-image: var(--panel-gradient, linear-gradient(to bottom right, #d8cfff, #cce4ff)) !important;
+  background-color: transparent !important;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: background-image 0.4s ease, color 0.3s ease;
+}
+
+body.theme-light {
+  --panel-gradient: linear-gradient(to bottom right, #ceb3d8, #88adf2); /* light purple/blue */
+}
+
+body.theme-dark {
+  --panel-gradient: linear-gradient(to bottom right, #3f2f7e, #0d26c8); /* deep purples/blues */
+}
+
+body.theme-royal {
+  --panel-gradient: linear-gradient(to bottom right, #6f3398, #3046c7); /* slightly richer */
+}
+
+body.theme-gray {
+  --panel-gradient: linear-gradient(to bottom right, #6f3398, #3046c7);  /* slightly richer */
+}
+
+body.theme-blue {
+  --panel-gradient: linear-gradient(to bottom right, #6a11cb, #2575fc);  /* slightly richer */
+}
+
+body.theme-green {
+  --panel-gradient: linear-gradient(to bottom right, #6a11cb, #2575fc);  /* slightly richer */
+}
+
+
+.avatar-box, .agent-panel {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.avatar-box, .agent-panel {
+  padding: 12px;
+}
+
+body.theme-light .avatar-box,
+body.theme-light .agent-panel {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+body.theme-dark .avatar-box,
+body.theme-dark .agent-panel {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.theme-light {
+  --panel-background: rgba(255, 255, 255, 0.92);
+}
+
+body.theme-dark {
+  --panel-background: rgba(34, 34, 34, 0.9);
+}
+
+body.theme-royal {
+  --panel-background: #f1f3ff;
+}
+
+body.theme-blue {
+  --panel-background: #e8f0ff;
+}
+
+body.theme-gray {
+  --panel-background: #f5f5f5;
+}
+
+
+#floating-station {
+  background-color: var(--panel-background, rgba(255,255,255,0.85)) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 💬 TOOLTIPS */
+.tooltip {
+  background-color: var(--text);
+  color: var(--background);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.tooltip::after {
+  border-color: var(--text) transparent transparent transparent;
+}
+
+/* 🔘 TOGGLE SWITCHES */
+.toggle-switch {
+  appearance: none;
+  width: 40px;
+  height: 20px;
+  background: var(--border);
+  border-radius: 20px;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.3s;
+}
+
+.toggle-switch::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: var(--background);
+  border-radius: 50%;
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  transition: transform 0.3s, background 0.3s;
+}
+
+.toggle-switch:checked {
+  background: var(--primary);
+}
+
+.toggle-switch:checked::before {
+  transform: translateX(20px);
+  background: var(--text);
+}
+
+/* 🎨 ICON STYLING */
+.icon, .icon-btn {
+  color: var(--primary);
+  transition: color 0.3s ease;
+}
+.icon:hover, .icon-btn:hover {
+  color: var(--primary-hover);
+}
+
+/* ✨ TRANSITIONS FOR EVERYTHING */
+.card, .panel, .box, .tab, input, select, textarea, .avatar-box, .agent-panel {
+  transition: all 0.3s ease;
+}
+
 
 /* 🌿 Optional: Add visual pop to interactive UI elements */
 body.theme-green .tts-controls-group,
@@ -310,6 +552,7 @@ body {
   background-color: #4caf50;
   transition: width 0.4s ease-in-out;
 }
+
 
 /* ================================
 📱 Mobile Styles (≤ 767px)
@@ -714,7 +957,6 @@ footer {
   white-space: nowrap;
   opacity: 0;
   transform: translateY(-6px);
-  pointer-events: none;
   transition: all 0.2s ease-in-out;
 }
 
@@ -1247,41 +1489,183 @@ body[data-theme='dark'] #profile-settings select {
 }
 
 
-/* ========================
-   🧠 Agent + Floating Panel
-   ======================== */
-#agent-panel {
+/* 🎧 Floating Station Modes */
+#floating-station {
   position: fixed;
-  bottom: 80px;
-  left: 20px;
-  width: 280px;
-  background: white;
-  border: 2px solid #6a11cb;
-  border-radius: 10px;
-  padding: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  display: none;
-  z-index: 1000;
+  right: 16px;
+  background: #1e1e1e;
+  color: white;
+  font-family: Arial, sans-serif;
+  z-index: 9999;
   transition: all 0.3s ease;
+  overflow: hidden;
 }
-.agent-header {
+
+.station-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: bold;
-  color: #6a11cb;
+  padding: 6px 12px;
 }
-.agent-close-btn {
-  cursor: pointer;
-  font-size: 20px;
-}
-.agent-body {
-  margin-top: 10px;
+
+#station-timer {
   font-size: 14px;
-  line-height: 1.5;
 }
-.agent-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
+
+.station-icon {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  margin-left: 6px;
+}
+
+.station-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 10px;
+}
+
+.station-controls button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.station-controls button:hover {
+  transform: scale(1.15);
+  color: #8faaff;
+}
+
+/* Normal vertical mode */
+.station-mode-normal {
+  top: 40%;
+  width: 60px;
+  border-radius: 30px;
+  text-align: center;
+  padding: 8px 0;
+}
+
+/* Expanded mode */
+.station-mode-expanded {
+  top: 30%;
+  width: 240px;
+  border-radius: 20px;
+  padding: 10px 0;
+}
+
+/* Docked horizontal mode */
+.station-mode-docked {
+  bottom: 108px;
+  right: 20px;
+  width: 60px;
+  height: 40px;
+  border-radius: 20px;
+  text-align: center;
+  line-height: 40px;
+  font-size: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.station-mode-docked:hover::after {
+  content: "Undock";
+  position: absolute;
+  top: -28px;
+  background: #444;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+/* Minimized (click to restore) */
+.station-mode-minimized {
+  display: none;
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 60px;
+  height: 40px;
+  background-color: #333;
+  border-radius: 20px;
+  text-align: center;
+  line-height: 40px;
+  font-size: 20px;
+  color: white;
+  box-shadow: 0 0 8px rgba(0,0,0,0.2);
+  cursor: pointer;
+  z-index: 9998;
+}
+
+#agent-panel.visible {
+  display: block;
+}
+
+#agent-panel {
+  position: fixed;
+  bottom: 80px;          /* ✅ Maintain bottom position */
+  left: 20px;            /* ✅ Always open on the left */
+  width: 300px;
+  height: auto;
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.4);
+  z-index: 9999;
+  overflow-y: auto;
+}
+
+/* Light Mode (default) */
+body.light-mode .station-close {
+  color: #222; /* Dark for light backgrounds */
+}
+
+/* Dark Mode */
+body.dark-mode .station-close {
+  color: #ccc; /* Light gray for dark backgrounds */
+}
+
+
+
+#avatar-image {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+/* === Highlighted Sentence === */
+.highlighted-sentence {
+  background-color: yellow;
+  padding: 3px 5px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease-in-out;
+}
+
+/* === Sliders === */
+#rate-label, #pitch-label {
+  font-weight: bold;
+  margin-left: 10px;
+}
+
+input[type="range"] {
+  width: 100px;
+  vertical-align: middle;
+}
+
+/* === Translated Flash Animation === */
+.translated-flash {
+  animation: flash 0.5s ease-in-out;
+}
+
+@keyframes flash {
+  from { background: #ffffcc; }
+  to   { background: transparent; }
 }
